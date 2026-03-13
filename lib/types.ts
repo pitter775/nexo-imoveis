@@ -15,13 +15,20 @@ export interface Property {
 }
 
 export interface User {
-  id: number;
+  id: number | string;
   email: string;
-  role: string;
-  is_premium: number;
+  role?: string;
+  tipo_usuario?: 'admin' | 'cliente';
+  is_premium?: number;
 }
 
 export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
+}
+
+export interface AppUserProfile {
+  id: string;
+  email: string;
+  tipo_usuario: 'admin' | 'cliente';
 }
