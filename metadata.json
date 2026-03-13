@@ -1,0 +1,7 @@
+{
+  "name": "Nexo Leilões",
+  "description": "Um marketplace imobiliário premium com insights baseados em IA, listagens exclusivas e análises de investimento.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
