@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, 
@@ -33,7 +34,7 @@ import { GoogleGenAI } from "@google/genai";
 import { Property, User as UserType, ChatMessage } from '@/lib/types';
 
 // Initialize Gemini
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+const genAI = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '' });
 
 export default function App() {
   const [view, setView] = useState<'home' | 'listings' | 'details' | 'chat' | 'admin' | 'finance'>('home');
@@ -90,8 +91,14 @@ export default function App() {
             ) : (
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium hidden sm:block">{user.email}</span>
-                <div className="size-8 rounded-full bg-slate-200 overflow-hidden">
-                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} alt="Avatar" />
+                <div className="size-8 rounded-full bg-slate-200 overflow-hidden relative">
+                  <Image 
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} 
+                    alt="Avatar" 
+                    fill
+                    className="object-cover"
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
               </div>
             )}
@@ -206,10 +213,13 @@ function HomeView({ onBrowse, onPropertyClick, properties }: { onBrowse: () => v
         </div>
         <div className="flex-1 w-full">
           <div className="relative h-[300px] sm:h-[450px] w-full overflow-hidden rounded-2xl shadow-2xl">
-            <img 
+            <Image 
               src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1000" 
-              className="w-full h-full object-cover" 
+              fill
+              className="object-cover" 
               alt="Hero"
+              priority
+              referrerPolicy="no-referrer"
             />
             <div className="absolute bottom-6 left-6 right-6 rounded-xl bg-white/90 p-4 backdrop-blur-md shadow-lg border border-white/20">
               <div className="flex items-center justify-between">
@@ -249,10 +259,12 @@ function PropertyCard({ property, onClick }: { property: Property, onClick: () =
       className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-xl cursor-pointer"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden">
-        <img 
+        <Image 
           src={property.image_url} 
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-110" 
           alt={property.title}
+          referrerPolicy="no-referrer"
         />
         <div className="absolute top-4 left-4 flex gap-2">
           {property.is_premium === 1 && (
@@ -342,7 +354,13 @@ function PropertyDetailsView({ property, onBack, user }: { property: Property, o
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           <div className="relative aspect-video rounded-2xl overflow-hidden shadow-xl">
-            <img src={property.image_url} className="w-full h-full object-cover" alt={property.title} />
+            <Image 
+              src={property.image_url} 
+              fill
+              className="object-cover" 
+              alt={property.title} 
+              referrerPolicy="no-referrer"
+            />
             <div className="absolute top-4 left-4">
               <span className="bg-primary text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">Imóvel Premium</span>
             </div>
