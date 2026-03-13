@@ -33,22 +33,80 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import { Property, User as UserType, ChatMessage } from '@/lib/types';
 
+// Mock Data
+const MOCK_PROPERTIES: Property[] = [
+  {
+    id: 1,
+    title: "Skyline Plaza Luxury Apartment",
+    description: "Apartamento de alto padrão com vista panorâmica para o centro da cidade. Totalmente mobiliado e com acabamentos de luxo.",
+    price: 1250000,
+    location: "Centro, São Paulo",
+    image_url: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1000",
+    beds: 3,
+    baths: 2,
+    sqft: 1850,
+    type: "Apartamento",
+    roi: 12.4,
+    cap_rate: 8.5,
+    is_premium: 1
+  },
+  {
+    id: 2,
+    title: "Vila Oakwood Residence",
+    description: "Casa contemporânea em condomínio fechado com segurança 24h e área de lazer completa. Ideal para famílias.",
+    price: 850000,
+    location: "Jardins, São Paulo",
+    image_url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1000",
+    beds: 4,
+    baths: 3,
+    sqft: 2400,
+    type: "Casa",
+    roi: 10.2,
+    cap_rate: 7.8,
+    is_premium: 0
+  },
+  {
+    id: 3,
+    title: "Modern Loft Downtown",
+    description: "Loft industrial moderno com pé direito duplo e design arrojado. Localização privilegiada próxima a centros comerciais.",
+    price: 620000,
+    location: "Vila Madalena, São Paulo",
+    image_url: "https://images.unsplash.com/photo-1536376074432-a228d0a59cf4?auto=format&fit=crop&q=80&w=1000",
+    beds: 1,
+    baths: 1,
+    sqft: 950,
+    type: "Loft",
+    roi: 14.8,
+    cap_rate: 9.2,
+    is_premium: 1
+  },
+  {
+    id: 4,
+    title: "Green Valley Estate",
+    description: "Propriedade rural de luxo com haras e área verde preservada. Perfeita para quem busca tranquilidade e contato com a natureza.",
+    price: 3450000,
+    location: "Interior, São Paulo",
+    image_url: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=1000",
+    beds: 6,
+    baths: 5,
+    sqft: 12000,
+    type: "Fazenda",
+    roi: 8.5,
+    cap_rate: 6.5,
+    is_premium: 1
+  }
+];
+
 // Initialize Gemini
 const genAI = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '' });
 
 export default function App() {
   const [view, setView] = useState<'home' | 'listings' | 'details' | 'chat' | 'admin' | 'finance'>('home');
-  const [properties, setProperties] = useState<Property[]>([]);
+  const [properties, setProperties] = useState<Property[]>(MOCK_PROPERTIES);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [user, setUser] = useState<UserType | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    fetch('/api/properties')
-      .then(res => res.json())
-      .then(data => setProperties(data));
-  }, []);
 
   const handlePropertyClick = (property: Property) => {
     setSelectedProperty(property);
@@ -56,13 +114,14 @@ export default function App() {
   };
 
   const login = async () => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'investor@example.com', password: 'password' })
-    });
-    const data = await res.json();
-    setUser(data);
+    // Mock login
+    const mockUser: UserType = {
+      id: 1,
+      email: 'investor@example.com',
+      role: 'investor',
+      is_premium: 1
+    };
+    setUser(mockUser);
   };
 
   return (
@@ -567,13 +626,11 @@ function ChatInterface() {
 }
 
 function AdminDashboard() {
-  const [stats, setStats] = useState<any>(null);
-
-  useEffect(() => {
-    fetch('/api/admin/stats').then(res => res.json()).then(setStats);
-  }, []);
-
-  if (!stats) return <div className="p-8 text-center">Carregando Dados Administrativos...</div>;
+  const [stats, setStats] = useState<any>({
+    totalUsers: 25430,
+    totalRevenue: 12450000,
+    activeAuctions: 42
+  });
 
   return (
     <div className="space-y-8">
