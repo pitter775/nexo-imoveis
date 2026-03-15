@@ -28,8 +28,8 @@ export function LoginForm({ redirectTo = '/' }: LoginFormProps) {
             Entrar na plataforma Nexo
           </h1>
           <p className="text-sm leading-6 text-slate-500">
-            Use sua conta do Supabase para acessar o painel. Administradores são
-            levados direto ao ambiente de gestão.
+            Use seu acesso cadastrado na plataforma. Administradores sao
+            levados direto ao ambiente de gestao.
           </p>
         </div>
       </div>

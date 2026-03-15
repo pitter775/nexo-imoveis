@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
+import { protectRoute } from '@/lib/auth/route-protection';
 
 export async function middleware(request: NextRequest) {
-  return updateSession(request);
+  return protectRoute(request);
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/dashboard/:path*'],
 };

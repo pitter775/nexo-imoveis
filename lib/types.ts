@@ -29,6 +29,7 @@ export interface ChatMessage {
 
 export interface AppUserProfile {
   id: string;
+  nome?: string | null;
   email: string;
   tipo_usuario: 'admin' | 'cliente';
 }

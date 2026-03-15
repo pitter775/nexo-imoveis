@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { login, logout } from '@/lib/auth';
 
 export type LoginFormState = {
   error?: string;
@@ -19,30 +19,15 @@ export async function loginAction(
     return { error: 'Preencha e-mail e senha para continuar.' };
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  const authenticatedUser = await login(email, password);
 
-  if (error || !data.user) {
-    return { error: 'Não foi possível entrar. Confira suas credenciais.' };
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from('users')
-    .select('tipo_usuario')
-    .eq('id', data.user.id)
-    .maybeSingle();
-
-  if (profileError || !profile?.tipo_usuario) {
-    await supabase.auth.signOut();
+  if (!authenticatedUser) {
     return {
-      error: 'Usuário autenticado, mas sem perfil válido na tabela users.',
+      error: 'Nao foi possivel entrar. Verifique e-mail, senha e se o usuario esta ativo.',
     };
   }
 
-  if (profile.tipo_usuario === 'admin') {
+  if (authenticatedUser.tipo_usuario === 'admin') {
     redirect('/admin');
   }
 
@@ -50,7 +35,6 @@ export async function loginAction(
 }
 
 export async function logoutAction() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
+  await logout();
   redirect('/login');
 }
