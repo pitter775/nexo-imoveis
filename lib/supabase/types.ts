@@ -232,6 +232,8 @@ export type Database = {
           cep: string | null;
           data_leilao: string | null;
           status: string | null;
+          destaque: boolean;
+          ordem_destaque: number | null;
           created_at: string | null;
         };
         Insert: {
@@ -255,6 +257,8 @@ export type Database = {
           cep?: string | null;
           data_leilao?: string | null;
           status?: string | null;
+          destaque?: boolean;
+          ordem_destaque?: number | null;
           created_at?: string | null;
         };
         Update: {
@@ -278,6 +282,8 @@ export type Database = {
           cep?: string | null;
           data_leilao?: string | null;
           status?: string | null;
+          destaque?: boolean;
+          ordem_destaque?: number | null;
           created_at?: string | null;
         };
         Relationships: [];

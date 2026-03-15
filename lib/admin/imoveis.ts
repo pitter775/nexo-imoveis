@@ -23,6 +23,8 @@ export type ImovelRecord = {
   cep: string | null;
   data_leilao: string | null;
   status: string | null;
+  destaque: boolean;
+  ordem_destaque: number | null;
   capa_url?: string | null;
 };
 
@@ -96,7 +98,7 @@ export async function listImoveisPage({
   let request = supabase
     .from('imoveis')
     .select(
-      'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status',
+      'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status, destaque, ordem_destaque',
       { count: 'exact' },
     )
     .order('data_leilao', { ascending: true })
@@ -186,7 +188,7 @@ export async function getImovelById(id: string) {
   const { data, error } = await supabase
     .from('imoveis')
     .select(
-      'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status',
+      'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status, destaque, ordem_destaque',
     )
     .eq('id', id)
     .maybeSingle();

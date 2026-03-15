@@ -2,6 +2,8 @@ export interface Property {
   id: string;
   title: string;
   description: string;
+  destaque?: boolean;
+  ordem_destaque?: number | null;
   price: number;
   valuation_price?: number | null;
   location: string;

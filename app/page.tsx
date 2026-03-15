@@ -243,7 +243,25 @@ export function PublicMarketplace({
     router.push('/imoveis');
   };
 
-  const featuredProperty = properties[0] ?? null;
+  const featuredProperties = useMemo(() => {
+    const highlighted = properties
+      .filter((property) => property.destaque)
+      .sort((first, second) => {
+        const firstOrder = first.ordem_destaque ?? Number.MAX_SAFE_INTEGER;
+        const secondOrder = second.ordem_destaque ?? Number.MAX_SAFE_INTEGER;
+        return firstOrder - secondOrder;
+      });
+
+    if (highlighted.length >= 3) {
+      return highlighted.slice(0, 3);
+    }
+
+    const fallback = properties.filter(
+      (property) => !highlighted.some((highlightedProperty) => highlightedProperty.id === property.id),
+    );
+
+    return [...highlighted, ...fallback].slice(0, 3);
+  }, [properties]);
 
   return (
     <div className="min-h-screen bg-[#f6f7f8] font-sans text-slate-900 selection:bg-primary/30">
@@ -435,7 +453,7 @@ export function PublicMarketplace({
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {view === 'home' && (
           <HomeView
-            featuredProperty={featuredProperty}
+            featuredProperties={featuredProperties}
             isLoading={isLoadingProperties}
             onBrowse={handleBrowse}
             onNavigate={handleMenuNavigation}
@@ -493,14 +511,14 @@ export default function App() {
 }
 
 function HomeView({
-  featuredProperty,
+  featuredProperties,
   isLoading,
   onBrowse,
   onNavigate,
   onPropertyClick,
   properties,
 }: {
-  featuredProperty: Property | null;
+  featuredProperties: Property[];
   isLoading: boolean;
   onBrowse: () => void;
   onNavigate: (sectionId: string) => void;
@@ -508,8 +526,26 @@ function HomeView({
   properties: Property[];
 }) {
   const [visibleCount, setVisibleCount] = useState(3);
+  const [featuredIndex, setFeaturedIndex] = useState(0);
   const visibleProperties = properties.slice(0, visibleCount);
   const hasMoreProperties = visibleCount < properties.length;
+  const featuredProperty = featuredProperties[featuredIndex] ?? null;
+
+  useEffect(() => {
+    setFeaturedIndex(0);
+  }, [featuredProperties]);
+
+  useEffect(() => {
+    if (featuredProperties.length <= 1) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setFeaturedIndex((currentIndex) => (currentIndex + 1) % featuredProperties.length);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [featuredProperties]);
 
   return (
     <div className="space-y-12 pb-12">
@@ -564,25 +600,51 @@ function HomeView({
             />
             <div className="absolute bottom-6 left-6 right-6 rounded-xl border border-white/20 bg-white/90 p-4 shadow-lg backdrop-blur-md">
               {featuredProperty ? (
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase text-primary">
-                      Em destaque
-                    </p>
-                    <p className="truncate text-sm font-bold text-slate-900">
-                      {featuredProperty.title}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {featuredProperty.location || 'Localizacao nao informada'}
-                    </p>
+                <>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase text-primary">
+                        Em destaque
+                      </p>
+                      <p className="truncate text-sm font-bold text-slate-900">
+                        {featuredProperty.title}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {featuredProperty.location || 'Localizacao nao informada'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-slate-500">Lance minimo</p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {formatCurrency(featuredProperty.price)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-slate-500">Lance minimo</p>
-                    <p className="text-sm font-bold text-slate-900">
-                      {formatCurrency(featuredProperty.price)}
-                    </p>
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      {featuredProperties.map((property, index) => (
+                        <button
+                          key={property.id}
+                          type="button"
+                          aria-label={`Exibir destaque ${index + 1}`}
+                          onClick={() => setFeaturedIndex(index)}
+                          className={`h-2.5 rounded-full transition-all ${
+                            index === featuredIndex
+                              ? 'w-8 bg-primary'
+                              : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onPropertyClick(featuredProperty)}
+                      className="rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+                    >
+                      Ver imovel
+                    </button>
                   </div>
-                </div>
+                </>
               ) : (
                 <div>
                   <p className="text-xs font-bold uppercase text-primary">

@@ -64,6 +64,8 @@ CREATE TABLE public.imoveis (
   area_total numeric,
   area_construida numeric,
   ano_construcao integer,
+  destaque boolean NOT NULL DEFAULT false,
+  ordem_destaque integer,
   CONSTRAINT imoveis_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.imovel_arquivos (

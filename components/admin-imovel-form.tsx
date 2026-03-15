@@ -77,6 +77,8 @@ type ImovelFormValues = {
   cep?: string | null;
   data_leilao?: string | null;
   status?: string | null;
+  destaque?: boolean | null;
+  ordem_destaque?: number | null;
 };
 
 type AdminImovelFormProps = {
@@ -222,6 +224,24 @@ export function AdminImovelForm({
             options={STATUS_OPTIONS}
             required
             className="xl:col-span-2"
+          />
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 xl:col-span-3 xl:self-end">
+            <input
+              type="checkbox"
+              name="destaque"
+              defaultChecked={Boolean(initialValues?.destaque)}
+              className="size-4 rounded border-slate-300 text-primary focus:ring-primary/20"
+            />
+            <span className="text-sm font-semibold text-slate-700">
+              Exibir no destaque da home
+            </span>
+          </label>
+          <Field
+            label="Ordem do destaque"
+            name="ordem_destaque"
+            type="number"
+            defaultValue={initialValues?.ordem_destaque ?? ''}
+            className="xl:col-span-3"
           />
           <Field
             label="Data do leilao"

@@ -62,6 +62,8 @@ function parseImovelFormData(formData: FormData) {
     cep: String(formData.get('cep') ?? '').trim(),
     data_leilao: String(formData.get('data_leilao') ?? ''),
     status: String(formData.get('status') ?? '').trim(),
+    destaque: formData.get('destaque') === 'on',
+    ordem_destaque: parseOptionalInteger(formData.get('ordem_destaque')),
   };
 }
 

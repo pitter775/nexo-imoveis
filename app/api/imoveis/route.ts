@@ -14,7 +14,7 @@ export async function GET() {
       supabase
         .from('imoveis')
         .select(
-          'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status, created_at',
+          'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status, destaque, ordem_destaque, created_at',
         )
         .order('created_at', { ascending: false }),
       supabase
@@ -92,6 +92,8 @@ export async function GET() {
       id: imovel.id,
       title: imovel.titulo,
       description: imovel.descricao ?? 'Sem descricao cadastrada.',
+      destaque: Boolean(imovel.destaque),
+      ordem_destaque: imovel.ordem_destaque,
       price: Number(imovel.valor_minimo ?? imovel.valor_avaliacao ?? 0),
       valuation_price:
         imovel.valor_avaliacao == null ? null : Number(imovel.valor_avaliacao),
