@@ -30,8 +30,10 @@ import {
   ShieldCheck,
   Square,
   Target,
+  UserCog,
   X,
 } from 'lucide-react';
+import { logoutAction } from '@/app/actions/auth';
 import { ChatMessage, Property, User as UserType } from '@/lib/types';
 import { SiteFooter } from '@/components/site-footer';
 
@@ -63,6 +65,7 @@ export function PublicMarketplace({
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [user, setUser] = useState<UserType | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isLoadingProperties, setIsLoadingProperties] = useState(true);
   const [activeSection, setActiveSection] = useState('topo');
 
@@ -232,6 +235,8 @@ export function PublicMarketplace({
     router.push('/');
   };
 
+  const adminHref = user?.tipo_usuario === 'admin' ? '/admin' : null;
+
   const handleBackToListings = () => {
     setView('listings');
     setSelectedProperty(null);
@@ -290,18 +295,87 @@ export function PublicMarketplace({
                 Login
               </a>
             ) : (
-              <div className="flex items-center gap-3">
-                <span className="hidden text-sm font-medium sm:block">{user.email}</span>
-                <div className="relative size-8 overflow-hidden rounded-full bg-slate-200">
-                  <Image
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
-                    alt="Avatar"
-                    fill
-                    className="object-cover"
-                    referrerPolicy="no-referrer"
-                    unoptimized
-                  />
+              <div
+                className="relative"
+                onMouseEnter={() => setIsUserMenuOpen(true)}
+                onMouseLeave={() => setIsUserMenuOpen(false)}
+              >
+                <div className="flex items-center gap-2">
+                  {adminHref ? (
+                    <a
+                      href={adminHref}
+                      className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 transition hover:border-primary/30 hover:bg-primary/5"
+                    >
+                      <span className="hidden text-sm font-medium sm:block">{user.email}</span>
+                      <div className="relative size-8 overflow-hidden rounded-full bg-slate-200">
+                        <Image
+                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+                          alt="Avatar"
+                          fill
+                          className="object-cover"
+                          referrerPolicy="no-referrer"
+                          unoptimized
+                        />
+                      </div>
+                    </a>
+                  ) : (
+                    <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2">
+                      <span className="hidden text-sm font-medium sm:block">{user.email}</span>
+                      <div className="relative size-8 overflow-hidden rounded-full bg-slate-200">
+                        <Image
+                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+                          alt="Avatar"
+                          fill
+                          className="object-cover"
+                          referrerPolicy="no-referrer"
+                          unoptimized
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    aria-label="Abrir menu do usuario"
+                    onClick={() => setIsUserMenuOpen((current) => !current)}
+                    className="rounded-full border border-slate-200 bg-white p-2 text-slate-600 transition hover:border-primary/30 hover:text-primary"
+                  >
+                    <ChevronDown
+                      className={`size-4 transition-transform ${
+                        isUserMenuOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
                 </div>
+
+                <AnimatePresence>
+                  {isUserMenuOpen ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                      className="absolute right-0 top-[calc(100%+0.75rem)] z-50 min-w-[220px] rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-xl shadow-slate-200/80"
+                    >
+                      {adminHref ? (
+                        <a
+                          href={adminHref}
+                          className="flex items-center gap-3 rounded-[1.1rem] px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                        >
+                          <UserCog className="size-4 text-primary" />
+                          Ambiente administrativo
+                        </a>
+                      ) : null}
+                      <form action={logoutAction} className="mt-1">
+                        <button
+                          type="submit"
+                          className="flex w-full items-center gap-3 rounded-[1.1rem] px-3 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                        >
+                          <ArrowLeft className="size-4 text-primary" />
+                          Sair
+                        </button>
+                      </form>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
               </div>
             )}
 
@@ -746,9 +820,21 @@ function HomeView({
                 alt="Analise estrategica de imovel da Nexo"
                 width={1200}
                 height={900}
-                className="h-[360px] w-full object-cover object-center"
+                className="h-[300px] w-full object-cover object-center"
                 priority={false}
               />
+            </div>
+            <div className="hidden rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm lg:block">
+              <div className="mb-3 inline-flex rounded-2xl bg-primary/10 p-3">
+                <Target className="size-5 text-primary" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">
+                Curadoria com foco em liquidez e margem
+              </h3>
+              <p className="mt-2 text-sm leading-7 text-slate-600">
+                Nossos estudos priorizam ativos com boa leitura juridica, potencial
+                de revenda e entrada mais inteligente para cada perfil.
+              </p>
             </div>
           </div>
           <div className="grid gap-4">
@@ -757,6 +843,7 @@ function HomeView({
               'Identificacao de oportunidades reais com potencial de valorizacao',
               'Atendimento consultivo e acompanhamento especializado',
               'Avaliacao inicial do perfil do investidor',
+              'Curadoria de ativos com maior liquidez e leitura de saida',
             ].map((item) => (
               <div
                 key={item}
