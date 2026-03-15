@@ -36,19 +36,16 @@ export default async function EditImovelPage({ params }: EditImovelPageProps) {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-[2rem] border border-white/50 bg-white/90 p-6 shadow-xl shadow-slate-900/5 backdrop-blur">
-        <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
-          Modulo de imoveis
-        </p>
-        <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
-          Editar imovel
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-          Atualize os dados publicos, o conteudo do dossie, os documentos e a galeria do imovel.
-        </p>
-      </div>
-
       <AdminImovelTabs
+        summary={{
+          titulo: imovel.titulo,
+          valor_minimo: imovel.valor_minimo,
+          status: imovel.status,
+          tipo_leilao: imovel.tipo_leilao,
+          cidade: imovel.cidade,
+          estado: imovel.estado,
+          capaUrl: images[0]?.url ?? null,
+        }}
         dadosTab={
           <AdminImovelForm
             title="Editar imovel"

@@ -162,22 +162,21 @@ export function AdminImovelImages({
   };
 
   return (
-    <section className="space-y-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm xl:sticky xl:top-6">
-      <div className="flex flex-col gap-4">
-        <div>
+    <section className="space-y-4 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm xl:sticky xl:top-6">
+      <div className="flex flex-col gap-3 rounded-[1.25rem] border border-slate-100 bg-slate-50/80 p-3.5">
+        <div className="space-y-2">
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
             Imagens do imovel
           </p>
-          <h2 className="mt-2 text-xl font-bold text-slate-900">
+          <h2 className="text-lg font-bold text-slate-900">
             Gerenciar galeria
           </h2>
-          <p className="mt-2 text-sm text-slate-500">
-            Envie multiplas imagens para o bucket <code>imoveis</code> e organize a
-            galeria do anuncio. Arraste para reordenar: a primeira imagem vira a capa.
+          <p className="text-sm leading-6 text-slate-500">
+            Envie imagens e organize a ordem da galeria. A primeira vira a capa.
           </p>
         </div>
 
-        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90">
+        <label className="inline-flex cursor-pointer items-center justify-center gap-2 self-start rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90">
           {isUploading ? <LoaderCircle className="size-4 animate-spin" /> : <Upload className="size-4" />}
           {isUploading ? 'Enviando...' : 'Enviar imagens'}
           <input
@@ -203,7 +202,7 @@ export function AdminImovelImages({
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-3 gap-2 xl:grid-cols-4">
         {images.map((image, index) => (
           <div
             key={image.url}
@@ -217,38 +216,38 @@ export function AdminImovelImages({
                 setDraggedUrl(null);
               }
             }}
-            className={`overflow-hidden rounded-[1.5rem] border bg-slate-50 transition ${
+            className={`overflow-hidden rounded-[1rem] border bg-slate-50 transition ${
               draggedUrl === image.url
                 ? 'border-primary/40 opacity-70'
                 : 'border-slate-200'
             }`}
           >
-            <div className="space-y-3 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm active:cursor-grabbing">
-                  <GripVertical className="size-4" />
+            <div className="space-y-2 p-2">
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="flex h-6 w-6 shrink-0 cursor-grab items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm active:cursor-grabbing">
+                  <GripVertical className="size-3" />
                 </div>
 
-                <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white">
-                  {index === 0 ? 'Capa' : `Ordem ${image.ordem ?? index + 1}`}
+                <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.12em] text-white">
+                  {index === 0 ? 'Capa' : `${image.ordem ?? index + 1}`}
                 </span>
 
                 <button
                   type="button"
                   onClick={() => handleRemove(image.url)}
                   disabled={isRemoving || isReordering}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-red-200 bg-white text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-red-200 bg-white text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                   aria-label="Remover imagem"
                 >
                   {isRemoving ? (
-                    <LoaderCircle className="size-4 animate-spin" />
+                    <LoaderCircle className="size-3 animate-spin" />
                   ) : (
-                    <Trash2 className="size-4" />
+                    <Trash2 className="size-3" />
                   )}
                 </button>
               </div>
 
-              <div className="relative aspect-[4/3] overflow-hidden rounded-[1.25rem]">
+              <div className="relative aspect-square overflow-hidden rounded-[0.85rem]">
                 <Image
                   src={image.url}
                   alt="Imagem do imovel"
@@ -258,14 +257,14 @@ export function AdminImovelImages({
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {index === 0 ? (
-                  <span className="inline-flex rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
-                    Primeira exibicao
+                  <span className="inline-flex rounded-full bg-primary/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.12em] text-primary">
+                    Principal
                   </span>
                 ) : null}
-                <p className="line-clamp-2 text-xs leading-5 text-slate-500">
-                  Arraste para reorganizar a galeria.
+                <p className="line-clamp-2 text-[10px] leading-4 text-slate-500">
+                  Arraste para ordenar.
                 </p>
               </div>
             </div>
@@ -273,7 +272,7 @@ export function AdminImovelImages({
         ))}
 
         {images.length === 0 ? (
-          <div className="rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50 p-8 text-sm text-slate-500">
+          <div className="col-span-full rounded-[1.25rem] border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">
             Nenhuma imagem cadastrada para este imovel.
           </div>
         ) : null}

@@ -8,9 +8,10 @@ import { requireAdmin } from '@/lib/auth';
 export async function createImovelAction(formData: FormData) {
   await requireAdmin();
 
-  await createImovel(parseImovelFormData(formData));
+  const id = await createImovel(parseImovelFormData(formData));
   revalidatePath('/admin/imoveis');
-  redirect('/admin/imoveis');
+  revalidatePath(`/admin/imoveis/${id}`);
+  redirect(`/admin/imoveis/${id}`);
 }
 
 export async function updateImovelAction(formData: FormData) {

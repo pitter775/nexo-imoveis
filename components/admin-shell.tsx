@@ -5,10 +5,12 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import {
   BarChart3,
+  Bot,
   ChevronLeft,
   ChevronRight,
   CreditCard,
   FileText,
+  Globe,
   Home,
   LogOut,
   Menu,
@@ -19,6 +21,7 @@ import {
 } from 'lucide-react';
 import type { AppUserProfile } from '@/lib/types';
 import { logoutAction } from '@/app/actions/auth';
+import { SiteFooter } from '@/components/site-footer';
 
 type AdminShellProps = {
   children: ReactNode;
@@ -29,6 +32,7 @@ const navigationItems = [
   { href: '/admin', label: 'Dashboard', icon: BarChart3 },
   { href: '/admin/imoveis', label: 'Imoveis', icon: Home },
   { href: '/admin/usuarios', label: 'Usuarios', icon: Users },
+  { href: '/admin/ia-tokens', label: 'IA Tokens', icon: Bot },
   { href: '/admin/pagamentos', label: 'Pagamentos', icon: CreditCard },
   { href: '/admin/relatorios', label: 'Relatorios', icon: FileText },
 ];
@@ -63,7 +67,7 @@ export function AdminShell({ children, profile }: AdminShellProps) {
         ) : null}
 
         <aside
-          className={`fixed inset-y-0 left-0 z-50 flex w-[300px] flex-col border-r border-slate-200 bg-slate-950 px-4 py-5 text-white transition-transform duration-300 lg:static lg:w-auto lg:translate-x-0 lg:px-5 lg:py-6 ${
+          className={`fixed inset-y-0 left-0 z-50 flex h-screen w-[300px] flex-col overflow-y-auto border-r border-slate-200 bg-slate-950 px-4 py-5 text-white transition-transform duration-300 lg:sticky lg:top-0 lg:w-auto lg:translate-x-0 lg:overflow-hidden lg:px-5 lg:py-6 ${
             isMobileOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
@@ -108,48 +112,46 @@ export function AdminShell({ children, profile }: AdminShellProps) {
             </span>
           </button>
 
-          <nav className="mt-8 space-y-2">
-            {navigationItems.map(({ href, label, icon: Icon }) => {
-              const isActive =
-                href === '/admin'
-                  ? pathname === href
-                  : pathname === href || pathname.startsWith(`${href}/`);
+          <div className="min-h-0 flex-1 pt-8 lg:overflow-hidden">
+            <nav className="space-y-2 pr-1 pb-6 lg:h-full lg:overflow-y-auto lg:pb-36">
+              {navigationItems.map(({ href, label, icon: Icon }) => {
+                const isActive =
+                  href === '/admin'
+                    ? pathname === href
+                    : pathname === href || pathname.startsWith(`${href}/`);
 
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  title={isDesktopCollapsed ? label : undefined}
-                  className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
-                    isActive
-                      ? 'bg-white text-slate-950 shadow-lg shadow-black/20'
-                      : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                  } ${isDesktopCollapsed ? 'lg:justify-center lg:px-0' : ''}`}
-                >
-                  <Icon
-                    className={`size-4 shrink-0 ${
-                      isActive ? 'text-primary' : 'text-current'
-                    }`}
-                  />
-                  <span className={isDesktopCollapsed ? 'lg:hidden' : ''}>
-                    {label}
-                  </span>
-                </Link>
-              );
-            })}
-          </nav>
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    title={isDesktopCollapsed ? label : undefined}
+                    className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                      isActive
+                        ? 'bg-white text-slate-950 shadow-lg shadow-black/20'
+                        : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                    } ${isDesktopCollapsed ? 'lg:justify-center lg:px-0' : ''}`}
+                  >
+                    <Icon
+                      className={`size-4 shrink-0 ${
+                        isActive ? 'text-primary' : 'text-current'
+                      }`}
+                    />
+                    <span className={isDesktopCollapsed ? 'lg:hidden' : ''}>
+                      {label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
 
-          <div className="mt-auto pt-6">
+          <div className="mt-6 bg-slate-950 pt-4 lg:absolute lg:bottom-6 lg:left-5 lg:right-5 lg:mt-0">
             <div
               className={`rounded-[1.75rem] border border-white/10 bg-white/5 p-4 ${
                 isDesktopCollapsed ? 'lg:px-2 lg:py-3' : ''
               }`}
             >
-              <div
-                className={`${
-                  isDesktopCollapsed ? 'lg:hidden' : ''
-                }`}
-              >
+              <div className={`${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">
                   Usuario logado
                 </p>
@@ -206,13 +208,20 @@ export function AdminShell({ children, profile }: AdminShellProps) {
                 </div>
               </div>
 
-              <div className="hidden sm:block" />
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                <Globe className="size-4" />
+                Voltar ao site
+              </Link>
             </div>
           </header>
 
           <main className="px-4 py-8 sm:px-6 lg:px-8">{children}</main>
         </div>
       </div>
+      <SiteFooter />
     </div>
   );
 }

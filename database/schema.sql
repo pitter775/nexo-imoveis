@@ -1,16 +1,35 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
-CREATE TABLE public.chat_ia (
+CREATE TABLE public.chat_conversas (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid,
   imovel_id uuid,
-  mensagem_usuario text,
-  resposta_ia text,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT chat_ia_pkey PRIMARY KEY (id),
-  CONSTRAINT chat_ia_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT chat_ia_imovel_id_fkey FOREIGN KEY (imovel_id) REFERENCES public.imoveis(id)
+  tipo_chat text NOT NULL DEFAULT 'imovel_cliente'::text,
+  titulo text,
+  status text NOT NULL DEFAULT 'ativa'::text,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  last_message_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT chat_conversas_pkey PRIMARY KEY (id),
+  CONSTRAINT chat_conversas_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT chat_conversas_imovel_id_fkey FOREIGN KEY (imovel_id) REFERENCES public.imoveis(id)
+);
+CREATE TABLE public.chat_mensagens (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  conversa_id uuid NOT NULL,
+  role text NOT NULL,
+  conteudo text NOT NULL,
+  modelo text,
+  tokens_input integer,
+  tokens_output integer,
+  custo_estimado numeric,
+  origem text NOT NULL DEFAULT 'app'::text,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT chat_mensagens_pkey PRIMARY KEY (id),
+  CONSTRAINT chat_mensagens_conversa_id_fkey FOREIGN KEY (conversa_id) REFERENCES public.chat_conversas(id)
 );
 CREATE TABLE public.historico_acessos (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

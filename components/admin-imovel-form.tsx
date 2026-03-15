@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, type ChangeEvent, type HTMLAttributes } from 'react';
 import { FormSelect } from '@/components/form-select';
 
 const TIPO_LEILAO_OPTIONS = [
@@ -24,9 +27,33 @@ const STATUS_OPTIONS = [
 ];
 
 const ESTADO_OPTIONS = [
-  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO',
-  'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI',
-  'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+  { value: 'AC', label: 'Acre' },
+  { value: 'AL', label: 'Alagoas' },
+  { value: 'AP', label: 'Amapa' },
+  { value: 'AM', label: 'Amazonas' },
+  { value: 'BA', label: 'Bahia' },
+  { value: 'CE', label: 'Ceara' },
+  { value: 'DF', label: 'Distrito Federal' },
+  { value: 'ES', label: 'Espirito Santo' },
+  { value: 'GO', label: 'Goias' },
+  { value: 'MA', label: 'Maranhao' },
+  { value: 'MT', label: 'Mato Grosso' },
+  { value: 'MS', label: 'Mato Grosso do Sul' },
+  { value: 'MG', label: 'Minas Gerais' },
+  { value: 'PA', label: 'Para' },
+  { value: 'PB', label: 'Paraiba' },
+  { value: 'PR', label: 'Parana' },
+  { value: 'PE', label: 'Pernambuco' },
+  { value: 'PI', label: 'Piaui' },
+  { value: 'RJ', label: 'Rio de Janeiro' },
+  { value: 'RN', label: 'Rio Grande do Norte' },
+  { value: 'RS', label: 'Rio Grande do Sul' },
+  { value: 'RO', label: 'Rondonia' },
+  { value: 'RR', label: 'Roraima' },
+  { value: 'SC', label: 'Santa Catarina' },
+  { value: 'SP', label: 'Sao Paulo' },
+  { value: 'SE', label: 'Sergipe' },
+  { value: 'TO', label: 'Tocantins' },
 ];
 
 type ImovelFormValues = {
@@ -69,6 +96,14 @@ export function AdminImovelForm({
   initialValues,
   showIntro = true,
 }: AdminImovelFormProps) {
+  const [valorAvaliacaoInput, setValorAvaliacaoInput] = useState(
+    formatCurrencyInput(initialValues?.valor_avaliacao),
+  );
+  const [valorMinimoInput, setValorMinimoInput] = useState(
+    formatCurrencyInput(initialValues?.valor_minimo),
+  );
+  const [cepInput, setCepInput] = useState(maskCep(initialValues?.cep ?? ''));
+
   return (
     <div className="space-y-8">
       {showIntro ? (
@@ -85,8 +120,21 @@ export function AdminImovelForm({
         </div>
       ) : null}
 
-      <form action={action} className="space-y-8 rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+      <form
+        action={action}
+        className="space-y-8 rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm"
+      >
         {initialValues?.id ? <input type="hidden" name="id" value={initialValues.id} /> : null}
+        <input
+          type="hidden"
+          name="valor_avaliacao"
+          value={parseCurrencyInput(valorAvaliacaoInput)}
+        />
+        <input
+          type="hidden"
+          name="valor_minimo"
+          value={parseCurrencyInput(valorMinimoInput)}
+        />
 
         <div className="grid gap-6 xl:grid-cols-12">
           <Field
@@ -114,24 +162,24 @@ export function AdminImovelForm({
           />
           <Field
             label="Valor de avaliacao"
-            name="valor_avaliacao"
-            type="number"
-            step="0.01"
-            defaultValue={initialValues?.valor_avaliacao ?? ''}
+            name="valor_avaliacao_display"
+            value={valorAvaliacaoInput}
+            onChange={(event) => setValorAvaliacaoInput(maskCurrency(event.target.value))}
+            inputMode="numeric"
             required
             className="xl:col-span-3"
           />
           <Field
             label="Valor minimo"
-            name="valor_minimo"
-            type="number"
-            step="0.01"
-            defaultValue={initialValues?.valor_minimo ?? ''}
+            name="valor_minimo_display"
+            value={valorMinimoInput}
+            onChange={(event) => setValorMinimoInput(maskCurrency(event.target.value))}
+            inputMode="numeric"
             required
             className="xl:col-span-3"
           />
           <Field
-            label="Total (m²)"
+            label="Total (m2)"
             name="area_total"
             type="number"
             step="0.01"
@@ -139,7 +187,7 @@ export function AdminImovelForm({
             className="xl:col-span-2"
           />
           <Field
-            label="Construida (m²)"
+            label="Construida (m2)"
             name="area_construida"
             type="number"
             step="0.01"
@@ -212,14 +260,16 @@ export function AdminImovelForm({
             label="Estado"
             name="estado"
             defaultValue={initialValues?.estado ?? ''}
-            options={ESTADO_OPTIONS.map((estado) => ({ value: estado, label: estado }))}
+            options={ESTADO_OPTIONS}
             required
             className="xl:col-span-3"
           />
           <Field
             label="CEP"
             name="cep"
-            defaultValue={initialValues?.cep ?? ''}
+            value={cepInput}
+            onChange={(event) => setCepInput(maskCep(event.target.value))}
+            inputMode="numeric"
             className="xl:col-span-4"
           />
         </div>
@@ -249,17 +299,23 @@ function Field({
   label,
   name,
   defaultValue,
+  value,
+  onChange,
   required,
   type = 'text',
   step,
+  inputMode,
   className = '',
 }: {
   label: string;
   name: string;
-  defaultValue: string | number;
+  defaultValue?: string | number;
+  value?: string;
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
   type?: string;
   step?: string;
+  inputMode?: HTMLAttributes<HTMLInputElement>['inputMode'];
   className?: string;
 }) {
   return (
@@ -269,8 +325,11 @@ function Field({
         name={name}
         type={type}
         step={step}
+        inputMode={inputMode}
         required={required}
-        defaultValue={defaultValue}
+        defaultValue={value == null ? defaultValue : undefined}
+        value={value}
+        onChange={onChange}
         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
       />
     </label>
@@ -316,4 +375,50 @@ function toDatetimeLocal(value?: string | null) {
 
   const timezoneOffset = date.getTimezoneOffset() * 60000;
   return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 16);
+}
+
+function maskCurrency(value: string) {
+  const digits = value.replace(/\D/g, '');
+
+  if (!digits) {
+    return '';
+  }
+
+  const amount = Number(digits) / 100;
+
+  return amount.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+}
+
+function parseCurrencyInput(value: string) {
+  const digits = value.replace(/\D/g, '');
+
+  if (!digits) {
+    return '';
+  }
+
+  return (Number(digits) / 100).toFixed(2);
+}
+
+function formatCurrencyInput(value?: number | null) {
+  if (value == null) {
+    return '';
+  }
+
+  return Number(value).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+}
+
+function maskCep(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+
+  if (digits.length <= 5) {
+    return digits;
+  }
+
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
 }

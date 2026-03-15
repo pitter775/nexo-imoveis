@@ -3,6 +3,87 @@ export type UserRole = 'admin' | 'cliente';
 export type Database = {
   public: {
     Tables: {
+      chat_conversas: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          imovel_id: string | null;
+          tipo_chat: string;
+          titulo: string | null;
+          status: string;
+          metadata: Record<string, unknown>;
+          created_at: string;
+          updated_at: string;
+          last_message_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          imovel_id?: string | null;
+          tipo_chat?: string;
+          titulo?: string | null;
+          status?: string;
+          metadata?: Record<string, unknown>;
+          created_at?: string;
+          updated_at?: string;
+          last_message_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          imovel_id?: string | null;
+          tipo_chat?: string;
+          titulo?: string | null;
+          status?: string;
+          metadata?: Record<string, unknown>;
+          created_at?: string;
+          updated_at?: string;
+          last_message_at?: string;
+        };
+        Relationships: [];
+      };
+      chat_mensagens: {
+        Row: {
+          id: string;
+          conversa_id: string;
+          role: string;
+          conteudo: string;
+          modelo: string | null;
+          tokens_input: number | null;
+          tokens_output: number | null;
+          custo_estimado: number | null;
+          origem: string;
+          metadata: Record<string, unknown>;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversa_id: string;
+          role: string;
+          conteudo: string;
+          modelo?: string | null;
+          tokens_input?: number | null;
+          tokens_output?: number | null;
+          custo_estimado?: number | null;
+          origem?: string;
+          metadata?: Record<string, unknown>;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          conversa_id?: string;
+          role?: string;
+          conteudo?: string;
+          modelo?: string | null;
+          tokens_input?: number | null;
+          tokens_output?: number | null;
+          custo_estimado?: number | null;
+          origem?: string;
+          metadata?: Record<string, unknown>;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       imovel_imagens: {
         Row: {
           id: string;

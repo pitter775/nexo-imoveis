@@ -8,6 +8,7 @@ import type { UsuarioRecord } from '@/lib/admin/usuarios';
 
 type AdminUsuariosTableProps = {
   usuarios: UsuarioRecord[];
+  createHref: string;
 };
 
 type SortKey = 'nome' | 'email' | 'tipo_usuario' | 'ativo' | 'created_at';
@@ -25,7 +26,10 @@ const columns: Array<{ key: SortKey; label: string }> = [
   { key: 'created_at', label: 'Cadastro' },
 ];
 
-export function AdminUsuariosTable({ usuarios }: AdminUsuariosTableProps) {
+export function AdminUsuariosTable({
+  usuarios,
+  createHref,
+}: AdminUsuariosTableProps) {
   const [query, setQuery] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: 'created_at',
@@ -62,20 +66,48 @@ export function AdminUsuariosTable({ usuarios }: AdminUsuariosTableProps) {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
-        <div className="relative w-full max-w-xl">
-          <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar por nome, email ou perfil"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/10"
-          />
-        </div>
+      <div className="rounded-[2rem] border border-white/50 bg-white/90 p-6 shadow-xl shadow-slate-900/5 backdrop-blur">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+                Usuarios
+              </p>
+              <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
+                Gestao de usuarios
+              </h1>
+              <p className="mt-2 text-sm text-slate-500">
+                Liste, crie e edite os usuarios da plataforma.
+              </p>
+            </div>
 
-        <div className="text-sm text-slate-500">
-          {filteredUsuarios.length} {filteredUsuarios.length === 1 ? 'usuario encontrado' : 'usuarios encontrados'}
+            <Link
+              href={createHref}
+              className="rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
+            >
+              Novo usuario
+            </Link>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full max-w-xl">
+              <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Buscar por nome, email ou perfil"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/10"
+              />
+            </div>
+
+            <div className="text-sm text-slate-500">
+              {filteredUsuarios.length}{' '}
+              {filteredUsuarios.length === 1
+                ? 'usuario encontrado'
+                : 'usuarios encontrados'}
+            </div>
+          </div>
         </div>
       </div>
 

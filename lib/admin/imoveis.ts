@@ -66,14 +66,57 @@ export type ImovelArquivoRecord = {
   created_at: string | null;
 };
 
-export async function listImoveis() {
+type ListImoveisPageInput = {
+  page?: number;
+  pageSize?: number;
+  query?: string;
+};
+
+export type ListImoveisPageResult = {
+  imoveis: ImovelRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  query: string;
+};
+
+export async function listImoveisPage({
+  page = 1,
+  pageSize = 20,
+  query = '',
+}: ListImoveisPageInput = {}): Promise<ListImoveisPageResult> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  const safePage = Math.max(1, page);
+  const safePageSize = Math.max(1, pageSize);
+  const normalizedQuery = query.trim();
+  const from = (safePage - 1) * safePageSize;
+  const to = from + safePageSize - 1;
+
+  let request = supabase
     .from('imoveis')
     .select(
       'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status',
+      { count: 'exact' },
     )
-    .order('data_leilao', { ascending: true });
+    .order('data_leilao', { ascending: true })
+    .range(from, to);
+
+  if (normalizedQuery) {
+    const escapedQuery = normalizedQuery.replace(/[%_]/g, '');
+    request = request.or(
+      [
+        `titulo.ilike.%${escapedQuery}%`,
+        `descricao.ilike.%${escapedQuery}%`,
+        `cidade.ilike.%${escapedQuery}%`,
+        `estado.ilike.%${escapedQuery}%`,
+        `tipo_leilao.ilike.%${escapedQuery}%`,
+        `status.ilike.%${escapedQuery}%`,
+      ].join(','),
+    );
+  }
+
+  const { data, error, count } = await request;
 
   if (error) {
     throw new Error(`Failed to list imoveis: ${error.message}`);
@@ -85,7 +128,14 @@ export async function listImoveis() {
   }));
 
   if (imoveis.length === 0) {
-    return imoveis;
+    return {
+      imoveis,
+      total: count ?? 0,
+      page: safePage,
+      pageSize: safePageSize,
+      totalPages: Math.max(1, Math.ceil((count ?? 0) / safePageSize)),
+      query: normalizedQuery,
+    };
   }
 
   const { data: imagens, error: imagesError } = await supabase
@@ -109,10 +159,26 @@ export async function listImoveis() {
     }
   }
 
-  return imoveis.map((imovel) => ({
+  const imoveisWithCover = imoveis.map((imovel) => ({
     ...imovel,
     capa_url: coverByImovelId.get(imovel.id) ?? null,
   }));
+
+  const total = count ?? 0;
+
+  return {
+    imoveis: imoveisWithCover,
+    total,
+    page: safePage,
+    pageSize: safePageSize,
+    totalPages: Math.max(1, Math.ceil(total / safePageSize)),
+    query: normalizedQuery,
+  };
+}
+
+export async function listImoveis() {
+  const result = await listImoveisPage({ page: 1, pageSize: 9999 });
+  return result.imoveis;
 }
 
 export async function getImovelById(id: string) {
@@ -134,11 +200,17 @@ export async function getImovelById(id: string) {
 
 export async function createImovel(input: Omit<ImovelRecord, 'id'>) {
   const supabase = createAdminClient();
-  const { error } = await supabase.from('imoveis').insert(input);
+  const { data, error } = await supabase
+    .from('imoveis')
+    .insert(input)
+    .select('id')
+    .single();
 
   if (error) {
     throw new Error(`Failed to create imovel: ${error.message}`);
   }
+
+  return data.id as string;
 }
 
 export async function updateImovel(id: string, input: Omit<ImovelRecord, 'id'>) {

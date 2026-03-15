@@ -2,12 +2,18 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
-import { ArrowDownUp, ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { ArrowDownUp, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import type { ImovelRecord } from '@/lib/admin/imoveis';
 
 type AdminImoveisTableProps = {
   imoveis: ImovelRecord[];
+  currentPage: number;
+  query: string;
+  total: number;
+  totalPages: number;
+  createHref: string;
 };
 
 type SortKey =
@@ -30,33 +36,29 @@ const columns: Array<{ key: SortKey; label: string }> = [
   { key: 'status', label: 'Status' },
 ];
 
-export function AdminImoveisTable({ imoveis }: AdminImoveisTableProps) {
-  const [query, setQuery] = useState('');
+export function AdminImoveisTable({
+  imoveis,
+  currentPage,
+  query,
+  total,
+  totalPages,
+  createHref,
+}: AdminImoveisTableProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [queryInput, setQueryInput] = useState(query);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: 'titulo',
     direction: 'asc',
   });
 
-  const filteredImoveis = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+  useEffect(() => {
+    setQueryInput(query);
+  }, [query]);
 
-    const filtered = normalizedQuery
-      ? imoveis.filter((imovel) =>
-          [
-            imovel.titulo,
-            imovel.descricao ?? '',
-            imovel.cidade ?? '',
-            imovel.estado ?? '',
-            imovel.tipo_leilao ?? '',
-            imovel.status ?? '',
-          ]
-            .join(' ')
-            .toLowerCase()
-            .includes(normalizedQuery),
-        )
-      : imoveis;
-
-    return [...filtered].sort((left, right) => {
+  const sortedImoveis = useMemo(() => {
+    return [...imoveis].sort((left, right) => {
       const leftValue = getSortableValue(left, sortConfig.key);
       const rightValue = getSortableValue(right, sortConfig.key);
 
@@ -70,24 +72,84 @@ export function AdminImoveisTable({ imoveis }: AdminImoveisTableProps) {
 
       return 0;
     });
-  }, [imoveis, query, sortConfig]);
+  }, [imoveis, sortConfig]);
+
+  const updateParams = (nextPage: number, nextQuery: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (nextQuery) {
+      params.set('q', nextQuery);
+    } else {
+      params.delete('q');
+    }
+
+    if (nextPage > 1) {
+      params.set('page', String(nextPage));
+    } else {
+      params.delete('page');
+    }
+
+    const queryString = params.toString();
+    router.push(queryString ? `${pathname}?${queryString}` : pathname);
+  };
+
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    updateParams(1, queryInput.trim());
+  };
+
+  const hasPreviousPage = currentPage > 1;
+  const hasNextPage = currentPage < totalPages;
+  const startItem = total === 0 ? 0 : (currentPage - 1) * 18 + 1;
+  const endItem = total === 0 ? 0 : startItem + sortedImoveis.length - 1;
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
-        <div className="relative w-full max-w-xl">
-          <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar por titulo, cidade, status ou leilao"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/10"
-          />
-        </div>
+      <div className="rounded-[2rem] border border-white/50 bg-white/90 p-6 shadow-xl shadow-slate-900/5 backdrop-blur">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+                Imoveis
+              </p>
+              <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
+                Gestao de imoveis
+              </h1>
+              <p className="mt-2 text-sm text-slate-500">
+                Liste, crie e edite os imoveis disponiveis na plataforma.
+              </p>
+            </div>
 
-        <div className="text-sm text-slate-500">
-          {filteredImoveis.length} {filteredImoveis.length === 1 ? 'imovel encontrado' : 'imoveis encontrados'}
+            <Link
+              href={createHref}
+              className="rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
+            >
+              Novo imovel
+            </Link>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xl">
+              <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                value={queryInput}
+                onChange={(event) => setQueryInput(event.target.value)}
+                placeholder="Buscar por titulo, cidade, status ou leilao"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-24 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/10"
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+              >
+                Buscar
+              </button>
+            </form>
+
+            <div className="text-sm text-slate-500">
+              {total} {total === 1 ? 'imovel encontrado' : 'imoveis encontrados'}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -108,7 +170,7 @@ export function AdminImoveisTable({ imoveis }: AdminImoveisTableProps) {
         </div>
 
         <div className="divide-y divide-slate-100">
-          {filteredImoveis.map((imovel) => (
+          {sortedImoveis.map((imovel) => (
             <div
               key={imovel.id}
               className="grid gap-4 px-4 py-4 text-sm text-slate-700 sm:px-6 lg:grid-cols-[1.6fr_0.9fr_0.8fr_0.9fr_0.7fr_0.5fr]"
@@ -175,13 +237,47 @@ export function AdminImoveisTable({ imoveis }: AdminImoveisTableProps) {
             </div>
           ))}
 
-          {filteredImoveis.length === 0 ? (
+          {sortedImoveis.length === 0 ? (
             <div className="px-6 py-10 text-sm text-slate-500">
               Nenhum imovel encontrado com essa busca.
             </div>
           ) : null}
         </div>
       </div>
+
+      {total > 0 ? (
+        <div className="flex flex-col gap-4 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <p className="text-sm text-slate-500">
+            Exibindo {startItem} a {endItem} de {total} imoveis
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => updateParams(currentPage - 1, query)}
+              disabled={!hasPreviousPage}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-primary/30 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft className="size-4" />
+              Anterior
+            </button>
+
+            <span className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600">
+              Pagina {currentPage} de {totalPages}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => updateParams(currentPage + 1, query)}
+              disabled={!hasNextPage}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-primary/30 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Proxima
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

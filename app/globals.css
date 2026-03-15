@@ -11,6 +11,25 @@
   body {
     @apply antialiased;
   }
+
+  a[href],
+  button,
+  [role="button"],
+  summary,
+  label:has(input[type="checkbox"]),
+  label:has(input[type="radio"]),
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    cursor: not-allowed;
+  }
 }
 
 .no-scrollbar::-webkit-scrollbar {

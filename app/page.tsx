@@ -6,28 +6,47 @@ import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowLeft,
+  BriefcaseBusiness,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   Bath,
   Bed,
   Calendar,
+  CheckCircle2,
   Filter,
+  FileSearch,
   Heart,
   Home,
+  Landmark,
+  LoaderCircle,
   MapPin,
   Menu,
   MessageCircle,
+  Scale,
   Search,
   Send,
   Share2,
+  ShieldCheck,
   Square,
+  Target,
   X,
 } from 'lucide-react';
 import { ChatMessage, Property, User as UserType } from '@/lib/types';
+import { SiteFooter } from '@/components/site-footer';
 
 const HERO_FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1000';
+
+const HOME_MENU_ITEMS: ReadonlyArray<{
+  label: string;
+  id: string;
+}> = [
+  { label: 'Home', id: 'topo' },
+  { label: 'Sobre Nos', id: 'sobre' },
+  { label: 'Servicos', id: 'servicos' },
+  { label: 'Planos', id: 'planos' },
+] as const;
 
 type PublicMarketplaceProps = {
   initialView?: 'home' | 'listings' | 'details';
@@ -45,6 +64,7 @@ export function PublicMarketplace({
   const [user, setUser] = useState<UserType | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+  const [activeSection, setActiveSection] = useState('topo');
 
   useEffect(() => {
     setView(initialView);
@@ -104,6 +124,96 @@ export function PublicMarketplace({
     setSelectedProperty(property);
   }, [initialPropertyId, initialView, properties]);
 
+  useEffect(() => {
+    if (view !== 'home' || typeof window === 'undefined') {
+      return;
+    }
+
+    const hash = window.location.hash.replace('#', '');
+
+    if (!hash) {
+      return;
+    }
+
+    const scrollToHash = () => {
+      const section = document.getElementById(hash);
+
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+
+    const timeoutId = window.setTimeout(scrollToHash, 50);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [view, properties.length, isLoadingProperties]);
+
+  useEffect(() => {
+    if (view !== 'home' || typeof window === 'undefined') {
+      return;
+    }
+
+    const sections = HOME_MENU_ITEMS.map((item) => document.getElementById(item.id)).filter(
+      (section): section is HTMLElement => Boolean(section),
+    );
+
+    if (sections.length === 0) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntry = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((first, second) => second.intersectionRatio - first.intersectionRatio)[0];
+
+        if (visibleEntry?.target?.id) {
+          setActiveSection(visibleEntry.target.id);
+        }
+      },
+      {
+        rootMargin: '-18% 0px -52% 0px',
+        threshold: [0.2, 0.35, 0.55],
+      },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+
+    return () => observer.disconnect();
+  }, [view]);
+
+  const handleMenuNavigation = (sectionId: string) => {
+    setIsMenuOpen(false);
+    setView('home');
+    setSelectedProperty(null);
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const targetHref = sectionId === 'topo' ? '/' : `/#${sectionId}`;
+
+    if (window.location.pathname !== '/') {
+      router.push(targetHref);
+      return;
+    }
+
+    if (sectionId === 'topo') {
+      setActiveSection('topo');
+      window.history.replaceState(null, '', '/');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    setActiveSection(sectionId);
+    window.history.replaceState(null, '', targetHref);
+    const section = document.getElementById(sectionId);
+
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const handlePropertyClick = (property: Property) => {
     setSelectedProperty(property);
     setView('details');
@@ -146,13 +256,29 @@ export function PublicMarketplace({
             </span>
           </div>
 
-          <div className="hidden items-center gap-8 md:flex">
-            <button
-              onClick={handleBrowse}
-              className="text-sm font-medium transition-colors hover:text-primary"
+          <div className="hidden items-center gap-3 md:flex">
+            {HOME_MENU_ITEMS.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => handleMenuNavigation(item.id)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                  activeSection === item.id
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-slate-600 hover:text-primary'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+            <a
+              href="https://wa.me/5511916751213"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
             >
-              Oportunidades
-            </button>
+              <MessageCircle className="size-4" />
+              (11) 91675-1213
+            </a>
           </div>
 
           <div className="flex items-center gap-4">
@@ -195,13 +321,35 @@ export function PublicMarketplace({
             className="fixed inset-x-0 top-16 z-40 border-b border-slate-200 bg-white p-4 md:hidden"
           >
             <div className="flex flex-col gap-4">
+              {HOME_MENU_ITEMS.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleMenuNavigation(item.id)}
+                  className={`rounded-2xl px-4 py-3 text-left font-semibold transition ${
+                    activeSection === item.id
+                      ? 'bg-primary/10 text-primary'
+                      : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+              <a
+                href="https://wa.me/5511916751213"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-3 font-semibold text-white shadow-lg shadow-primary/20"
+              >
+                <MessageCircle className="size-4" />
+                (11) 91675-1213
+              </a>
               <button
                 onClick={() => {
                   setView('listings');
                   router.push('/imoveis');
                   setIsMenuOpen(false);
                 }}
-                className="text-left font-medium"
+                className="rounded-2xl bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700 hover:bg-slate-100"
               >
                 Oportunidades
               </button>
@@ -216,6 +364,7 @@ export function PublicMarketplace({
             featuredProperty={featuredProperty}
             isLoading={isLoadingProperties}
             onBrowse={handleBrowse}
+            onNavigate={handleMenuNavigation}
             onPropertyClick={handlePropertyClick}
             properties={properties}
           />
@@ -239,6 +388,7 @@ export function PublicMarketplace({
           </div>
         ) : null}
       </main>
+      <SiteFooter onNavigate={handleMenuNavigation} />
 
       <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-slate-200 bg-white px-4 py-2 md:hidden">
         <button
@@ -272,12 +422,14 @@ function HomeView({
   featuredProperty,
   isLoading,
   onBrowse,
+  onNavigate,
   onPropertyClick,
   properties,
 }: {
   featuredProperty: Property | null;
   isLoading: boolean;
   onBrowse: () => void;
+  onNavigate: (sectionId: string) => void;
   onPropertyClick: (p: Property) => void;
   properties: Property[];
 }) {
@@ -286,28 +438,40 @@ function HomeView({
   const hasMoreProperties = visibleCount < properties.length;
 
   return (
-    <div className="space-y-12">
-      <section className="flex flex-col items-center gap-12 py-12 lg:flex-row">
+    <div className="space-y-12 pb-12">
+      <section
+        id="topo"
+        className="flex scroll-mt-24 flex-col items-center gap-12 py-12 lg:flex-row"
+      >
         <div className="flex-1 space-y-6">
           <div className="inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-accent">
-            Oportunidades reais atualizadas do banco
+            Assessoria especializada em leiloes imobiliarios
           </div>
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-            Encontre sua proxima oportunidade de{' '}
-            <span className="text-primary">investimento</span>
+            Compre imoveis de leilao com{' '}
+            <span className="text-primary">seguranca e estrategia comprovada</span>
           </h1>
           <p className="max-w-xl text-lg text-slate-600">
-            Explore os imoveis cadastrados na plataforma com dados reais de valor,
-            localizacao, leilao e detalhes completos.
+            Da analise do edital a posse cuidamos de todo o processo para voce
+            investir com seguranca e aumentar suas chances de lucro.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
             <button
-              onClick={onBrowse}
+              onClick={() => window.open('https://wa.me/5511916751213', '_blank', 'noopener,noreferrer')}
               className="rounded-xl bg-primary px-8 py-4 text-base font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90"
             >
-              Ver imoveis
+              Fale com um especialista
             </button>
-            <button className="rounded-xl border border-slate-200 bg-white px-8 py-4 text-base font-bold text-slate-700 transition-all hover:bg-slate-50">
+            <button
+              onClick={onBrowse}
+              className="rounded-xl border border-slate-200 bg-white px-8 py-4 text-base font-bold text-slate-700 transition-all hover:bg-slate-50"
+            >
+              Ver oportunidades
+            </button>
+            <button
+              onClick={() => onNavigate('sobre')}
+              className="rounded-xl border border-slate-200 bg-white px-8 py-4 text-base font-bold text-slate-700 transition-all hover:bg-slate-50"
+            >
               Saiba mais
             </button>
           </div>
@@ -360,10 +524,116 @@ function HomeView({
         </div>
       </section>
 
-      <section>
+      <section className="scroll-mt-24">
+        <div className="mb-8 max-w-3xl space-y-3">
+          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+            Diferenciais
+          </p>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+            Inteligencia, seguranca e acompanhamento em todas as etapas
+          </h2>
+        </div>
+        <div className="grid gap-6 md:grid-cols-3">
+          {[
+            {
+              icon: <BriefcaseBusiness className="size-6 text-primary" />,
+              title: 'Assessoria completa do lance a chave na mao',
+              text: 'Acompanhamos todo o processo, desde a analise do edital ate a entrega do imovel.',
+            },
+            {
+              icon: <ShieldCheck className="size-6 text-primary" />,
+              title: 'Seguranca total em cada etapa do leilao',
+              text: 'Nossa equipe analisa os riscos juridicos e financeiros antes de qualquer recomendacao.',
+            },
+            {
+              icon: <Scale className="size-6 text-primary" />,
+              title: 'Analise juridica completa',
+              text: 'Verificamos processos, matricula, dividas e possiveis riscos antes do arremate.',
+            },
+          ].map((item) => (
+            <div
+              key={item.title}
+              className="rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div className="mb-5 inline-flex rounded-2xl bg-primary/10 p-3">
+                {item.icon}
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">{item.title}</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-600">{item.text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section
+        id="sobre"
+        className="scroll-mt-24 rounded-[2.25rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10"
+      >
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+          <div className="space-y-5">
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+              Sobre a Nexo
+            </p>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+              Sobre a Nexo
+            </h2>
+            <p className="text-base leading-8 text-slate-600">
+              A Nexo Leiloes conecta investidores e compradores as melhores
+              oportunidades do mercado de leiloes imobiliarios.
+            </p>
+            <p className="text-base leading-8 text-slate-600">
+              Nossa equipe realiza analises detalhadas dos imoveis disponiveis,
+              avaliando riscos, potencial de valorizacao e estrategias de aquisicao.
+            </p>
+            <p className="text-base leading-8 text-slate-600">
+              Nosso objetivo e tornar o processo de compra em leiloes mais simples,
+              seguro e acessivel, seja para quem deseja conquistar a casa propria ou
+              investir com inteligencia.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.open('https://wa.me/5511916751213', '_blank', 'noopener,noreferrer')}
+              className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+            >
+              Saiba mais
+            </button>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              'Avaliacao tecnica e juridica antes de cada indicacao.',
+              'Oportunidades selecionadas com foco em seguranca e margem.',
+              'Atendimento consultivo para investidor e comprador final.',
+              'Acompanhamento estrategico do edital a posse.',
+            ].map((item) => (
+              <div
+                key={item}
+                className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5"
+              >
+                <CheckCircle2 className="mb-3 size-5 text-primary" />
+                <p className="text-sm leading-7 text-slate-600">{item}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="scroll-mt-24" id="planos">
+        <div className="mb-8 max-w-3xl space-y-3">
+          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+            Oportunidades de imoveis
+          </p>
+          <h3 className="text-3xl font-bold text-slate-900">
+            Oportunidades exclusivas de imoveis em leilao
+          </h3>
+          <p className="text-base leading-8 text-slate-600">
+            Explore imoveis selecionados com analise previa da equipe Nexo.
+            Encontre oportunidades com valores abaixo do mercado e potencial real de valorizacao.
+          </p>
+        </div>
+
         <div className="mb-8 flex items-center justify-between">
           <h3 className="text-2xl font-bold text-slate-900">
-            Oportunidades em destaque
+            Imoveis selecionados
           </h3>
           <button
             onClick={onBrowse}
@@ -407,6 +677,90 @@ function HomeView({
           </div>
         )}
       </section>
+
+      <section className="scroll-mt-24" id="servicos">
+        <div className="mb-8 max-w-3xl space-y-3">
+          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+            Como funciona
+          </p>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+            Como funciona nossa assessoria
+          </h2>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {[
+            {
+              icon: <Target className="size-5 text-primary" />,
+              title: 'Analise e Estrategia',
+              text: 'Entendemos seu objetivo: investir, revender ou adquirir um imovel para moradia.',
+            },
+            {
+              icon: <FileSearch className="size-5 text-primary" />,
+              title: 'Selecao e Due Diligence',
+              text: 'Filtramos imoveis e realizamos uma analise juridica e financeira detalhada.',
+            },
+            {
+              icon: <Landmark className="size-5 text-primary" />,
+              title: 'Lances e Arremate',
+              text: 'Acompanhamos voce durante o processo do leilao e orientamos na estrategia de lances.',
+            },
+            {
+              icon: <Home className="size-5 text-primary" />,
+              title: 'Regularizacao e Posse',
+              text: 'Auxiliamos nos tramites apos o arremate ate a regularizacao e posse do imovel.',
+            },
+          ].map((item, index) => (
+            <div
+              key={item.title}
+              className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm"
+            >
+              <div className="mb-4 flex items-center gap-3">
+                <span className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-sm font-bold text-primary">
+                  {index + 1}
+                </span>
+                <div className="rounded-2xl bg-slate-100 p-2">{item.icon}</div>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-600">{item.text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section
+        className="scroll-mt-24 rounded-[2.25rem] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-8 shadow-sm sm:p-10"
+        id="servicos-diferenciais"
+      >
+        <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+          <div className="space-y-4">
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+              Diferenciais da Nexo
+            </p>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+              Por que escolher a Nexo Leiloes?
+            </h2>
+          </div>
+          <div className="grid gap-4">
+            {[
+              'Analise juridica combinada com estrategia de investimento',
+              'Identificacao de oportunidades reais com potencial de valorizacao',
+              'Atendimento consultivo e acompanhamento especializado',
+              'Avaliacao inicial do perfil do investidor',
+            ].map((item) => (
+              <div
+                key={item}
+                className="flex items-start gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-5"
+              >
+                <div className="mt-0.5 rounded-xl bg-primary/10 p-2">
+                  <CheckCircle2 className="size-5 text-primary" />
+                </div>
+                <p className="text-sm leading-7 text-slate-600">{item}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }
@@ -780,11 +1134,13 @@ function PropertyDetailsView({
 }) {
   const [activeImage, setActiveImage] = useState(property.image_url);
   const [hasUnlockedPremium, setHasUnlockedPremium] = useState(false);
-  const [activePremiumTab, setActivePremiumTab] = useState<'geral' | 'dossie' | 'arquivos'>('geral');
+  const [activePremiumTab, setActivePremiumTab] = useState<'geral' | 'dossie' | 'analise' | 'arquivos'>('geral');
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   const [isDesktopChatVisible, setIsDesktopChatVisible] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
+  const [chatConversationId, setChatConversationId] = useState<string | null>(null);
+  const [isSubmittingChat, setIsSubmittingChat] = useState(false);
 
   useEffect(() => {
     setActiveImage(property.image_url);
@@ -799,6 +1155,8 @@ function PropertyDetailsView({
       },
     ]);
     setChatInput('');
+    setChatConversationId(null);
+    setIsSubmittingChat(false);
   }, [property.id, property.image_url]);
 
   const gallery = property.images?.length ? property.images : [property.image_url];
@@ -810,22 +1168,55 @@ function PropertyDetailsView({
     setIsDesktopChatVisible(true);
   };
 
-  const submitChatMessage = () => {
+  const submitChatMessage = async () => {
     const trimmedInput = chatInput.trim();
 
-    if (!trimmedInput) {
+    if (!trimmedInput || isSubmittingChat) {
       return;
     }
 
-    setChatMessages((current) => [
-      ...current,
-      { role: 'user', text: trimmedInput },
-      {
-        role: 'model',
-        text: `Recebi sua pergunta sobre ${property.title}. Agora este painel pode continuar aberto enquanto voce analisa o dossie e os arquivos complementares do imovel.`,
-      },
-    ]);
+    setChatMessages((current) => [...current, { role: 'user', text: trimmedInput }]);
     setChatInput('');
+
+    try {
+      setIsSubmittingChat(true);
+
+      const response = await fetch('/api/chat/imovel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          propertyId: property.id,
+          message: trimmedInput,
+          conversationId: chatConversationId,
+        }),
+      });
+
+      const data = (await response.json()) as {
+        conversationId?: string;
+        reply?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.reply) {
+        throw new Error(data.error || 'Falha ao responder no chat.');
+      }
+
+      setChatConversationId(data.conversationId ?? null);
+      setChatMessages((current) => [...current, { role: 'model', text: data.reply ?? '' }]);
+    } catch (error) {
+      console.error(error);
+      setChatMessages((current) => [
+        ...current,
+        {
+          role: 'model',
+          text: 'Nao consegui responder agora. Tente novamente em alguns instantes.',
+        },
+      ]);
+    } finally {
+      setIsSubmittingChat(false);
+    }
   };
 
   return (
@@ -840,7 +1231,7 @@ function PropertyDetailsView({
         </button>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="space-y-8 lg:col-span-2">
+        <div className="space-y-4 lg:col-span-2">
           <div className="space-y-4">
             <div className="relative aspect-video overflow-hidden rounded-2xl shadow-xl">
               <Image
@@ -887,191 +1278,10 @@ function PropertyDetailsView({
               </div>
             ) : null}
           </div>
+        </div>
 
-          <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-              <div>
-                <h1 className="mb-2 text-3xl font-bold tracking-tight">{property.title}</h1>
-                <p className="flex items-center gap-2 text-lg text-slate-500">
-                  <MapPin className="size-5 text-primary" />
-                  {property.address || property.location || 'Endereco nao informado'}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-3xl font-bold text-primary">
-                  {formatCurrency(property.price)}
-                </p>
-                <p className="text-sm text-slate-400">
-                  {property.location || 'Localizacao nao informada'}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              <FactCard
-                icon={<Bed className="mx-auto mb-1 size-5 text-primary" />}
-                label="Quartos"
-                value={formatMetric(property.beds)}
-              />
-              <FactCard
-                icon={<Bath className="mx-auto mb-1 size-5 text-primary" />}
-                label="Banheiros"
-                value={formatMetric(property.baths)}
-              />
-              <FactCard
-                icon={<Square className="mx-auto mb-1 size-5 text-primary" />}
-                label="Total (m2)"
-                value={formatArea(property.sqft)}
-              />
-              <FactCard
-                icon={<Calendar className="mx-auto mb-1 size-5 text-primary" />}
-                label="Construido"
-                value={property.year_built ?? '-'}
-              />
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-xl font-bold">Descricao</h3>
-                <p className="leading-relaxed text-slate-600">{property.description}</p>
-              </div>
-            </div>
-
-            {hasUnlockedPremium ? (
-              <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { key: 'geral', label: 'Visao geral' },
-                    { key: 'dossie', label: 'Dossie' },
-                    { key: 'arquivos', label: 'Arquivos' },
-                  ].map((tab) => (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      onClick={() =>
-                        setActivePremiumTab(tab.key as 'geral' | 'dossie' | 'arquivos')
-                      }
-                      className={`rounded-full px-4 py-2 text-sm font-bold transition ${
-                        activePremiumTab === tab.key
-                          ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                {activePremiumTab === 'geral' ? (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <DetailPanelCard
-                      label="Resumo executivo"
-                      value={property.dossier?.resumo_executivo}
-                    />
-                    <DetailPanelCard
-                      label="Ocupacao"
-                      value={property.dossier?.ocupacao}
-                    />
-                    <DetailPanelCard
-                      label="Matricula"
-                      value={property.dossier?.matricula}
-                    />
-                    <DetailPanelCard
-                      label="Cartorio"
-                      value={property.dossier?.cartorio}
-                    />
-                    <DetailPanelCard
-                      label="Numero do processo"
-                      value={property.dossier?.numero_processo}
-                    />
-                    <DetailPanelCard
-                      label="Valor de mercado"
-                      value={formatOptionalCurrency(property.dossier?.valor_mercado)}
-                    />
-                    <DetailPanelCard
-                      label="Lance recomendado"
-                      value={formatOptionalCurrency(property.dossier?.lance_recomendado)}
-                    />
-                    <DetailPanelCard
-                      label="Lucro estimado"
-                      value={formatOptionalCurrency(property.dossier?.lucro_estimado)}
-                    />
-                    <DetailPanelCard
-                      label="ROI estimado"
-                      value={formatPercent(property.dossier?.roi_estimado)}
-                    />
-                    <DetailPanelCard
-                      label="Divida de IPTU"
-                      value={formatOptionalCurrency(property.dossier?.divida_iptu)}
-                    />
-                    <DetailPanelCard
-                      label="Divida de condominio"
-                      value={formatOptionalCurrency(property.dossier?.divida_condominio)}
-                    />
-                  </div>
-                ) : null}
-
-                {activePremiumTab === 'dossie' ? (
-                  <div className="space-y-4">
-                    <LongDetailBlock
-                      label="Analise do investimento"
-                      value={property.dossier?.analise}
-                    />
-                    <LongDetailBlock
-                      label="Riscos"
-                      value={property.dossier?.riscos}
-                    />
-                    <LongDetailBlock
-                      label="Observacoes juridicas"
-                      value={property.dossier?.observacoes_juridicas}
-                    />
-                    <LongDetailBlock
-                      label="Estrategia recomendada"
-                      value={property.dossier?.estrategia}
-                    />
-                  </div>
-                ) : null}
-
-                {activePremiumTab === 'arquivos' ? (
-                  <div className="space-y-3">
-                    {property.dossier_files?.length ? (
-                      property.dossier_files.map((file) => (
-                        <div
-                          key={file.id}
-                          className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
-                        >
-                          <div>
-                            <p className="font-semibold text-slate-900">
-                              {file.nome_arquivo || 'Arquivo sem nome'}
-                            </p>
-                            <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
-                              {file.tipo_documento || 'Documento'}
-                            </p>
-                          </div>
-                          {file.url_storage ? (
-                            <a
-                              href={file.url_storage}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-sm font-bold text-primary transition hover:text-primary/80"
-                            >
-                              Abrir arquivo
-                            </a>
-                          ) : null}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-                        Nenhum arquivo complementar cadastrado para este imovel.
-                      </div>
-                    )}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="space-y-8">
-          <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="lg:h-full">
+          <div className="flex h-full flex-col space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="text-xl font-bold">Resumo do Imovel</h3>
             <div className="space-y-4">
               <SummaryRow label="Valor minimo" value={formatCurrency(property.price)} valueClassName="text-primary" />
@@ -1086,23 +1296,213 @@ function PropertyDetailsView({
               <SummaryRow label="Area construida" value={formatArea(property.built_area)} />
               <SummaryRow label="CEP" value={property.cep || '-'} />
             </div>
-            <button
-              type="button"
-              onClick={handleUnlockInformation}
-              className="w-full rounded-xl bg-primary py-4 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90"
-            >
-              Solicitar Informacoes
-            </button>
-            <div className="flex gap-2">
-              <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 py-3 text-sm font-medium hover:bg-slate-50">
-                <Share2 className="size-4" /> Compartilhar
+            <div className="mt-auto space-y-3">
+              <button
+                type="button"
+                onClick={handleUnlockInformation}
+                className="w-full rounded-xl bg-primary py-4 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90"
+              >
+                Solicitar Informacoes
               </button>
-              <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 py-3 text-sm font-medium hover:bg-slate-50">
-                <Heart className="size-4" /> Salvar
-              </button>
+              <div className="flex gap-2">
+                <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 py-3 text-sm font-medium hover:bg-slate-50">
+                  <Share2 className="size-4" /> Compartilhar
+                </button>
+                <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 py-3 text-sm font-medium hover:bg-slate-50">
+                  <Heart className="size-4" /> Salvar
+                </button>
+              </div>
             </div>
           </div>
+        </div>
 
+        <div className="space-y-6 lg:col-span-2">
+          {hasUnlockedPremium ? (
+            <div className="grid w-full grid-cols-2 gap-3 md:grid-cols-4">
+              {[
+                { key: 'geral', label: 'Informacoes basicas' },
+                { key: 'dossie', label: 'Visao geral' },
+                { key: 'analise', label: 'Dossie' },
+                { key: 'arquivos', label: 'Arquivos' },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() =>
+                    setActivePremiumTab(
+                      tab.key as 'geral' | 'dossie' | 'analise' | 'arquivos',
+                    )
+                  }
+                  className={`w-full rounded-xl border px-4 py-3 text-center text-sm font-bold transition ${
+                    activePremiumTab === tab.key
+                      ? 'border-primary text-primary shadow-sm'
+                      : 'border-slate-200 bg-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          {(!hasUnlockedPremium || activePremiumTab === 'geral') ? (
+            <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+                <div>
+                  <h1 className="mb-2 text-3xl font-bold tracking-tight">{property.title}</h1>
+                  <p className="flex items-center gap-2 text-lg text-slate-500">
+                    <MapPin className="size-5 text-primary" />
+                    {property.address || property.location || 'Endereco nao informado'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-primary">
+                    {formatCurrency(property.price)}
+                  </p>
+                  <p className="text-sm text-slate-400">
+                    {property.location || 'Localizacao nao informada'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <FactCard
+                  icon={<Bed className="mx-auto mb-1 size-5 text-primary" />}
+                  label="Quartos"
+                  value={formatMetric(property.beds)}
+                />
+                <FactCard
+                  icon={<Bath className="mx-auto mb-1 size-5 text-primary" />}
+                  label="Banheiros"
+                  value={formatMetric(property.baths)}
+                />
+                <FactCard
+                  icon={<Square className="mx-auto mb-1 size-5 text-primary" />}
+                  label="Total (m2)"
+                  value={formatArea(property.sqft)}
+                />
+                <FactCard
+                  icon={<Calendar className="mx-auto mb-1 size-5 text-primary" />}
+                  label="Construido"
+                  value={property.year_built ?? '-'}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold">Descricao</h3>
+                <p className="leading-relaxed text-slate-600">{property.description}</p>
+              </div>
+            </div>
+          ) : null}
+
+          {hasUnlockedPremium && activePremiumTab === 'dossie' ? (
+            <div className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm md:grid-cols-2">
+              <DetailPanelCard
+                label="Resumo executivo"
+                value={property.dossier?.resumo_executivo}
+              />
+              <DetailPanelCard
+                label="Ocupacao"
+                value={property.dossier?.ocupacao}
+              />
+              <DetailPanelCard
+                label="Matricula"
+                value={property.dossier?.matricula}
+              />
+              <DetailPanelCard
+                label="Cartorio"
+                value={property.dossier?.cartorio}
+              />
+              <DetailPanelCard
+                label="Numero do processo"
+                value={property.dossier?.numero_processo}
+              />
+              <DetailPanelCard
+                label="Valor de mercado"
+                value={formatOptionalCurrency(property.dossier?.valor_mercado)}
+              />
+              <DetailPanelCard
+                label="Lance recomendado"
+                value={formatOptionalCurrency(property.dossier?.lance_recomendado)}
+              />
+              <DetailPanelCard
+                label="Lucro estimado"
+                value={formatOptionalCurrency(property.dossier?.lucro_estimado)}
+              />
+              <DetailPanelCard
+                label="ROI estimado"
+                value={formatPercent(property.dossier?.roi_estimado)}
+              />
+              <DetailPanelCard
+                label="Divida de IPTU"
+                value={formatOptionalCurrency(property.dossier?.divida_iptu)}
+              />
+              <DetailPanelCard
+                label="Divida de condominio"
+                value={formatOptionalCurrency(property.dossier?.divida_condominio)}
+              />
+            </div>
+          ) : null}
+
+          {hasUnlockedPremium && activePremiumTab === 'analise' ? (
+            <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+              <LongDetailBlock
+                label="Analise do investimento"
+                value={property.dossier?.analise}
+              />
+              <LongDetailBlock
+                label="Riscos"
+                value={property.dossier?.riscos}
+              />
+              <LongDetailBlock
+                label="Observacoes juridicas"
+                value={property.dossier?.observacoes_juridicas}
+              />
+              <LongDetailBlock
+                label="Estrategia recomendada"
+                value={property.dossier?.estrategia}
+              />
+            </div>
+          ) : null}
+
+          {hasUnlockedPremium && activePremiumTab === 'arquivos' ? (
+            <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+              {property.dossier_files?.length ? (
+                property.dossier_files.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <p className="font-semibold text-slate-900">
+                        {file.nome_arquivo || 'Arquivo sem nome'}
+                      </p>
+                      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
+                        {file.tipo_documento || 'Documento'}
+                      </p>
+                    </div>
+                    {file.url_storage ? (
+                      <a
+                        href={file.url_storage}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm font-bold text-primary transition hover:text-primary/80"
+                      >
+                        Abrir arquivo
+                      </a>
+                    ) : null}
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+                  Nenhum arquivo complementar cadastrado para este imovel.
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="lg:self-start">
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="text-xl font-bold">Localizacao</h3>
             <p className="text-sm leading-relaxed text-slate-600">
@@ -1111,6 +1511,17 @@ function PropertyDetailsView({
             <p className="text-sm leading-relaxed text-slate-500">
               {property.location || 'Cidade e estado nao informados'}
             </p>
+            <div className="overflow-hidden rounded-2xl border border-slate-200">
+              <iframe
+                title={`Mapa de ${property.title}`}
+                src={`https://www.google.com/maps?q=${encodeURIComponent(
+                  [property.address, property.location].filter(Boolean).join(', '),
+                )}&output=embed`}
+                className="h-72 w-full border-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -1125,6 +1536,7 @@ function PropertyDetailsView({
         input={chatInput}
         onInputChange={setChatInput}
         onSubmit={submitChatMessage}
+        isSubmitting={isSubmittingChat}
         onDesktopMinimize={() => setIsDesktopChatVisible(false)}
         onDesktopExpand={() => setIsDesktopChatVisible(true)}
         onDesktopClose={() => setIsDesktopChatVisible(false)}
@@ -1143,6 +1555,7 @@ function PropertyChatAssistant({
   input,
   onInputChange,
   onSubmit,
+  isSubmitting,
   onDesktopMinimize,
   onDesktopExpand,
   onDesktopClose,
@@ -1155,7 +1568,8 @@ function PropertyChatAssistant({
   messages: ChatMessage[];
   input: string;
   onInputChange: (value: string) => void;
-  onSubmit: () => void;
+  onSubmit: () => void | Promise<void>;
+  isSubmitting: boolean;
   onDesktopMinimize: () => void;
   onDesktopExpand: () => void;
   onDesktopClose: () => void;
@@ -1190,6 +1604,7 @@ function PropertyChatAssistant({
                   input={input}
                   onChange={onInputChange}
                   onSubmit={onSubmit}
+                  isSubmitting={isSubmitting}
                 />
               </motion.div>
             </motion.div>
@@ -1244,6 +1659,7 @@ function PropertyChatAssistant({
                   input={input}
                   onChange={onInputChange}
                   onSubmit={onSubmit}
+                  isSubmitting={isSubmitting}
                 />
               </motion.div>
             )}
@@ -1345,10 +1761,12 @@ function ChatComposer({
   input,
   onChange,
   onSubmit,
+  isSubmitting,
 }: {
   input: string;
   onChange: (value: string) => void;
-  onSubmit: () => void;
+  onSubmit: () => void | Promise<void>;
+  isSubmitting: boolean;
 }) {
   return (
     <div className="border-t border-slate-200 bg-white px-6 py-5">
@@ -1358,14 +1776,20 @@ function ChatComposer({
           onChange={(event) => onChange(event.target.value)}
           rows={2}
           placeholder="Escreva sua mensagem sobre este imovel"
+          disabled={isSubmitting}
           className="min-h-[56px] flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
         />
         <button
           type="button"
           onClick={onSubmit}
+          disabled={isSubmitting}
           className="inline-flex size-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
         >
-          <Send className="size-4" />
+          {isSubmitting ? (
+            <LoaderCircle className="size-4 animate-spin" />
+          ) : (
+            <Send className="size-4" />
+          )}
         </button>
       </div>
     </div>
