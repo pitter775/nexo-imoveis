@@ -32,6 +32,40 @@ export type ImovelImagemRecord = {
   ordem: number | null;
 };
 
+export type ImovelDetalhesRecord = {
+  id: string;
+  imovel_id: string;
+  resumo_executivo: string | null;
+  ocupacao: string | null;
+  matricula: string | null;
+  cartorio: string | null;
+  numero_processo: string | null;
+  valor_mercado: number | null;
+  lance_recomendado: number | null;
+  lucro_estimado: number | null;
+  roi_estimado: number | null;
+  divida_iptu: number | null;
+  divida_condominio: number | null;
+  analise: string | null;
+  riscos: string | null;
+  observacoes_juridicas: string | null;
+  estrategia: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type ImovelArquivoRecord = {
+  id: string;
+  imovel_id: string | null;
+  nome_arquivo: string | null;
+  url_storage: string | null;
+  tipo_arquivo: string | null;
+  tipo_documento: string | null;
+  visivel_publico: boolean | null;
+  visivel_pagantes: boolean | null;
+  created_at: string | null;
+};
+
 export async function listImoveis() {
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -131,6 +165,116 @@ export async function listImovelImages(imovelId: string) {
   return (data ?? []) as ImovelImagemRecord[];
 }
 
+export async function getImovelDetalhes(imovelId: string) {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('imovel_detalhes')
+    .select(
+      'id, imovel_id, resumo_executivo, ocupacao, matricula, cartorio, numero_processo, valor_mercado, lance_recomendado, lucro_estimado, roi_estimado, divida_iptu, divida_condominio, analise, riscos, observacoes_juridicas, estrategia, created_at, updated_at',
+    )
+    .eq('imovel_id', imovelId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to fetch imovel details: ${error.message}`);
+  }
+
+  return (data as ImovelDetalhesRecord | null) ?? null;
+}
+
+export async function upsertImovelDetalhes(
+  imovelId: string,
+  input: Omit<ImovelDetalhesRecord, 'id' | 'imovel_id' | 'created_at' | 'updated_at'>,
+) {
+  const supabase = createAdminClient();
+  const payload = {
+    imovel_id: imovelId,
+    ...input,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .from('imovel_detalhes')
+    .upsert(payload, { onConflict: 'imovel_id' });
+
+  if (error) {
+    throw new Error(`Failed to save imovel details: ${error.message}`);
+  }
+}
+
+export async function listImovelArquivos(imovelId: string) {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('imovel_arquivos')
+    .select(
+      'id, imovel_id, nome_arquivo, url_storage, tipo_arquivo, tipo_documento, visivel_publico, visivel_pagantes, created_at',
+    )
+    .eq('imovel_id', imovelId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to list imovel files: ${error.message}`);
+  }
+
+  return (data ?? []) as ImovelArquivoRecord[];
+}
+
+export async function addImovelArquivo(
+  imovelId: string,
+  input: Omit<ImovelArquivoRecord, 'id' | 'imovel_id' | 'created_at'>,
+) {
+  const supabase = createAdminClient();
+  const payload = {
+    imovel_id: imovelId,
+    ...input,
+  };
+
+  const { data, error } = await supabase
+    .from('imovel_arquivos')
+    .insert(payload)
+    .select(
+      'id, imovel_id, nome_arquivo, url_storage, tipo_arquivo, tipo_documento, visivel_publico, visivel_pagantes, created_at',
+    )
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to save imovel file: ${error.message}`);
+  }
+
+  return data as ImovelArquivoRecord;
+}
+
+export async function removeImovelArquivo(imovelId: string, arquivoId: string) {
+  const supabase = createAdminClient();
+
+  const { data: arquivo, error: selectError } = await supabase
+    .from('imovel_arquivos')
+    .select('id, url_storage')
+    .eq('imovel_id', imovelId)
+    .eq('id', arquivoId)
+    .maybeSingle();
+
+  if (selectError) {
+    throw new Error(`Failed to fetch imovel file: ${selectError.message}`);
+  }
+
+  const { error } = await supabase
+    .from('imovel_arquivos')
+    .delete()
+    .eq('imovel_id', imovelId)
+    .eq('id', arquivoId);
+
+  if (error) {
+    throw new Error(`Failed to remove imovel file: ${error.message}`);
+  }
+
+  const storagePath = extractStoragePath(arquivo?.url_storage ?? null);
+
+  if (storagePath) {
+    await supabase.storage.from('imoveis').remove([storagePath]);
+  }
+}
+
 export async function addImovelImage(imovelId: string, url: string) {
   const supabase = createAdminClient();
 
@@ -200,7 +344,11 @@ export async function reorderImovelImages(
   }
 }
 
-function extractStoragePath(url: string) {
+function extractStoragePath(url: string | null) {
+  if (!url) {
+    return null;
+  }
+
   const marker = '/storage/v1/object/public/imoveis/';
   const markerIndex = url.indexOf(marker);
 

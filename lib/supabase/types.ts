@@ -5,19 +5,127 @@ export type Database = {
     Tables: {
       imovel_imagens: {
         Row: {
+          id: string;
           imovel_id: string;
           url: string;
           ordem: number | null;
+          created_at: string | null;
         };
         Insert: {
+          id?: string;
           imovel_id: string;
           url: string;
           ordem?: number | null;
+          created_at?: string | null;
         };
         Update: {
+          id?: string;
           imovel_id?: string;
           url?: string;
           ordem?: number | null;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
+      imovel_arquivos: {
+        Row: {
+          id: string;
+          imovel_id: string | null;
+          nome_arquivo: string | null;
+          url_storage: string | null;
+          tipo_arquivo: string | null;
+          visivel_pagantes: boolean | null;
+          created_at: string | null;
+          tipo_documento: string | null;
+          visivel_publico: boolean | null;
+        };
+        Insert: {
+          id?: string;
+          imovel_id?: string | null;
+          nome_arquivo?: string | null;
+          url_storage?: string | null;
+          tipo_arquivo?: string | null;
+          visivel_pagantes?: boolean | null;
+          created_at?: string | null;
+          tipo_documento?: string | null;
+          visivel_publico?: boolean | null;
+        };
+        Update: {
+          id?: string;
+          imovel_id?: string | null;
+          nome_arquivo?: string | null;
+          url_storage?: string | null;
+          tipo_arquivo?: string | null;
+          visivel_pagantes?: boolean | null;
+          created_at?: string | null;
+          tipo_documento?: string | null;
+          visivel_publico?: boolean | null;
+        };
+        Relationships: [];
+      };
+      imovel_detalhes: {
+        Row: {
+          id: string;
+          imovel_id: string;
+          resumo_executivo: string | null;
+          ocupacao: string | null;
+          matricula: string | null;
+          cartorio: string | null;
+          numero_processo: string | null;
+          valor_mercado: number | null;
+          lance_recomendado: number | null;
+          lucro_estimado: number | null;
+          roi_estimado: number | null;
+          divida_iptu: number | null;
+          divida_condominio: number | null;
+          analise: string | null;
+          riscos: string | null;
+          observacoes_juridicas: string | null;
+          estrategia: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          imovel_id: string;
+          resumo_executivo?: string | null;
+          ocupacao?: string | null;
+          matricula?: string | null;
+          cartorio?: string | null;
+          numero_processo?: string | null;
+          valor_mercado?: number | null;
+          lance_recomendado?: number | null;
+          lucro_estimado?: number | null;
+          roi_estimado?: number | null;
+          divida_iptu?: number | null;
+          divida_condominio?: number | null;
+          analise?: string | null;
+          riscos?: string | null;
+          observacoes_juridicas?: string | null;
+          estrategia?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          imovel_id?: string;
+          resumo_executivo?: string | null;
+          ocupacao?: string | null;
+          matricula?: string | null;
+          cartorio?: string | null;
+          numero_processo?: string | null;
+          valor_mercado?: number | null;
+          lance_recomendado?: number | null;
+          lucro_estimado?: number | null;
+          roi_estimado?: number | null;
+          divida_iptu?: number | null;
+          divida_condominio?: number | null;
+          analise?: string | null;
+          riscos?: string | null;
+          observacoes_juridicas?: string | null;
+          estrategia?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
         };
         Relationships: [];
       };
@@ -43,6 +151,7 @@ export type Database = {
           cep: string | null;
           data_leilao: string | null;
           status: string | null;
+          created_at: string | null;
         };
         Insert: {
           id?: string;
@@ -65,6 +174,7 @@ export type Database = {
           cep?: string | null;
           data_leilao?: string | null;
           status?: string | null;
+          created_at?: string | null;
         };
         Update: {
           id?: string;
@@ -87,6 +197,7 @@ export type Database = {
           cep?: string | null;
           data_leilao?: string | null;
           status?: string | null;
+          created_at?: string | null;
         };
         Relationships: [];
       };

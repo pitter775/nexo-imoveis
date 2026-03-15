@@ -58,6 +58,7 @@ type AdminImovelFormProps = {
   submitLabel: string;
   action: (formData: FormData) => void | Promise<void>;
   initialValues?: ImovelFormValues;
+  showIntro?: boolean;
 };
 
 export function AdminImovelForm({
@@ -66,20 +67,23 @@ export function AdminImovelForm({
   submitLabel,
   action,
   initialValues,
+  showIntro = true,
 }: AdminImovelFormProps) {
   return (
     <div className="space-y-8">
-      <div className="rounded-[2rem] border border-white/50 bg-white/90 p-6 shadow-xl shadow-slate-900/5 backdrop-blur">
-        <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
-          Modulo de imoveis
-        </p>
-        <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
-          {title}
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-          {description}
-        </p>
-      </div>
+      {showIntro ? (
+        <div className="rounded-[2rem] border border-white/50 bg-white/90 p-6 shadow-xl shadow-slate-900/5 backdrop-blur">
+          <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+            Modulo de imoveis
+          </p>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
+            {title}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            {description}
+          </p>
+        </div>
+      ) : null}
 
       <form action={action} className="space-y-8 rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
         {initialValues?.id ? <input type="hidden" name="id" value={initialValues.id} /> : null}
