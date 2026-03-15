@@ -814,27 +814,24 @@ function HomeView({
               Por que escolher a Nexo Leiloes?
             </h2>
             <div className="relative hidden overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm lg:block">
-              <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-950/15 via-transparent to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-950/20 via-transparent to-transparent" />
               <Image
                 src="/images/analise-imovel.png"
                 alt="Analise estrategica de imovel da Nexo"
                 width={1200}
                 height={900}
-                className="h-[300px] w-full object-cover object-center"
+                className="h-[380px] w-full object-cover object-center"
                 priority={false}
               />
-            </div>
-            <div className="hidden rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm lg:block">
-              <div className="mb-3 inline-flex rounded-2xl bg-primary/10 p-3">
-                <Target className="size-5 text-primary" />
+              <div className="absolute inset-x-5 bottom-5 rounded-[1.4rem] border border-white/30 bg-white/92 p-4 shadow-lg backdrop-blur-sm">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">
+                  Curadoria inteligente
+                </p>
+                <p className="mt-2 text-sm leading-7 text-slate-700">
+                  Oportunidades analisadas com foco em liquidez, seguranca juridica
+                  e potencial real de valorizacao.
+                </p>
               </div>
-              <h3 className="text-base font-bold text-slate-900">
-                Curadoria com foco em liquidez e margem
-              </h3>
-              <p className="mt-2 text-sm leading-7 text-slate-600">
-                Nossos estudos priorizam ativos com boa leitura juridica, potencial
-                de revenda e entrada mais inteligente para cada perfil.
-              </p>
             </div>
           </div>
           <div className="grid gap-4">
