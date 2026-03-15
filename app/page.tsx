@@ -732,13 +732,24 @@ function HomeView({
         id="servicos-diferenciais"
       >
         <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-          <div className="space-y-4">
+          <div className="space-y-6">
             <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
               Diferenciais da Nexo
             </p>
             <h2 className="text-3xl font-bold tracking-tight text-slate-900">
               Por que escolher a Nexo Leiloes?
             </h2>
+            <div className="relative hidden overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm lg:block">
+              <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-950/15 via-transparent to-transparent" />
+              <Image
+                src="/images/analise-imovel.png"
+                alt="Analise estrategica de imovel da Nexo"
+                width={1200}
+                height={900}
+                className="h-[360px] w-full object-cover object-center"
+                priority={false}
+              />
+            </div>
           </div>
           <div className="grid gap-4">
             {[
