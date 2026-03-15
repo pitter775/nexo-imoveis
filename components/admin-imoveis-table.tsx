@@ -113,8 +113,8 @@ export function AdminImoveisTable({ imoveis }: AdminImoveisTableProps) {
               key={imovel.id}
               className="grid gap-4 px-4 py-4 text-sm text-slate-700 sm:px-6 lg:grid-cols-[1.6fr_0.9fr_0.8fr_0.9fr_0.7fr_0.5fr]"
             >
-              <div className="min-w-0">
-                <div className="flex items-center gap-3">
+              <div className="min-w-0 lg:min-w-0">
+                <div className="flex items-start gap-3">
                   <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
                     {imovel.capa_url ? (
                       <Image
@@ -131,27 +131,37 @@ export function AdminImoveisTable({ imoveis }: AdminImoveisTableProps) {
                     )}
                   </div>
 
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="font-semibold text-slate-900">{imovel.titulo}</p>
                     <p className="mt-1 line-clamp-1 text-xs text-slate-500">
                       {imovel.descricao}
                     </p>
+                    <div className="mt-3 lg:hidden">
+                      <Link
+                        href={`/admin/imoveis/${imovel.id}`}
+                        className="inline-flex items-center rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
+                      >
+                        Editar
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <DataCell label="Cidade" value={imovel.cidade ?? '-'} />
-              <DataCell label="Leilao" value={imovel.tipo_leilao ?? '-'} />
-              <DataCell
-                label="Valor minimo"
-                value={(imovel.valor_minimo ?? 0).toLocaleString('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL',
-                })}
-              />
-              <DataCell label="Status" value={imovel.status ?? '-'} />
+              <div className="grid grid-cols-2 gap-4 lg:contents">
+                <DataCell label="Cidade" value={imovel.cidade ?? '-'} />
+                <DataCell label="Leilao" value={imovel.tipo_leilao ?? '-'} />
+                <DataCell
+                  label="Valor minimo"
+                  value={(imovel.valor_minimo ?? 0).toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
+                />
+                <DataCell label="Status" value={imovel.status ?? '-'} />
+              </div>
 
-              <div className="lg:self-center">
+              <div className="hidden lg:block lg:self-center">
                 <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-400 lg:hidden">
                   Acoes
                 </span>
@@ -178,7 +188,7 @@ export function AdminImoveisTable({ imoveis }: AdminImoveisTableProps) {
 
 function DataCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="lg:self-center">
+    <div className="rounded-2xl border border-slate-100 bg-slate-50/80 px-3 py-3 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:self-center">
       <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-400 lg:hidden">
         {label}
       </span>

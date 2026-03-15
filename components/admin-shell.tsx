@@ -138,10 +138,46 @@ export function AdminShell({ children, profile }: AdminShellProps) {
               );
             })}
           </nav>
+
+          <div className="mt-auto pt-6">
+            <div
+              className={`rounded-[1.75rem] border border-white/10 bg-white/5 p-4 ${
+                isDesktopCollapsed ? 'lg:px-2 lg:py-3' : ''
+              }`}
+            >
+              <div
+                className={`${
+                  isDesktopCollapsed ? 'lg:hidden' : ''
+                }`}
+              >
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                  Usuario logado
+                </p>
+                <p className="mt-2 truncate text-sm font-semibold text-white">
+                  {profile.email}
+                </p>
+              </div>
+
+              <form
+                action={logoutAction}
+                className={`mt-4 ${isDesktopCollapsed ? 'lg:mt-0' : ''}`}
+              >
+                <button
+                  title={isDesktopCollapsed ? 'Sair' : undefined}
+                  className={`inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15 ${
+                    isDesktopCollapsed ? 'w-full justify-center lg:px-0' : 'w-full justify-center'
+                  }`}
+                >
+                  <LogOut className="size-4" />
+                  <span className={isDesktopCollapsed ? 'lg:hidden' : ''}>Sair</span>
+                </button>
+              </form>
+            </div>
+          </div>
         </aside>
 
         <div className="min-w-0">
-          <header className="border-b border-slate-200 bg-white/80 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
+          <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <button
@@ -170,20 +206,7 @@ export function AdminShell({ children, profile }: AdminShellProps) {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-wide text-slate-400">
-                    Usuario logado
-                  </p>
-                  <p className="font-semibold text-slate-900">{profile.email}</p>
-                </div>
-                <form action={logoutAction}>
-                  <button className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                    <LogOut className="size-4" />
-                    Sair
-                  </button>
-                </form>
-              </div>
+              <div className="hidden sm:block" />
             </div>
           </header>
 
