@@ -216,6 +216,7 @@ Campos:
 - id
 - user_id
 - imovel_id
+- resumo
 - mensagem_usuario
 - resposta_ia
 - created_at

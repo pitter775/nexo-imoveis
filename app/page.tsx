@@ -494,6 +494,7 @@ export function PublicMarketplace({
               {view === 'details' && selectedProperty && (
                 <PropertyDetailsView
                   property={selectedProperty}
+                  user={user}
                   onBack={handleBackToListings}
                 />
               )}
@@ -1393,9 +1394,11 @@ function FilterField({
 
 function PropertyDetailsView({
   property,
+  user,
   onBack,
 }: {
   property: Property;
+  user: UserType | null;
   onBack: () => void;
 }) {
   const [activeImage, setActiveImage] = useState(property.image_url);
@@ -1407,6 +1410,8 @@ function PropertyDetailsView({
   const [chatInput, setChatInput] = useState('');
   const [chatConversationId, setChatConversationId] = useState<string | null>(null);
   const [isSubmittingChat, setIsSubmittingChat] = useState(false);
+  const [isLoadingChatHistory, setIsLoadingChatHistory] = useState(false);
+  const [hasAttemptedHistoryLoad, setHasAttemptedHistoryLoad] = useState(false);
 
   useEffect(() => {
     setActiveImage(property.image_url);
@@ -1414,16 +1419,72 @@ function PropertyDetailsView({
     setActivePremiumTab('geral');
     setIsMobileChatOpen(false);
     setIsDesktopChatVisible(false);
-    setChatMessages([
-      {
-        role: 'model',
-        text: `Oi! Posso te ajudar com informacoes sobre ${property.title}. Pergunte sobre valor, leilao, localizacao ou caracteristicas do imovel.`,
-      },
-    ]);
+    setChatMessages(createInitialChatMessages(property.title));
     setChatInput('');
     setChatConversationId(null);
     setIsSubmittingChat(false);
+    setIsLoadingChatHistory(false);
+    setHasAttemptedHistoryLoad(false);
   }, [property.id, property.image_url]);
+
+  useEffect(() => {
+    if (!hasUnlockedPremium || !user?.id || hasAttemptedHistoryLoad) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function loadChatHistory() {
+      try {
+        setIsLoadingChatHistory(true);
+
+        const response = await fetch(
+          `/api/chat/imovel?propertyId=${encodeURIComponent(property.id)}`,
+          { cache: 'no-store' },
+        );
+
+        const data = (await response.json()) as {
+          conversationId?: string | null;
+          messages?: ChatMessage[];
+          error?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Falha ao carregar historico do chat.');
+        }
+
+        if (isCancelled) {
+          return;
+        }
+
+        if ((data.messages?.length ?? 0) > 0) {
+          setChatMessages(data.messages ?? []);
+          setChatConversationId(data.conversationId ?? null);
+        } else {
+          setChatMessages(createInitialChatMessages(property.title));
+          setChatConversationId(null);
+        }
+      } catch (error) {
+        console.error(error);
+
+        if (!isCancelled) {
+          setChatMessages(createInitialChatMessages(property.title));
+          setChatConversationId(null);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingChatHistory(false);
+          setHasAttemptedHistoryLoad(true);
+        }
+      }
+    }
+
+    loadChatHistory();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [hasAttemptedHistoryLoad, hasUnlockedPremium, property.id, property.title, user?.id]);
 
   const gallery = property.images?.length ? property.images : [property.image_url];
 
@@ -1437,7 +1498,7 @@ function PropertyDetailsView({
   const submitChatMessage = async () => {
     const trimmedInput = chatInput.trim();
 
-    if (!trimmedInput || isSubmittingChat) {
+    if (!trimmedInput || isSubmittingChat || isLoadingChatHistory) {
       return;
     }
 
@@ -1803,6 +1864,7 @@ function PropertyDetailsView({
         onInputChange={setChatInput}
         onSubmit={submitChatMessage}
         isSubmitting={isSubmittingChat}
+        isLoadingHistory={isLoadingChatHistory}
         onDesktopMinimize={() => setIsDesktopChatVisible(false)}
         onDesktopExpand={() => setIsDesktopChatVisible(true)}
         onDesktopClose={() => setIsDesktopChatVisible(false)}
@@ -1822,6 +1884,7 @@ function PropertyChatAssistant({
   onInputChange,
   onSubmit,
   isSubmitting,
+  isLoadingHistory,
   onDesktopMinimize,
   onDesktopExpand,
   onDesktopClose,
@@ -1836,6 +1899,7 @@ function PropertyChatAssistant({
   onInputChange: (value: string) => void;
   onSubmit: () => void | Promise<void>;
   isSubmitting: boolean;
+  isLoadingHistory: boolean;
   onDesktopMinimize: () => void;
   onDesktopExpand: () => void;
   onDesktopClose: () => void;
@@ -1865,12 +1929,13 @@ function PropertyChatAssistant({
                   propertyTitle={property.title}
                   onClose={onMobileClose}
                 />
-                <ChatMessages messages={messages} />
+                <ChatMessages messages={messages} isLoadingHistory={isLoadingHistory} />
                 <ChatComposer
                   input={input}
                   onChange={onInputChange}
                   onSubmit={onSubmit}
                   isSubmitting={isSubmitting}
+                  isLoadingHistory={isLoadingHistory}
                 />
               </motion.div>
             </motion.div>
@@ -1920,12 +1985,13 @@ function PropertyChatAssistant({
                     </button>
                   </div>
                 </div>
-                <ChatMessages messages={messages} />
+                <ChatMessages messages={messages} isLoadingHistory={isLoadingHistory} />
                 <ChatComposer
                   input={input}
                   onChange={onInputChange}
                   onSubmit={onSubmit}
                   isSubmitting={isSubmitting}
+                  isLoadingHistory={isLoadingHistory}
                 />
               </motion.div>
             )}
@@ -1998,9 +2064,21 @@ function ChatPanelHeader({
   );
 }
 
-function ChatMessages({ messages }: { messages: ChatMessage[] }) {
+function ChatMessages({
+  messages,
+  isLoadingHistory,
+}: {
+  messages: ChatMessage[];
+  isLoadingHistory: boolean;
+}) {
   return (
     <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/70 px-6 py-5">
+      {isLoadingHistory ? (
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+          <LoaderCircle className="size-4 animate-spin" />
+          Carregando historico da conversa...
+        </div>
+      ) : null}
       {messages.map((message, index) => (
         <div
           key={`${message.role}-${index}`}
@@ -2028,11 +2106,13 @@ function ChatComposer({
   onChange,
   onSubmit,
   isSubmitting,
+  isLoadingHistory,
 }: {
   input: string;
   onChange: (value: string) => void;
   onSubmit: () => void | Promise<void>;
   isSubmitting: boolean;
+  isLoadingHistory: boolean;
 }) {
   return (
     <div className="border-t border-slate-200 bg-white px-6 py-5">
@@ -2041,17 +2121,21 @@ function ChatComposer({
           value={input}
           onChange={(event) => onChange(event.target.value)}
           rows={2}
-          placeholder="Escreva sua mensagem sobre este imovel"
-          disabled={isSubmitting}
+          placeholder={
+            isLoadingHistory
+              ? 'Carregando historico da conversa...'
+              : 'Escreva sua mensagem sobre este imovel'
+          }
+          disabled={isSubmitting || isLoadingHistory}
           className="min-h-[56px] flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
         />
         <button
           type="button"
           onClick={onSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isLoadingHistory}
           className="inline-flex size-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
         >
-          {isSubmitting ? (
+          {isSubmitting || isLoadingHistory ? (
             <LoaderCircle className="size-4 animate-spin" />
           ) : (
             <Send className="size-4" />
@@ -2060,6 +2144,15 @@ function ChatComposer({
       </div>
     </div>
   );
+}
+
+function createInitialChatMessages(propertyTitle: string): ChatMessage[] {
+  return [
+    {
+      role: 'model',
+      text: `Oi! Posso te ajudar com informacoes sobre ${propertyTitle}. Pergunte sobre valor, leilao, localizacao ou caracteristicas do imovel.`,
+    },
+  ];
 }
 
 function MiniMetric({

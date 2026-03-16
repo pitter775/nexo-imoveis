@@ -10,6 +10,7 @@ export type Database = {
           imovel_id: string | null;
           tipo_chat: string;
           titulo: string | null;
+          resumo: string | null;
           status: string;
           metadata: Record<string, unknown>;
           created_at: string;
@@ -22,6 +23,7 @@ export type Database = {
           imovel_id?: string | null;
           tipo_chat?: string;
           titulo?: string | null;
+          resumo?: string | null;
           status?: string;
           metadata?: Record<string, unknown>;
           created_at?: string;
@@ -34,6 +36,7 @@ export type Database = {
           imovel_id?: string | null;
           tipo_chat?: string;
           titulo?: string | null;
+          resumo?: string | null;
           status?: string;
           metadata?: Record<string, unknown>;
           created_at?: string;

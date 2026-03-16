@@ -12,6 +12,7 @@ CREATE TABLE public.chat_conversas (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   last_message_at timestamp with time zone NOT NULL DEFAULT now(),
+  resumo text,
   CONSTRAINT chat_conversas_pkey PRIMARY KEY (id),
   CONSTRAINT chat_conversas_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
   CONSTRAINT chat_conversas_imovel_id_fkey FOREIGN KEY (imovel_id) REFERENCES public.imoveis(id)

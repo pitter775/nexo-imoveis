@@ -17,6 +17,17 @@ type PropertyChatResponse = {
   reply: string;
 };
 
+type StoredConversationMessage = {
+  role: ConversationRole;
+  content: string;
+  created_at: string;
+};
+
+type ConversationSummaryState = {
+  resumo: string | null;
+  metadata: Record<string, unknown>;
+};
+
 type PropertyContextRecord = {
   id: string;
   titulo: string;
@@ -74,6 +85,9 @@ type ConversationMessageRecord = {
 };
 
 const DEFAULT_MODEL = process.env.OPENAI_CHAT_MODEL ?? 'gpt-4.1-mini';
+const RECENT_MESSAGES_FOR_PROMPT = 6;
+const MIN_MESSAGES_TO_SUMMARIZE = 10;
+const SUMMARY_REFRESH_INTERVAL = 6;
 
 export async function answerPropertyQuestion({
   propertyId,
@@ -107,7 +121,11 @@ export async function answerPropertyQuestion({
     source: 'web_public',
   });
 
-  const recentMessages = await listRecentMessages(activeConversationId, 6);
+  const conversationState = await getConversationSummaryState(activeConversationId);
+  const recentMessages = await listRecentMessages(
+    activeConversationId,
+    RECENT_MESSAGES_FOR_PROMPT,
+  );
   const selectedContext = selectRelevantContext(question, property);
 
   const response = await getOpenAIClient().responses.create({
@@ -123,8 +141,10 @@ export async function answerPropertyQuestion({
           'Contexto do imovel:',
           JSON.stringify(selectedContext, null, 2),
           '',
-          'Historico recente da conversa:',
-          formatConversationHistory(recentMessages),
+          buildPromptHistorySection({
+            resumo: conversationState.resumo,
+            recentMessages,
+          }),
           '',
           `Pergunta atual do cliente: ${question}`,
         ].join('\n'),
@@ -157,12 +177,54 @@ export async function answerPropertyQuestion({
     .from('chat_conversas')
     .update({
       user_id: userId ?? null,
+      last_message_at: new Date().toISOString(),
     })
     .eq('id', activeConversationId);
+
+  await maybeRefreshConversationSummary({
+    conversationId: activeConversationId,
+    propertyTitle: property.imovel.titulo,
+    currentSummary: conversationState.resumo,
+    currentMetadata: conversationState.metadata,
+  });
 
   return {
     conversationId: activeConversationId,
     reply,
+  };
+}
+
+export async function getLatestPropertyConversation({
+  propertyId,
+  userId,
+}: {
+  propertyId: string;
+  userId: string;
+}) {
+  const supabase = createAdminClient();
+  const { data: conversation, error: conversationError } = await supabase
+    .from('chat_conversas')
+    .select('id')
+    .eq('imovel_id', propertyId)
+    .eq('user_id', userId)
+    .order('last_message_at', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (conversationError) {
+    throw new Error(`Failed to load conversation: ${conversationError.message}`);
+  }
+
+  if (!conversation) {
+    return null;
+  }
+
+  const messages = await listConversationMessages(conversation.id as string);
+
+  return {
+    conversationId: conversation.id as string,
+    messages,
   };
 }
 
@@ -220,6 +282,28 @@ async function loadPropertyContext(propertyId: string) {
     detalhes: (detalhes as PropertyDossierRecord | null) ?? null,
     arquivos: (arquivos as PropertyFileRecord[] | null) ?? [],
   };
+}
+
+function buildPromptHistorySection({
+  resumo,
+  recentMessages,
+}: {
+  resumo: string | null;
+  recentMessages: ConversationMessageRecord[];
+}) {
+  if (resumo?.trim()) {
+    return [
+      'Resumo acumulado da conversa:',
+      resumo.trim(),
+      '',
+      'Trecho mais recente da conversa:',
+      formatConversationHistory(recentMessages),
+    ].join('\n');
+  }
+
+  return ['Historico recente da conversa:', formatConversationHistory(recentMessages)].join(
+    '\n',
+  );
 }
 
 function selectRelevantContext(
@@ -410,6 +494,7 @@ async function createConversation({
       imovel_id: propertyId,
       tipo_chat: 'imovel_cliente',
       titulo: `Chat do imovel: ${title}`,
+      resumo: null,
       status: 'ativa',
     })
     .select('id')
@@ -420,6 +505,26 @@ async function createConversation({
   }
 
   return data.id as string;
+}
+
+async function getConversationSummaryState(
+  conversationId: string,
+): Promise<ConversationSummaryState> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('chat_conversas')
+    .select('resumo, metadata')
+    .eq('id', conversationId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load conversation summary state: ${error.message}`);
+  }
+
+  return {
+    resumo: (data?.resumo as string | null | undefined) ?? null,
+    metadata: isRecord(data?.metadata) ? data.metadata : {},
+  };
 }
 
 async function appendMessage({
@@ -469,4 +574,134 @@ async function listRecentMessages(conversationId: string, limit: number) {
   }
 
   return ((data ?? []) as ConversationMessageRecord[]).reverse();
+}
+
+async function listConversationMessages(conversationId: string): Promise<StoredConversationMessage[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('chat_mensagens')
+    .select('role, conteudo, created_at')
+    .eq('conversa_id', conversationId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to load full conversation history: ${error.message}`);
+  }
+
+  return ((data ?? []) as Array<{ role: string; conteudo: string; created_at: string }>).map(
+    (message) => ({
+      role: message.role === 'assistant' ? 'assistant' : 'user',
+      content: message.conteudo,
+      created_at: message.created_at,
+    }),
+  );
+}
+
+async function maybeRefreshConversationSummary({
+  conversationId,
+  propertyTitle,
+  currentSummary,
+  currentMetadata,
+}: {
+  conversationId: string;
+  propertyTitle: string;
+  currentSummary: string | null;
+  currentMetadata: Record<string, unknown>;
+}) {
+  const allMessages = await listConversationMessages(conversationId);
+  const totalMessages = allMessages.length;
+  const summarizedMessageCount = getSummarizedMessageCount(currentMetadata);
+
+  if (totalMessages < MIN_MESSAGES_TO_SUMMARIZE) {
+    return;
+  }
+
+  if (currentSummary && totalMessages - summarizedMessageCount < SUMMARY_REFRESH_INTERVAL) {
+    return;
+  }
+
+  const summary = await generateConversationSummary({
+    propertyTitle,
+    previousSummary: currentSummary,
+    messages: allMessages,
+  });
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from('chat_conversas')
+    .update({
+      resumo: summary,
+      metadata: {
+        ...currentMetadata,
+        resumo_message_count: totalMessages,
+      },
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', conversationId);
+
+  if (error) {
+    throw new Error(`Failed to update conversation summary: ${error.message}`);
+  }
+}
+
+async function generateConversationSummary({
+  propertyTitle,
+  previousSummary,
+  messages,
+}: {
+  propertyTitle: string;
+  previousSummary: string | null;
+  messages: StoredConversationMessage[];
+}) {
+  const response = await getOpenAIClient().responses.create({
+    model: DEFAULT_MODEL,
+    input: [
+      {
+        role: 'system',
+        content: [
+          'Voce vai resumir uma conversa entre cliente e assistente sobre um unico imovel.',
+          `O imovel da conversa e "${propertyTitle}".`,
+          'Produza um resumo curto em portugues do Brasil.',
+          'Preserve fatos, preferencias, perguntas respondidas, pendencias e contexto util para a proxima resposta.',
+          'Nao invente nada e nao repita texto desnecessario.',
+          'Retorne no maximo 8 linhas curtas.',
+        ].join(' '),
+      },
+      {
+        role: 'user',
+        content: [
+          'Resumo anterior:',
+          previousSummary?.trim() || 'Sem resumo anterior.',
+          '',
+          'Conversa completa ate agora:',
+          formatStoredConversationHistory(messages),
+        ].join('\n'),
+      },
+    ],
+  });
+
+  return (
+    response.output_text?.trim() ||
+    previousSummary?.trim() ||
+    formatStoredConversationHistory(messages.slice(-RECENT_MESSAGES_FOR_PROMPT))
+  );
+}
+
+function formatStoredConversationHistory(messages: StoredConversationMessage[]) {
+  if (messages.length === 0) {
+    return 'Sem historico anterior.';
+  }
+
+  return messages
+    .map((message) => `${message.role === 'assistant' ? 'Assistente' : 'Cliente'}: ${message.content}`)
+    .join('\n');
+}
+
+function getSummarizedMessageCount(metadata: Record<string, unknown>) {
+  const rawValue = metadata.resumo_message_count;
+  return typeof rawValue === 'number' && Number.isFinite(rawValue) ? rawValue : 0;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
