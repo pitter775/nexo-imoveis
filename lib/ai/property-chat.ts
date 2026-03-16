@@ -84,7 +84,7 @@ type ConversationMessageRecord = {
   conteudo: string;
 };
 
-const DEFAULT_MODEL = process.env.OPENAI_CHAT_MODEL ?? 'gpt-4.1-mini';
+const DEFAULT_MODEL = process.env.OPENAI_CHAT_MODEL ?? 'gpt-4o-mini';
 const RECENT_MESSAGES_FOR_PROMPT = 6;
 const MIN_MESSAGES_TO_SUMMARIZE = 10;
 const SUMMARY_REFRESH_INTERVAL = 6;
