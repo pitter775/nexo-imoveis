@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import {
   Activity,
   Bot,
@@ -104,9 +105,12 @@ export default async function AdminIaTokensPage() {
                           {index + 1}
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate font-semibold text-slate-900">
-                            {item.titulo}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="truncate font-semibold text-slate-900">
+                              {item.titulo}
+                            </p>
+                            <EditImovelTinyButton imovelId={item.id} />
+                          </div>
                           <p className="mt-1 text-xs text-slate-500">
                             {item.localizacao}
                           </p>
@@ -188,7 +192,10 @@ export default async function AdminIaTokensPage() {
                     key={item.id}
                     className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4"
                   >
-                    <p className="font-semibold text-slate-900">{item.titulo}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-slate-900">{item.titulo}</p>
+                      <EditImovelTinyButton imovelId={item.imovelId} />
+                    </div>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <span className="rounded-full bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
                         {item.tipoChat.replaceAll('_', ' ')}
@@ -256,6 +263,21 @@ function TableCell({ label, value }: { label: string; value: string }) {
 
 function EmptyState({ text }: { text: string }) {
   return <div className="px-5 py-8 text-sm text-slate-500">{text}</div>;
+}
+
+function EditImovelTinyButton({ imovelId }: { imovelId: string | null }) {
+  if (!imovelId) {
+    return null;
+  }
+
+  return (
+    <Link
+      href={`/admin/imoveis/${imovelId}`}
+      className="inline-flex h-6 items-center rounded-md border border-primary/20 bg-primary/10 px-2 text-[10px] font-bold uppercase tracking-[0.14em] text-primary transition hover:border-primary/30 hover:bg-primary/15"
+    >
+      Editar
+    </Link>
+  );
 }
 
 function formatNumber(value: number) {

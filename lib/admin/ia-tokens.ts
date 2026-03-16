@@ -63,6 +63,7 @@ export type IaTokensOverview = {
   }>;
   recentActivity: Array<{
     id: string;
+    imovelId: string | null;
     titulo: string;
     tipoChat: string;
     when: string;
@@ -261,6 +262,7 @@ export async function getIaTokensOverview(): Promise<IaTokensOverview> {
 
     return {
       id: message.id,
+      imovelId: conversation?.imovel_id ?? null,
       titulo: imovel?.titulo ?? 'Chat sem imovel vinculado',
       tipoChat: conversation?.tipo_chat ?? 'indefinido',
       when: message.created_at,

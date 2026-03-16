@@ -31,6 +31,7 @@ import {
   ShieldCheck,
   Square,
   Target,
+  UserRound,
   UserCog,
   X,
 } from 'lucide-react';
@@ -339,30 +340,12 @@ export function PublicMarketplace({
                         className="flex h-11 w-[208px] items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 transition hover:border-primary/30 hover:bg-primary/5"
                       >
                         <span className="truncate text-sm font-medium">{user.email}</span>
-                        <div className="relative ml-auto size-8 shrink-0 overflow-hidden rounded-full bg-slate-200">
-                          <Image
-                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
-                            alt="Avatar"
-                            fill
-                            className="object-cover"
-                            referrerPolicy="no-referrer"
-                            unoptimized
-                          />
-                        </div>
+                        <UserAvatar email={user.email} />
                       </Link>
                     ) : (
                       <div className="flex h-11 w-[208px] items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2">
                         <span className="truncate text-sm font-medium">{user.email}</span>
-                        <div className="relative ml-auto size-8 shrink-0 overflow-hidden rounded-full bg-slate-200">
-                          <Image
-                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
-                            alt="Avatar"
-                            fill
-                            className="object-cover"
-                            referrerPolicy="no-referrer"
-                            unoptimized
-                          />
-                        </div>
+                        <UserAvatar email={user.email} />
                       </div>
                     )}
                     <button
@@ -2246,6 +2229,16 @@ function AdminEditPropertyLink({
     >
       Editar imovel
     </Link>
+  );
+}
+
+function UserAvatar({ email }: { email: string }) {
+  const initial = email.trim().charAt(0).toUpperCase() || 'U';
+
+  return (
+    <div className="ml-auto flex size-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">
+      {/[A-Z0-9]/.test(initial) ? initial : <UserRound className="size-4" />}
+    </div>
   );
 }
 
