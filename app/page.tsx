@@ -65,6 +65,7 @@ export function PublicMarketplace({
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [user, setUser] = useState<UserType | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isLoadingProperties, setIsLoadingProperties] = useState(true);
@@ -102,6 +103,7 @@ export function PublicMarketplace({
         }
       } finally {
         if (isMounted) {
+          setIsLoadingUser(false);
           setIsLoadingProperties(false);
         }
       }
@@ -309,98 +311,106 @@ export function PublicMarketplace({
           </div>
 
           <div className="flex items-center gap-4">
-            {!user ? (
-              <Link
-                href="/login"
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary/90"
-              >
-                Login
-              </Link>
-            ) : (
-              <div
-                className="relative"
-                onMouseEnter={() => setIsUserMenuOpen(true)}
-                onMouseLeave={() => setIsUserMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  {adminHref ? (
-                    <Link
-                      href={adminHref}
-                      className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 transition hover:border-primary/30 hover:bg-primary/5"
-                    >
-                      <span className="hidden text-sm font-medium sm:block">{user.email}</span>
-                      <div className="relative size-8 overflow-hidden rounded-full bg-slate-200">
-                        <Image
-                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
-                          alt="Avatar"
-                          fill
-                          className="object-cover"
-                          referrerPolicy="no-referrer"
-                          unoptimized
-                        />
-                      </div>
-                    </Link>
-                  ) : (
-                    <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2">
-                      <span className="hidden text-sm font-medium sm:block">{user.email}</span>
-                      <div className="relative size-8 overflow-hidden rounded-full bg-slate-200">
-                        <Image
-                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
-                          alt="Avatar"
-                          fill
-                          className="object-cover"
-                          referrerPolicy="no-referrer"
-                          unoptimized
-                        />
-                      </div>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    aria-label="Abrir menu do usuario"
-                    onClick={() => setIsUserMenuOpen((current) => !current)}
-                    className="rounded-full border border-slate-200 bg-white p-2 text-slate-600 transition hover:border-primary/30 hover:text-primary"
-                  >
-                    <ChevronDown
-                      className={`size-4 transition-transform ${
-                        isUserMenuOpen ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </button>
+            <div className="hidden min-h-11 min-w-[260px] items-center justify-end md:flex">
+              {isLoadingUser ? (
+                <div className="flex w-full max-w-[260px] items-center justify-end gap-2">
+                  <div className="h-11 w-[208px] animate-pulse rounded-full border border-slate-200 bg-slate-100" />
+                  <div className="size-11 animate-pulse rounded-full border border-slate-200 bg-slate-100" />
                 </div>
-
-                <AnimatePresence>
-                  {isUserMenuOpen ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                      className="absolute right-0 top-[calc(100%+0.75rem)] z-50 min-w-[220px] rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-xl shadow-slate-200/80"
+              ) : !user ? (
+                <div className="flex w-full justify-end">
+                  <Link
+                    href="/login"
+                    className="inline-flex h-11 min-w-[132px] items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary/90"
+                  >
+                    Login
+                  </Link>
+                </div>
+              ) : (
+                <div
+                  className="relative"
+                  onMouseEnter={() => setIsUserMenuOpen(true)}
+                  onMouseLeave={() => setIsUserMenuOpen(false)}
+                >
+                  <div className="flex items-center gap-2">
+                    {adminHref ? (
+                      <Link
+                        href={adminHref}
+                        className="flex h-11 w-[208px] items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 transition hover:border-primary/30 hover:bg-primary/5"
+                      >
+                        <span className="truncate text-sm font-medium">{user.email}</span>
+                        <div className="relative ml-auto size-8 shrink-0 overflow-hidden rounded-full bg-slate-200">
+                          <Image
+                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+                            alt="Avatar"
+                            fill
+                            className="object-cover"
+                            referrerPolicy="no-referrer"
+                            unoptimized
+                          />
+                        </div>
+                      </Link>
+                    ) : (
+                      <div className="flex h-11 w-[208px] items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2">
+                        <span className="truncate text-sm font-medium">{user.email}</span>
+                        <div className="relative ml-auto size-8 shrink-0 overflow-hidden rounded-full bg-slate-200">
+                          <Image
+                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+                            alt="Avatar"
+                            fill
+                            className="object-cover"
+                            referrerPolicy="no-referrer"
+                            unoptimized
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      aria-label="Abrir menu do usuario"
+                      onClick={() => setIsUserMenuOpen((current) => !current)}
+                      className="inline-flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-primary/30 hover:text-primary"
                     >
-                      {adminHref ? (
-                        <Link
-                          href={adminHref}
-                          className="flex items-center gap-3 rounded-[1.1rem] px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
-                        >
-                          <UserCog className="size-4 text-primary" />
-                          Ambiente administrativo
-                        </Link>
-                      ) : null}
-                      <form action={logoutAction} className="mt-1">
-                        <button
-                          type="submit"
-                          className="flex w-full items-center gap-3 rounded-[1.1rem] px-3 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
-                        >
-                          <ArrowLeft className="size-4 text-primary" />
-                          Sair
-                        </button>
-                      </form>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-              </div>
-            )}
+                      <ChevronDown
+                        className={`size-4 transition-transform ${
+                          isUserMenuOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                  </div>
 
+                  <AnimatePresence>
+                    {isUserMenuOpen ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                        className="absolute right-0 top-[calc(100%+0.75rem)] z-50 min-w-[220px] rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-xl shadow-slate-200/80"
+                      >
+                        {adminHref ? (
+                          <Link
+                            href={adminHref}
+                            className="flex items-center gap-3 rounded-[1.1rem] px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                          >
+                            <UserCog className="size-4 text-primary" />
+                            Ambiente administrativo
+                          </Link>
+                        ) : null}
+                        <form action={logoutAction} className="mt-1">
+                          <button
+                            type="submit"
+                            className="flex w-full items-center gap-3 rounded-[1.1rem] px-3 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                          >
+                            <ArrowLeft className="size-4 text-primary" />
+                            Sair
+                          </button>
+                        </form>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
+              )}
+            </div>
             <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
               {isMenuOpen ? <X /> : <Menu />}
             </button>
@@ -449,6 +459,37 @@ export function PublicMarketplace({
               >
                 Oportunidades
               </button>
+              {isLoadingUser ? (
+                <div className="h-12 animate-pulse rounded-2xl bg-slate-100" />
+              ) : user ? (
+                <>
+                  {adminHref ? (
+                    <Link
+                      href={adminHref}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="rounded-2xl bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700 hover:bg-slate-100"
+                    >
+                      Ambiente administrativo
+                    </Link>
+                  ) : null}
+                  <form action={logoutAction}>
+                    <button
+                      type="submit"
+                      className="w-full rounded-2xl bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700 hover:bg-slate-100"
+                    >
+                      Sair
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="rounded-2xl bg-slate-950 px-4 py-3 text-left font-semibold text-white"
+                >
+                  Login
+                </Link>
+              )}
             </div>
           </motion.div>
         )}
@@ -477,6 +518,7 @@ export function PublicMarketplace({
               {view === 'home' && (
                 <HomeView
                   featuredProperties={featuredProperties}
+                  isAdmin={user?.tipo_usuario === 'admin'}
                   isLoading={isLoadingProperties}
                   onBrowse={handleBrowse}
                   onNavigate={handleMenuNavigation}
@@ -486,6 +528,7 @@ export function PublicMarketplace({
               )}
               {view === 'listings' && (
                 <ListingsView
+                  isAdmin={user?.tipo_usuario === 'admin'}
                   isLoading={isLoadingProperties}
                   properties={properties}
                   onPropertyClick={handlePropertyClick}
@@ -641,6 +684,7 @@ function MarketplaceLoadingState({
 
 function HomeView({
   featuredProperties,
+  isAdmin = false,
   isLoading,
   onBrowse,
   onNavigate,
@@ -648,6 +692,7 @@ function HomeView({
   properties,
 }: {
   featuredProperties: Property[];
+  isAdmin?: boolean;
   isLoading: boolean;
   onBrowse: () => void;
   onNavigate: (sectionId: string) => void;
@@ -753,6 +798,9 @@ function HomeView({
                     >
                       Ver imovel
                     </button>
+                    {isAdmin ? (
+                      <AdminEditPropertyLink propertyId={featuredProperty.id} compact />
+                    ) : null}
                   </div>
                 </>
               ) : (
@@ -903,6 +951,7 @@ function HomeView({
               {visibleProperties.map((property) => (
                 <PropertyCard
                   key={property.id}
+                  isAdmin={isAdmin}
                   property={property}
                   onClick={() => onPropertyClick(property)}
                 />
@@ -1033,9 +1082,11 @@ function HomeView({
 }
 
 function PropertyCard({
+  isAdmin = false,
   property,
   onClick,
 }: {
+  isAdmin?: boolean;
   property: Property;
   onClick: () => void;
 }) {
@@ -1095,6 +1146,11 @@ function PropertyCard({
             {property.status || 'ativo'}
           </span>
         </div>
+        {isAdmin ? (
+          <div className="absolute right-4 top-4">
+            <AdminEditPropertyLink propertyId={property.id} compact floating />
+          </div>
+        ) : null}
         {gallery.length > 1 ? (
           <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-slate-950/45 px-2 py-1 backdrop-blur">
             {gallery.map((imageUrl, index) => (
@@ -1140,10 +1196,12 @@ function PropertyCard({
 }
 
 function ListingsView({
+  isAdmin = false,
   isLoading,
   properties,
   onPropertyClick,
 }: {
+  isAdmin?: boolean;
   isLoading: boolean;
   properties: Property[];
   onPropertyClick: (p: Property) => void;
@@ -1342,6 +1400,7 @@ function ListingsView({
             {visibleProperties.map((property) => (
               <PropertyCard
                 key={property.id}
+                isAdmin={isAdmin}
                 property={property}
                 onClick={() => onPropertyClick(property)}
               />
@@ -1402,6 +1461,7 @@ function PropertyDetailsView({
   onBack: () => void;
 }) {
   const [activeImage, setActiveImage] = useState(property.image_url);
+  const isAdmin = user?.tipo_usuario === 'admin';
   const [hasUnlockedPremium, setHasUnlockedPremium] = useState(false);
   const [activePremiumTab, setActivePremiumTab] = useState<'geral' | 'dossie' | 'analise' | 'arquivos'>('geral');
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
@@ -1631,6 +1691,9 @@ function PropertyDetailsView({
               >
                 Solicitar Informacoes
               </button>
+              {isAdmin ? (
+                <AdminEditPropertyLink propertyId={property.id} className="w-full justify-center" />
+              ) : null}
               <div className="flex gap-2">
                 <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 py-3 text-sm font-medium hover:bg-slate-50">
                   <Share2 className="size-4" /> Compartilhar
@@ -2153,6 +2216,37 @@ function createInitialChatMessages(propertyTitle: string): ChatMessage[] {
       text: `Oi! Posso te ajudar com informacoes sobre ${propertyTitle}. Pergunte sobre valor, leilao, localizacao ou caracteristicas do imovel.`,
     },
   ];
+}
+
+function AdminEditPropertyLink({
+  propertyId,
+  compact = false,
+  className = '',
+  floating = false,
+}: {
+  propertyId: string;
+  compact?: boolean;
+  className?: string;
+  floating?: boolean;
+}) {
+  return (
+    <Link
+      href={`/admin/imoveis/${propertyId}`}
+      onClick={(event) => event.stopPropagation()}
+      className={[
+        'inline-flex items-center rounded-xl font-bold transition',
+        floating
+          ? 'border border-white/40 bg-white/90 text-primary shadow-lg backdrop-blur hover:bg-white'
+          : 'border border-primary/20 bg-primary/10 text-primary hover:border-primary/30 hover:bg-primary/15',
+        compact ? 'px-3 py-2 text-xs' : 'px-4 py-3 text-sm',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      Editar imovel
+    </Link>
+  );
 }
 
 function MiniMetric({

@@ -153,7 +153,7 @@ export async function answerPropertyQuestion({
   });
 
   const reply =
-    response.output_text?.trim() ||
+    sanitizeAssistantReply(response.output_text) ||
     'Nao consegui gerar uma resposta neste momento. Tente novamente em instantes.';
 
   const usage = response.usage as
@@ -457,6 +457,7 @@ function buildSystemPrompt(propertyTitle: string) {
     'Nao invente informacoes, nao generalize e nao fale sobre outros imoveis.',
     'Responda em portugues do Brasil, de forma objetiva, clara e comercial.',
     'Prefira respostas curtas, com no maximo 6 frases, exceto quando o usuario pedir mais detalhes.',
+    'Nao encerre com frases solicitas como "Posso ajudar com mais alguma informacao?".',
   ].join(' ');
 }
 
@@ -704,4 +705,16 @@ function getSummarizedMessageCount(metadata: Record<string, unknown>) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function sanitizeAssistantReply(value: string | null | undefined) {
+  if (!value) {
+    return '';
+  }
+
+  return value
+    .replace(/\bPosso ajudar com mais alguma informa[cç][aã]o\??/gi, '')
+    .replace(/\bPosso ajudar com mais alguma coisa\??/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
