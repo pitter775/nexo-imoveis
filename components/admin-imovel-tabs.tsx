@@ -41,14 +41,14 @@ export function AdminImovelTabs({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[2rem] border border-white/50 bg-white/90 p-5 shadow-xl shadow-slate-900/5 backdrop-blur sm:p-6">
+      <div className="overflow-hidden p-1 sm:p-0">
         <div className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr] lg:items-start">
           <div className="space-y-5">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
                 Modulo de imoveis
               </p>
-              <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
+              <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
                 Editar imovel
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
@@ -57,14 +57,14 @@ export function AdminImovelTabs({
               </p>
             </div>
 
-            <div className="overflow-x-auto rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-2">
-              <div className="flex min-w-max gap-2">
+            <div className="-mx-1 overflow-x-auto px-1 sm:mx-0 sm:px-0">
+              <div className="inline-flex min-w-max gap-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-2">
                 {tabs.map((tab) => (
                   <button
                     key={tab.key}
                     type="button"
                     onClick={() => setActiveTab(tab.key)}
-                    className={`rounded-2xl px-4 py-3 text-sm font-bold transition ${
+                    className={`whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-bold transition ${
                       activeTab === tab.key
                         ? 'bg-primary text-white shadow-lg shadow-primary/20'
                         : 'text-slate-600 hover:bg-white'
@@ -78,7 +78,7 @@ export function AdminImovelTabs({
           </div>
 
           <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
-            <div className="flex gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row">
               <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
                 {summary.capaUrl ? (
                   <Image
@@ -108,7 +108,7 @@ export function AdminImovelTabs({
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <SummaryBadge label="Status" value={summary.status || '-'} />
               <SummaryBadge label="Leilao" value={summary.tipo_leilao || '-'} />
             </div>

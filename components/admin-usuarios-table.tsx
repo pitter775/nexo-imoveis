@@ -66,7 +66,7 @@ export function AdminUsuariosTable({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-[2rem] border border-white/50 bg-white/90 p-6 shadow-xl shadow-slate-900/5 backdrop-blur">
+      <div className="px-1 sm:px-0">
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>

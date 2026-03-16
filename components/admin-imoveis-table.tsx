@@ -105,7 +105,7 @@ export function AdminImoveisTable({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-[2rem] border border-white/50 bg-white/90 p-6 shadow-xl shadow-slate-900/5 backdrop-blur">
+      <div className="px-1 sm:px-0">
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -154,30 +154,100 @@ export function AdminImoveisTable({
       </div>
 
       <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-        <div className="hidden grid-cols-[1.6fr_0.9fr_0.8fr_0.9fr_0.7fr_0.5fr] gap-4 border-b border-slate-100 px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-400 lg:grid">
-          {columns.map((column) => (
-            <button
-              key={column.key}
-              type="button"
-              onClick={() => handleSort(column.key, sortConfig, setSortConfig)}
-              className="inline-flex items-center gap-2 text-left transition hover:text-slate-700"
-            >
-              <span>{column.label}</span>
-              <SortIcon active={sortConfig.key === column.key} direction={sortConfig.direction} />
-            </button>
-          ))}
-          <span>Acoes</span>
+        <div className="hidden lg:block">
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-fixed border-collapse">
+              <thead className="bg-slate-50/80">
+                <tr className="border-b border-slate-100 text-xs font-bold uppercase tracking-wide text-slate-400">
+                  {columns.map((column) => (
+                    <th key={column.key} className={column.key === 'titulo' ? 'w-[32%] px-6 py-4' : 'px-6 py-4'}>
+                      <button
+                        type="button"
+                        onClick={() => handleSort(column.key, sortConfig, setSortConfig)}
+                        className="inline-flex items-center gap-2 text-left transition hover:text-slate-700"
+                      >
+                        <span>{column.label}</span>
+                        <SortIcon active={sortConfig.key === column.key} direction={sortConfig.direction} />
+                      </button>
+                    </th>
+                  ))}
+                  <th className="w-[120px] px-6 py-4 text-left">Acoes</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-100">
+                {sortedImoveis.map((imovel) => (
+                  <tr key={imovel.id} className="align-top text-sm text-slate-700">
+                    <td className="px-6 py-5">
+                      <div className="flex items-start gap-3">
+                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+                          {imovel.capa_url ? (
+                            <Image
+                              src={imovel.capa_url}
+                              alt={`Capa do imovel ${imovel.titulo}`}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                              Sem capa
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-900">{imovel.titulo}</p>
+                          <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+                            {imovel.descricao}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">{imovel.cidade ?? '-'}</td>
+                    <td className="px-6 py-5">{imovel.tipo_leilao ?? '-'}</td>
+                    <td className="px-6 py-5">
+                      {(imovel.valor_minimo ?? 0).toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                      })}
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
+                        {imovel.status ?? '-'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <Link
+                        href={`/admin/imoveis/${imovel.id}`}
+                        className="font-semibold text-primary transition hover:text-primary/80"
+                      >
+                        Editar
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div className="divide-y divide-slate-100">
+        <div className="lg:hidden">
+          <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,0.95fr)_minmax(0,1.1fr)_auto] gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+            <span>Titulo</span>
+            <span>Cidade</span>
+            <span>Valor</span>
+            <span className="text-right">Acoes</span>
+          </div>
+
           {sortedImoveis.map((imovel) => (
             <div
               key={imovel.id}
-              className="grid gap-4 px-4 py-4 text-sm text-slate-700 sm:px-6 lg:grid-cols-[1.6fr_0.9fr_0.8fr_0.9fr_0.7fr_0.5fr]"
+              className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,0.95fr)_minmax(0,1.1fr)_auto] gap-3 border-b border-slate-100 px-4 py-3 text-sm text-slate-700"
             >
-              <div className="min-w-0 lg:min-w-0">
-                <div className="flex items-start gap-3">
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+              <div className="min-w-0">
+                <div className="flex items-start gap-2.5">
+                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
                     {imovel.capa_url ? (
                       <Image
                         src={imovel.capa_url}
@@ -194,42 +264,39 @@ export function AdminImoveisTable({
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-slate-900">{imovel.titulo}</p>
-                    <p className="mt-1 line-clamp-1 text-xs text-slate-500">
+                    <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-900">
+                      {imovel.titulo}
+                    </p>
+                    <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">
                       {imovel.descricao}
                     </p>
-                    <div className="mt-3 lg:hidden">
-                      <Link
-                        href={`/admin/imoveis/${imovel.id}`}
-                        className="inline-flex items-center rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
-                      >
-                        Editar
-                      </Link>
-                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 lg:contents">
-                <DataCell label="Cidade" value={imovel.cidade ?? '-'} />
-                <DataCell label="Leilao" value={imovel.tipo_leilao ?? '-'} />
-                <DataCell
-                  label="Valor minimo"
-                  value={(imovel.valor_minimo ?? 0).toLocaleString('pt-BR', {
+              <div className="min-w-0 self-start pt-0.5">
+                <p className="truncate text-sm text-slate-700">{imovel.cidade ?? '-'}</p>
+                <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                  {imovel.tipo_leilao ?? '-'}
+                </p>
+              </div>
+
+              <div className="min-w-0 self-start pt-0.5">
+                <p className="text-sm font-semibold text-slate-900">
+                  {(imovel.valor_minimo ?? 0).toLocaleString('pt-BR', {
                     style: 'currency',
                     currency: 'BRL',
                   })}
-                />
-                <DataCell label="Status" value={imovel.status ?? '-'} />
+                </p>
+                <p className="mt-1 text-[11px] capitalize text-slate-500">
+                  {imovel.status ?? '-'}
+                </p>
               </div>
 
-              <div className="hidden lg:block lg:self-center">
-                <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-400 lg:hidden">
-                  Acoes
-                </span>
+              <div className="flex justify-end">
                 <Link
                   href={`/admin/imoveis/${imovel.id}`}
-                  className="font-semibold text-primary transition hover:text-primary/80"
+                  className="inline-flex h-9 items-center rounded-lg border border-primary/20 bg-primary/10 px-2.5 text-[11px] font-semibold text-primary transition hover:border-primary/30 hover:bg-primary/15"
                 >
                   Editar
                 </Link>

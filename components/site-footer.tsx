@@ -13,7 +13,7 @@ const footerItems = [
 
 export function SiteFooter({ onNavigate }: SiteFooterProps) {
   return (
-    <footer className="w-full bg-slate-950 px-4 py-10 text-slate-200 shadow-2xl sm:px-6 lg:px-8">
+    <footer className="w-full bg-slate-950 px-4 py-10 pb-28 text-slate-200 shadow-2xl sm:px-6 sm:pb-10 lg:px-8">
       <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-2 xl:grid-cols-4">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
@@ -29,7 +29,7 @@ export function SiteFooter({ onNavigate }: SiteFooterProps) {
           <h3 className="text-sm font-bold uppercase tracking-[0.22em] text-white">
             Menu
           </h3>
-          <div className="mt-4 flex flex-col gap-3 text-sm text-slate-300">
+          <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-slate-300 sm:grid-cols-4 md:grid-cols-2">
             {footerItems.map((item) =>
               onNavigate ? (
                 <button

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
 import {
@@ -236,6 +237,9 @@ export function PublicMarketplace({
   };
 
   const adminHref = user?.tipo_usuario === 'admin' ? '/admin' : null;
+  const isDetailPending =
+    view === 'details' && Boolean(initialPropertyId) && selectedProperty === null;
+  const isContentReady = !isLoadingProperties && !isDetailPending;
 
   const handleBackToListings = () => {
     setView('listings');
@@ -306,12 +310,12 @@ export function PublicMarketplace({
 
           <div className="flex items-center gap-4">
             {!user ? (
-              <a
+              <Link
                 href="/login"
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary/90"
               >
                 Login
-              </a>
+              </Link>
             ) : (
               <div
                 className="relative"
@@ -320,7 +324,7 @@ export function PublicMarketplace({
               >
                 <div className="flex items-center gap-2">
                   {adminHref ? (
-                    <a
+                    <Link
                       href={adminHref}
                       className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 transition hover:border-primary/30 hover:bg-primary/5"
                     >
@@ -335,7 +339,7 @@ export function PublicMarketplace({
                           unoptimized
                         />
                       </div>
-                    </a>
+                    </Link>
                   ) : (
                     <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2">
                       <span className="hidden text-sm font-medium sm:block">{user.email}</span>
@@ -374,13 +378,13 @@ export function PublicMarketplace({
                       className="absolute right-0 top-[calc(100%+0.75rem)] z-50 min-w-[220px] rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-xl shadow-slate-200/80"
                     >
                       {adminHref ? (
-                        <a
+                        <Link
                           href={adminHref}
                           className="flex items-center gap-3 rounded-[1.1rem] px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                         >
                           <UserCog className="size-4 text-primary" />
                           Ambiente administrativo
-                        </a>
+                        </Link>
                       ) : null}
                       <form action={logoutAction} className="mt-1">
                         <button
@@ -451,36 +455,68 @@ export function PublicMarketplace({
       </AnimatePresence>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {view === 'home' && (
-          <HomeView
-            featuredProperties={featuredProperties}
-            isLoading={isLoadingProperties}
-            onBrowse={handleBrowse}
-            onNavigate={handleMenuNavigation}
-            onPropertyClick={handlePropertyClick}
-            properties={properties}
-          />
-        )}
-        {view === 'listings' && (
-          <ListingsView
-            isLoading={isLoadingProperties}
-            properties={properties}
-            onPropertyClick={handlePropertyClick}
-          />
-        )}
-        {view === 'details' && selectedProperty && (
-          <PropertyDetailsView
-            property={selectedProperty}
-            onBack={handleBackToListings}
-          />
-        )}
-        {view === 'details' && !selectedProperty && !isLoadingProperties ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500 shadow-sm">
-            Imovel nao encontrado.
-          </div>
-        ) : null}
+        <AnimatePresence mode="wait" initial={false}>
+          {!isContentReady ? (
+            <motion.div
+              key={`loading-${view}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.28, ease: 'easeOut' }}
+            >
+              <MarketplaceLoadingState view={view} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key={`${view}-${selectedProperty?.id ?? 'root'}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.28, ease: 'easeOut' }}
+            >
+              {view === 'home' && (
+                <HomeView
+                  featuredProperties={featuredProperties}
+                  isLoading={isLoadingProperties}
+                  onBrowse={handleBrowse}
+                  onNavigate={handleMenuNavigation}
+                  onPropertyClick={handlePropertyClick}
+                  properties={properties}
+                />
+              )}
+              {view === 'listings' && (
+                <ListingsView
+                  isLoading={isLoadingProperties}
+                  properties={properties}
+                  onPropertyClick={handlePropertyClick}
+                />
+              )}
+              {view === 'details' && selectedProperty && (
+                <PropertyDetailsView
+                  property={selectedProperty}
+                  onBack={handleBackToListings}
+                />
+              )}
+              {view === 'details' && !selectedProperty && !isLoadingProperties ? (
+                <div className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500 shadow-sm">
+                  Imovel nao encontrado.
+                </div>
+              ) : null}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
-      <SiteFooter onNavigate={handleMenuNavigation} />
+      <motion.div
+        initial={false}
+        animate={{
+          opacity: isContentReady ? 1 : 0,
+          y: isContentReady ? 0 : 16,
+        }}
+        transition={{ duration: 0.28, ease: 'easeOut' }}
+        aria-hidden={!isContentReady}
+      >
+        <SiteFooter onNavigate={handleMenuNavigation} />
+      </motion.div>
 
       <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-slate-200 bg-white px-4 py-2 md:hidden">
         <button
@@ -508,6 +544,98 @@ export function PublicMarketplace({
 
 export default function App() {
   return <PublicMarketplace />;
+}
+
+function MarketplaceLoadingState({
+  view,
+}: {
+  view: 'home' | 'listings' | 'details';
+}) {
+  if (view === 'listings') {
+    return (
+      <div className="space-y-8 pb-12">
+        <div className="h-16 w-56 rounded-full bg-slate-200/80" />
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={`listing-skeleton-${index}`}
+              className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm"
+            >
+              <div className="aspect-[4/3] bg-slate-200/80" />
+              <div className="space-y-4 p-5">
+                <div className="h-6 w-2/5 rounded-full bg-slate-200/80" />
+                <div className="h-5 w-4/5 rounded-full bg-slate-200/70" />
+                <div className="h-4 w-full rounded-full bg-slate-100" />
+                <div className="h-4 w-3/4 rounded-full bg-slate-100" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'details') {
+    return (
+      <div className="space-y-8 pb-12">
+        <div className="h-12 w-44 rounded-full bg-slate-200/80" />
+        <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="space-y-5">
+            <div className="aspect-[16/10] rounded-[2rem] bg-slate-200/80" />
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-6">
+              <div className="h-6 w-2/3 rounded-full bg-slate-200/80" />
+              <div className="mt-4 h-4 w-full rounded-full bg-slate-100" />
+              <div className="mt-3 h-4 w-5/6 rounded-full bg-slate-100" />
+              <div className="mt-3 h-4 w-4/6 rounded-full bg-slate-100" />
+            </div>
+          </div>
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6">
+            <div className="h-7 w-1/2 rounded-full bg-slate-200/80" />
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={`detail-metric-${index}`}
+                  className="rounded-[1.5rem] bg-slate-100 p-5"
+                >
+                  <div className="h-3 w-16 rounded-full bg-slate-200/80" />
+                  <div className="mt-3 h-5 w-24 rounded-full bg-slate-200/60" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-12 pb-12">
+      <section className="grid gap-10 py-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <div className="space-y-5">
+          <div className="h-8 w-56 rounded-full bg-primary/15" />
+          <div className="h-14 w-full max-w-3xl rounded-[1.5rem] bg-slate-200/80" />
+          <div className="h-14 w-4/5 max-w-2xl rounded-[1.5rem] bg-slate-200/70" />
+          <div className="h-5 w-full max-w-xl rounded-full bg-slate-100" />
+          <div className="h-5 w-5/6 max-w-lg rounded-full bg-slate-100" />
+        </div>
+        <div className="aspect-[4/3] rounded-[2.25rem] bg-slate-200/80 shadow-xl shadow-slate-900/5" />
+      </section>
+
+      <section className="grid gap-6 md:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={`home-card-${index}`}
+            className="rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm"
+          >
+            <div className="h-12 w-12 rounded-2xl bg-primary/10" />
+            <div className="mt-5 h-6 w-4/5 rounded-full bg-slate-200/80" />
+            <div className="mt-4 h-4 w-full rounded-full bg-slate-100" />
+            <div className="mt-3 h-4 w-5/6 rounded-full bg-slate-100" />
+          </div>
+        ))}
+      </section>
+    </div>
+  );
 }
 
 function HomeView({
@@ -551,9 +679,9 @@ function HomeView({
     <div className="space-y-12 pb-12">
       <section
         id="topo"
-        className="flex scroll-mt-24 flex-col items-center gap-12 py-12 lg:flex-row"
+        className="flex scroll-mt-24 flex-col items-center gap-12 py-6 lg:flex-row"
       >
-        <div className="flex-1 space-y-6">
+        <div className="flex-1 space-y-3">
           <div className="inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-accent">
             Assessoria especializada em leiloes imobiliarios
           </div>
@@ -565,26 +693,7 @@ function HomeView({
             Da analise do edital a posse cuidamos de todo o processo para voce
             investir com seguranca e aumentar suas chances de lucro.
           </p>
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <button
-              onClick={() => window.open('https://wa.me/5511916751213', '_blank', 'noopener,noreferrer')}
-              className="rounded-xl bg-primary px-8 py-4 text-base font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90"
-            >
-              Fale com um especialista
-            </button>
-            <button
-              onClick={onBrowse}
-              className="rounded-xl border border-slate-200 bg-white px-8 py-4 text-base font-bold text-slate-700 transition-all hover:bg-slate-50"
-            >
-              Ver oportunidades
-            </button>
-            <button
-              onClick={() => onNavigate('sobre')}
-              className="rounded-xl border border-slate-200 bg-white px-8 py-4 text-base font-bold text-slate-700 transition-all hover:bg-slate-50"
-            >
-              Saiba mais
-            </button>
-          </div>
+
         </div>
 
         <div className="w-full flex-1">
@@ -661,11 +770,11 @@ function HomeView({
       </section>
 
       <section className="scroll-mt-24">
-        <div className="mb-8 max-w-3xl space-y-3">
+        <div className="mb-8 space-y-3">
           <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
             Diferenciais
           </p>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+          <h2 className="w-full text-[1.8rem] font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-[2rem] lg:whitespace-nowrap lg:text-[2.45rem]">
             Inteligencia, seguranca e acompanhamento em todas as etapas
           </h2>
         </div>

@@ -6,7 +6,7 @@ export function PlaceholderPage({
   description: string;
 }) {
   return (
-    <div className="rounded-[2rem] border border-white/50 bg-white/90 p-8 shadow-xl shadow-slate-900/5 backdrop-blur">
+    <div className="px-1 sm:px-0">
       <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
         Em breve
       </p>

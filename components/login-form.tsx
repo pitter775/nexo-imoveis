@@ -22,14 +22,14 @@ export function LoginForm({ redirectTo = '/' }: LoginFormProps) {
         </div>
         <div className="space-y-2">
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
-            Acesso seguro
+            Area exclusiva
           </p>
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-            Entrar na plataforma Nexo
+            Acesse sua conta Nexo
           </h1>
           <p className="text-sm leading-6 text-slate-500">
-            Use seu acesso cadastrado na plataforma. Administradores sao
-            levados direto ao ambiente de gestao.
+            Entre para acompanhar oportunidades analisadas, acessar seus materiais e
+            seguir com mais seguranca em cada etapa da jornada.
           </p>
         </div>
       </div>
@@ -84,7 +84,7 @@ export function LoginForm({ redirectTo = '/' }: LoginFormProps) {
       </form>
 
       <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-100 pt-5 text-sm text-slate-500">
-        <span>Painel de clientes e administradores</span>
+        <span>Acesso para clientes e equipe Nexo</span>
         <Link href="/" className="font-semibold text-primary hover:text-primary/80">
           Voltar ao site
         </Link>

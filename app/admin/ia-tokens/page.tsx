@@ -13,8 +13,8 @@ export default async function AdminIaTokensPage() {
   const overview = await getIaTokensOverview();
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-[2rem] border border-white/50 bg-white/90 p-6 shadow-xl shadow-slate-900/5 backdrop-blur sm:p-7">
+    <div className="space-y-6">
+      <section className="px-1 sm:px-0">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
             <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">

@@ -40,8 +40,8 @@ export function AdminUsuarioForm({
   const avatarSeed = initialValues?.email || initialValues?.nome || 'novo-usuario';
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-[2rem] border border-white/50 bg-white/90 p-6 shadow-xl shadow-slate-900/5 backdrop-blur">
+    <div className="space-y-6">
+      <div className="px-1 sm:px-0">
         <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
           Modulo de usuarios
         </p>
@@ -53,7 +53,7 @@ export function AdminUsuarioForm({
         </p>
       </div>
 
-      <form action={action} className="space-y-8 rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+      <form action={action} className="space-y-8 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:p-8">
         {initialValues?.id ? <input type="hidden" name="id" value={initialValues.id} /> : null}
 
         <div className="grid gap-8 xl:grid-cols-[220px_minmax(0,1fr)]">

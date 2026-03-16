@@ -30,7 +30,7 @@ export function AdminImovelDetalhesForm({
   initialValues,
 }: AdminImovelDetalhesFormProps) {
   return (
-    <form action={action} className="space-y-6 rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+    <form action={action} className="space-y-6 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:p-8">
       <input type="hidden" name="id" value={imovelId} />
 
       <div>
@@ -45,36 +45,36 @@ export function AdminImovelDetalhesForm({
         </p>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-12">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-12">
         <TextareaField
           label="Resumo executivo"
           name="resumo_executivo"
           defaultValue={initialValues?.resumo_executivo ?? ''}
-          className="xl:col-span-12"
+          className="md:col-span-2 xl:col-span-12"
         />
         <Field
           label="Ocupacao do imovel"
           name="ocupacao"
           defaultValue={initialValues?.ocupacao ?? ''}
-          className="xl:col-span-4"
+          className="md:col-span-1 xl:col-span-4"
         />
         <Field
           label="Matricula"
           name="matricula"
           defaultValue={initialValues?.matricula ?? ''}
-          className="xl:col-span-4"
+          className="md:col-span-1 xl:col-span-4"
         />
         <Field
           label="Cartorio"
           name="cartorio"
           defaultValue={initialValues?.cartorio ?? ''}
-          className="xl:col-span-4"
+          className="md:col-span-2 xl:col-span-4"
         />
         <Field
           label="Numero do processo"
           name="numero_processo"
           defaultValue={initialValues?.numero_processo ?? ''}
-          className="xl:col-span-6"
+          className="md:col-span-2 xl:col-span-6"
         />
         <Field
           label="Valor de mercado"
@@ -82,7 +82,7 @@ export function AdminImovelDetalhesForm({
           type="number"
           step="0.01"
           defaultValue={initialValues?.valor_mercado ?? ''}
-          className="xl:col-span-3"
+          className="md:col-span-1 xl:col-span-3"
         />
         <Field
           label="Lance recomendado"
@@ -90,7 +90,7 @@ export function AdminImovelDetalhesForm({
           type="number"
           step="0.01"
           defaultValue={initialValues?.lance_recomendado ?? ''}
-          className="xl:col-span-3"
+          className="md:col-span-1 xl:col-span-3"
         />
         <Field
           label="Lucro estimado"
@@ -98,7 +98,7 @@ export function AdminImovelDetalhesForm({
           type="number"
           step="0.01"
           defaultValue={initialValues?.lucro_estimado ?? ''}
-          className="xl:col-span-3"
+          className="md:col-span-1 xl:col-span-3"
         />
         <Field
           label="ROI estimado"
@@ -106,7 +106,7 @@ export function AdminImovelDetalhesForm({
           type="number"
           step="0.01"
           defaultValue={initialValues?.roi_estimado ?? ''}
-          className="xl:col-span-3"
+          className="md:col-span-1 xl:col-span-3"
         />
         <Field
           label="Divida de IPTU"
@@ -114,7 +114,7 @@ export function AdminImovelDetalhesForm({
           type="number"
           step="0.01"
           defaultValue={initialValues?.divida_iptu ?? ''}
-          className="xl:col-span-3"
+          className="md:col-span-1 xl:col-span-3"
         />
         <Field
           label="Divida de condominio"
@@ -122,31 +122,31 @@ export function AdminImovelDetalhesForm({
           type="number"
           step="0.01"
           defaultValue={initialValues?.divida_condominio ?? ''}
-          className="xl:col-span-3"
+          className="md:col-span-1 xl:col-span-3"
         />
         <TextareaField
           label="Analise do investimento"
           name="analise"
           defaultValue={initialValues?.analise ?? ''}
-          className="xl:col-span-12"
+          className="md:col-span-2 xl:col-span-12"
         />
         <TextareaField
           label="Riscos"
           name="riscos"
           defaultValue={initialValues?.riscos ?? ''}
-          className="xl:col-span-6"
+          className="md:col-span-2 xl:col-span-6"
         />
         <TextareaField
           label="Observacoes juridicas"
           name="observacoes_juridicas"
           defaultValue={initialValues?.observacoes_juridicas ?? ''}
-          className="xl:col-span-6"
+          className="md:col-span-2 xl:col-span-6"
         />
         <TextareaField
           label="Estrategia recomendada"
           name="estrategia"
           defaultValue={initialValues?.estrategia ?? ''}
-          className="xl:col-span-12"
+          className="md:col-span-2 xl:col-span-12"
         />
       </div>
 

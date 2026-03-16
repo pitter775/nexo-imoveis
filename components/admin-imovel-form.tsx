@@ -109,7 +109,7 @@ export function AdminImovelForm({
   return (
     <div className="space-y-8">
       {showIntro ? (
-        <div className="rounded-[2rem] border border-white/50 bg-white/90 p-6 shadow-xl shadow-slate-900/5 backdrop-blur">
+        <div className="px-1 sm:px-0">
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
             Modulo de imoveis
           </p>
@@ -124,8 +124,22 @@ export function AdminImovelForm({
 
       <form
         action={action}
-        className="space-y-8 rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm"
+        className="space-y-8 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:p-8"
       >
+        {!showIntro ? (
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+              Dados publicos
+            </p>
+            <h2 className="mt-2 text-2xl font-bold text-slate-900">
+              Dados do imovel
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Edite as informacoes principais exibidas na plataforma e usadas na vitrine.
+            </p>
+          </div>
+        ) : null}
+
         {initialValues?.id ? <input type="hidden" name="id" value={initialValues.id} /> : null}
         <input
           type="hidden"
@@ -138,13 +152,13 @@ export function AdminImovelForm({
           value={parseCurrencyInput(valorMinimoInput)}
         />
 
-        <div className="grid gap-6 xl:grid-cols-12">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-12">
           <Field
             label="Titulo"
             name="titulo"
             defaultValue={initialValues?.titulo ?? ''}
             required
-            className="xl:col-span-6"
+            className="md:col-span-2 xl:col-span-6"
           />
           <SelectField
             label="Tipo de propriedade"
@@ -152,7 +166,7 @@ export function AdminImovelForm({
             defaultValue={initialValues?.tipo_propriedade ?? ''}
             options={TIPO_PROPRIEDADE_OPTIONS}
             required
-            className="xl:col-span-3"
+            className="md:col-span-1 xl:col-span-3"
           />
           <SelectField
             label="Tipo de leilao"
@@ -160,7 +174,7 @@ export function AdminImovelForm({
             defaultValue={initialValues?.tipo_leilao ?? ''}
             options={TIPO_LEILAO_OPTIONS}
             required
-            className="xl:col-span-3"
+            className="md:col-span-1 xl:col-span-3"
           />
           <Field
             label="Valor de avaliacao"
@@ -169,7 +183,7 @@ export function AdminImovelForm({
             onChange={(event) => setValorAvaliacaoInput(maskCurrency(event.target.value))}
             inputMode="numeric"
             required
-            className="xl:col-span-3"
+            className="md:col-span-1 xl:col-span-3"
           />
           <Field
             label="Valor minimo"
@@ -178,7 +192,7 @@ export function AdminImovelForm({
             onChange={(event) => setValorMinimoInput(maskCurrency(event.target.value))}
             inputMode="numeric"
             required
-            className="xl:col-span-3"
+            className="md:col-span-1 xl:col-span-3"
           />
           <Field
             label="Total (m2)"
@@ -186,7 +200,7 @@ export function AdminImovelForm({
             type="number"
             step="0.01"
             defaultValue={initialValues?.area_total ?? ''}
-            className="xl:col-span-2"
+            className="md:col-span-1 xl:col-span-2"
           />
           <Field
             label="Construida (m2)"
@@ -194,28 +208,28 @@ export function AdminImovelForm({
             type="number"
             step="0.01"
             defaultValue={initialValues?.area_construida ?? ''}
-            className="xl:col-span-2"
+            className="md:col-span-1 xl:col-span-2"
           />
           <Field
             label="Quartos"
             name="quartos"
             type="number"
             defaultValue={initialValues?.quartos ?? ''}
-            className="xl:col-span-2"
+            className="md:col-span-1 xl:col-span-2"
           />
           <Field
             label="Banheiros"
             name="banheiros"
             type="number"
             defaultValue={initialValues?.banheiros ?? ''}
-            className="xl:col-span-2"
+            className="md:col-span-1 xl:col-span-2"
           />
           <Field
             label="Ano de construcao"
             name="ano_construcao"
             type="number"
             defaultValue={initialValues?.ano_construcao ?? ''}
-            className="xl:col-span-3"
+            className="md:col-span-1 xl:col-span-3"
           />
           <SelectField
             label="Status"
@@ -223,9 +237,9 @@ export function AdminImovelForm({
             defaultValue={initialValues?.status ?? 'ativo'}
             options={STATUS_OPTIONS}
             required
-            className="xl:col-span-2"
+            className="md:col-span-1 xl:col-span-2"
           />
-          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 xl:col-span-3 xl:self-end">
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 md:col-span-2 xl:col-span-3 xl:self-end">
             <input
               type="checkbox"
               name="destaque"
@@ -241,7 +255,7 @@ export function AdminImovelForm({
             name="ordem_destaque"
             type="number"
             defaultValue={initialValues?.ordem_destaque ?? ''}
-            className="xl:col-span-3"
+            className="md:col-span-1 xl:col-span-3"
           />
           <Field
             label="Data do leilao"
@@ -249,32 +263,32 @@ export function AdminImovelForm({
             type="datetime-local"
             defaultValue={toDatetimeLocal(initialValues?.data_leilao)}
             required
-            className="xl:col-span-4"
+            className="md:col-span-1 xl:col-span-4"
           />
           <Field
             label="Rua"
             name="rua"
             defaultValue={initialValues?.rua ?? ''}
-            className="xl:col-span-7"
+            className="md:col-span-2 xl:col-span-7"
           />
           <Field
             label="Numero"
             name="numero"
             defaultValue={initialValues?.numero ?? ''}
-            className="xl:col-span-2"
+            className="md:col-span-1 xl:col-span-2"
           />
           <Field
             label="Complemento"
             name="complemento"
             defaultValue={initialValues?.complemento ?? ''}
-            className="xl:col-span-3"
+            className="md:col-span-1 xl:col-span-3"
           />
           <Field
             label="Cidade"
             name="cidade"
             defaultValue={initialValues?.cidade ?? ''}
             required
-            className="xl:col-span-5"
+            className="md:col-span-1 xl:col-span-5"
           />
           <SelectField
             label="Estado"
@@ -282,7 +296,7 @@ export function AdminImovelForm({
             defaultValue={initialValues?.estado ?? ''}
             options={ESTADO_OPTIONS}
             required
-            className="xl:col-span-3"
+            className="md:col-span-1 xl:col-span-3"
           />
           <Field
             label="CEP"
@@ -290,7 +304,7 @@ export function AdminImovelForm({
             value={cepInput}
             onChange={(event) => setCepInput(maskCep(event.target.value))}
             inputMode="numeric"
-            className="xl:col-span-4"
+            className="md:col-span-1 xl:col-span-4"
           />
         </div>
 
