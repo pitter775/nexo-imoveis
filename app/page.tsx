@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Script from 'next/script';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowLeft,
@@ -570,7 +571,21 @@ export function PublicMarketplace({
 }
 
 export default function App() {
-  return <PublicMarketplace />;
+  return (
+    <>
+      <PublicMarketplace />
+      <Script
+        id="infrastudio-chat-widget"
+        src="https://infrastudio.vercel.app/chat-widget.js"
+        strategy="afterInteractive"
+        data-widget="nexo_leiloes"
+        data-title="nexo leiloes"
+        data-theme="dark"
+        data-accent="#2563eb"
+        data-transparent="true"
+      />
+    </>
+  );
 }
 
 function MarketplaceLoadingState({
