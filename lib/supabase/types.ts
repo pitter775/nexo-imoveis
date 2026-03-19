@@ -291,6 +291,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      leiloes: {
+        Row: {
+          id: string;
+          imovel_id: string | null;
+          data_inicio: string | null;
+          data_fim: string | null;
+          valor_inicial: number | null;
+          status: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          imovel_id?: string | null;
+          data_inicio?: string | null;
+          data_fim?: string | null;
+          valor_inicial?: number | null;
+          status?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          imovel_id?: string | null;
+          data_inicio?: string | null;
+          data_fim?: string | null;
+          valor_inicial?: number | null;
+          status?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
       users: {
         Row: {
           id: string;
