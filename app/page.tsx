@@ -3,8 +3,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import Script from 'next/script';
+import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowLeft,
@@ -39,6 +39,18 @@ import {
 import { logoutAction } from '@/app/actions/auth';
 import { ChatMessage, Property, User as UserType } from '@/lib/types';
 import { SiteFooter } from '@/components/site-footer';
+
+type InfraChatWindow = Window & {
+  InfraChat?: {
+    setContext: (context: {
+      title: string;
+      theme: string;
+      accent: string;
+      transparent: boolean;
+      id: string;
+    }) => void;
+  };
+};
 
 const HERO_FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1000';
@@ -571,21 +583,7 @@ export function PublicMarketplace({
 }
 
 export default function App() {
-  return (
-    <>
-      <PublicMarketplace />
-      <Script
-        id="infrastudio-chat-widget"
-        src="https://infrastudio.vercel.app/chat-widget.js"
-        strategy="afterInteractive"
-        data-widget="nexo_leiloes"
-        data-title="nexo leiloes"
-        data-theme="dark"
-        data-accent="#2563eb"
-        data-transparent="true"
-      />
-    </>
-  );
+  return <PublicMarketplace />;
 }
 
 function MarketplaceLoadingState({
@@ -721,6 +719,7 @@ function HomeView({
 
   return (
     <div className="space-y-12 pb-12">
+      <InfraChatHomeWidget />
       <section
         id="topo"
         className="flex scroll-mt-24 flex-col items-center gap-12 py-6 lg:flex-row"
@@ -1076,6 +1075,54 @@ function HomeView({
       </section>
 
     </div>
+  );
+}
+
+function InfraChatHomeWidget() {
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    let attempts = 0;
+    let intervalId = 0;
+
+    const applyContext = () => {
+      const infraChat = (window as InfraChatWindow).InfraChat;
+
+      if (!infraChat) {
+        attempts += 1;
+        if (attempts >= 40) {
+          window.clearInterval(intervalId);
+        }
+        return;
+      }
+
+      infraChat.setContext({
+        title: 'nexo leiloes',
+        theme: 'dark',
+        accent: '#2563eb',
+        transparent: true,
+        id: 'd4993358-4644-43e8-b0db-fa8fb5669caf',
+      });
+
+      window.clearInterval(intervalId);
+    };
+
+    intervalId = window.setInterval(applyContext, 300);
+    applyContext();
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  return (
+    <Script
+      id="infra-chat-widget"
+      src="https://infrastudio.vercel.app/chat.js"
+      strategy="afterInteractive"
+      data-projeto="nexo"
+      data-agente="agente-imovel"
+    />
   );
 }
 
