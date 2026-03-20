@@ -1100,8 +1100,8 @@ function InfraChatHomeWidget() {
 
       infraChat.setContext({
         title: 'nexo leiloes',
-        theme: 'dark',
-        accent: '#2563eb',
+        theme: 'light',
+        accent: '#ff6a00',
         transparent: true,
         id: 'd4993358-4644-43e8-b0db-fa8fb5669caf',
       });
