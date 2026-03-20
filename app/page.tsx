@@ -47,8 +47,36 @@ type InfraChatWindow = Window & {
       transparent: boolean;
       id: string;
     }) => void;
+    hide?: () => void;
+    destroy?: () => void;
   };
 };
+
+function cleanupInfraChatWidget() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const infraWindow = window as InfraChatWindow;
+
+  infraWindow.InfraChat?.hide?.();
+  infraWindow.InfraChat?.destroy?.();
+
+  document.getElementById('infra-chat-widget')?.remove();
+
+  document
+    .querySelectorAll(
+      [
+        '[id="infra-chat-root"]',
+        '[id*="infra-chat"]',
+        '[class*="infra-chat"]',
+        'iframe[src*="infrastudio.vercel.app"]',
+      ].join(','),
+    )
+    .forEach((element) => element.remove());
+
+  delete infraWindow.InfraChat;
+}
 
 const HERO_FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1000';
@@ -1083,7 +1111,12 @@ function InfraChatWidget({
   enabled?: boolean;
 }) {
   useEffect(() => {
-    if (!enabled || typeof window === 'undefined') {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (!enabled) {
+      cleanupInfraChatWidget();
       return;
     }
 
@@ -1115,7 +1148,10 @@ function InfraChatWidget({
     intervalId = window.setInterval(applyContext, 300);
     applyContext();
 
-    return () => window.clearInterval(intervalId);
+    return () => {
+      window.clearInterval(intervalId);
+      cleanupInfraChatWidget();
+    };
   }, [enabled, propertyId]);
 
   if (!enabled) {
