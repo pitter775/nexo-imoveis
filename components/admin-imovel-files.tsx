@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileText, LoaderCircle, Trash2, Upload } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { supabase } from '@/lib/supabase';
 
 export type ImovelArquivo = {
@@ -83,6 +84,13 @@ export function AdminImovelFiles({
     }, 5000);
   };
 
+  const pushProgress = (message: string) => {
+    setProgressMessage(message);
+    setProgressLog((current) =>
+      current.includes(message) ? current : [...current, message],
+    );
+  };
+
   const startProgressTicker = (fileName: string) => {
     stopProgressTicker();
 
@@ -100,11 +108,7 @@ export function AdminImovelFiles({
         return;
       }
 
-      const message = steps[index];
-      setProgressMessage(message);
-      setProgressLog((current) =>
-        current.includes(message) ? current : [...current, message],
-      );
+      pushProgress(steps[index]);
       index += 1;
     }, 2200);
   };
@@ -118,17 +122,14 @@ export function AdminImovelFiles({
     setFeedback(null);
     setProgressMessage(null);
     setProgressLog([]);
+
     startUploadTransition(async () => {
       const uploadedFiles: ImovelArquivo[] = [];
       const processingMessages: string[] = [];
 
       try {
         for (const [index, file] of Array.from(selectedFiles).entries()) {
-          setProgressMessage(`Enviando ${file.name} para o storage...`);
-          setProgressLog((current) => [
-            ...current,
-            `Enviando ${file.name} para o storage...`,
-          ]);
+          pushProgress(`Enviando ${file.name} para o storage...`);
           const fileName = `arquivos/imovel-${imovelId}/${Date.now()}-${index}-${file.name}`;
 
           const { error: uploadError } = await supabase.storage
@@ -143,12 +144,9 @@ export function AdminImovelFiles({
             .from('imoveis')
             .getPublicUrl(fileName);
 
-          setProgressMessage(`Lendo ${file.name} e mapeando os campos do PDF...`);
-          setProgressLog((current) => [
-            ...current,
-            `Lendo ${file.name} e mapeando os campos do PDF...`,
-          ]);
+          pushProgress(`Lendo ${file.name} e mapeando os campos do PDF...`);
           startProgressTicker(file.name);
+
           const response = await fetch(`/api/admin/imoveis/${imovelId}/arquivos`, {
             method: 'POST',
             headers: {
@@ -181,10 +179,14 @@ export function AdminImovelFiles({
               } | null;
             } | null;
           };
+
           uploadedFiles.push(data.arquivo);
 
           if (data.processamento?.status === 'concluido') {
-            processingMessages.push(`${file.name}: PDF lido e dados aproveitados no banco.`);
+            processingMessages.push(
+              `${file.name}: PDF lido e dados aproveitados no banco.`,
+            );
+
             if (data.processamento.extractedFields?.detalhes) {
               window.sessionStorage.setItem(
                 `admin-imovel-dossie-preview:${imovelId}`,
@@ -196,28 +198,21 @@ export function AdminImovelFiles({
                 }),
               );
             }
-            setProgressLog((current) => [
-              ...current,
-              `${file.name}: processamento concluido com sucesso.`,
-            ]);
+
+            pushProgress(`${file.name}: processamento concluido com sucesso.`);
           } else if (data.processamento?.status === 'erro') {
             processingMessages.push(
               `${file.name}: arquivo salvo, mas a leitura automatica falhou. ${data.processamento.error ?? ''}`.trim(),
             );
-            setProgressLog((current) => [
-              ...current,
+            pushProgress(
               `${file.name}: falha na leitura automatica. ${data.processamento?.error ?? ''}`.trim(),
-            ]);
+            );
           }
         }
 
         setFiles((current) => [...uploadedFiles, ...current]);
         setFeedback(processingMessages[0] ?? 'Arquivo enviado com sucesso.');
-        setProgressMessage('Processo concluido. Voce pode enviar outro arquivo.');
-        setProgressLog((current) => [
-          ...current,
-          'Processo concluido. Voce pode enviar outro arquivo.',
-        ]);
+        pushProgress('Processo concluido. Voce pode enviar outro arquivo.');
         router.refresh();
         scheduleUiCleanup();
 
@@ -238,8 +233,7 @@ export function AdminImovelFiles({
 
     startRemoveTransition(async () => {
       try {
-        setProgressMessage('Removendo arquivo...');
-        setProgressLog((current) => [...current, 'Removendo arquivo...']);
+        pushProgress('Removendo arquivo...');
         const response = await fetch(`/api/admin/imoveis/${imovelId}/arquivos`, {
           method: 'DELETE',
           headers: {
@@ -254,8 +248,7 @@ export function AdminImovelFiles({
 
         setFiles((current) => current.filter((file) => file.id !== arquivoId));
         router.refresh();
-        setProgressMessage('Arquivo removido com sucesso.');
-        setProgressLog((current) => [...current, 'Arquivo removido com sucesso.']);
+        pushProgress('Arquivo removido com sucesso.');
         scheduleUiCleanup();
       } catch (removeError) {
         console.error(removeError);
@@ -281,7 +274,9 @@ export function AdminImovelFiles({
 
       <div className="grid gap-4 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 md:grid-cols-2 xl:grid-cols-4">
         <label className="space-y-2">
-          <span className="text-sm font-semibold text-slate-700">Tipo de documento</span>
+          <span className="text-sm font-semibold text-slate-700">
+            Tipo de documento
+          </span>
           <select
             value={tipoDocumento}
             onChange={(event) => setTipoDocumento(event.target.value)}
@@ -315,8 +310,16 @@ export function AdminImovelFiles({
           Visivel pagantes
         </label>
 
-        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90">
-          {isUploading ? <LoaderCircle className="size-4 animate-spin" /> : <Upload className="size-4" />}
+        <motion.label
+          whileHover={{ y: -2, scale: 1.01 }}
+          whileTap={{ scale: 0.985 }}
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
+        >
+          {isUploading ? (
+            <LoaderCircle className="size-4 animate-spin" />
+          ) : (
+            <Upload className="size-4" />
+          )}
           {isUploading ? 'Enviando...' : 'Enviar arquivos'}
           <input
             ref={inputRef}
@@ -325,84 +328,173 @@ export function AdminImovelFiles({
             className="hidden"
             onChange={(event) => handleUpload(event.target.files)}
           />
-        </label>
+        </motion.label>
       </div>
 
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
+      <AnimatePresence mode="popLayout">
+        {error ? (
+          <motion.div
+            key="upload-error"
+            initial={{ opacity: 0, y: 12, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.985 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm"
+          >
+            {error}
+          </motion.div>
+        ) : null}
 
-      {feedback ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {feedback}
-        </div>
-      ) : null}
+        {feedback ? (
+          <motion.div
+            key="upload-feedback"
+            initial={{ opacity: 0, y: 12, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.985 }}
+            transition={{ duration: 0.24, ease: 'easeOut' }}
+            className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white px-4 py-3 text-sm text-emerald-700 shadow-[0_18px_45px_-30px_rgba(16,185,129,0.55)]"
+          >
+            {feedback}
+          </motion.div>
+        ) : null}
 
-      {progressMessage ? (
-        <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-          <p className="font-semibold">{progressMessage}</p>
-          {progressLog.length > 0 ? (
-            <div className="mt-3 space-y-1 text-xs text-sky-800/90">
-              {progressLog.map((item, index) => (
-                <p key={`${item}-${index}`}>{`${index + 1}. ${item}`}</p>
-              ))}
+        {progressMessage ? (
+          <motion.div
+            key="upload-progress"
+            initial={{ opacity: 0, y: 14, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            transition={{ duration: 0.28, ease: 'easeOut' }}
+            className="overflow-hidden rounded-[1.75rem] border border-sky-200 bg-[linear-gradient(135deg,rgba(14,165,233,0.12),rgba(255,255,255,0.96))] px-4 py-4 text-sm text-sky-700 shadow-[0_24px_60px_-38px_rgba(14,165,233,0.55)]"
+          >
+            <div className="flex items-start gap-3">
+              <motion.div
+                animate={{ scale: [1, 1.12, 1], opacity: [0.7, 1, 0.7] }}
+                transition={{
+                  duration: 1.8,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'easeInOut',
+                }}
+                className="mt-1 size-2.5 shrink-0 rounded-full bg-sky-500"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">{progressMessage}</p>
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/70">
+                  <motion.div
+                    className="h-full rounded-full bg-sky-500"
+                    initial={{ x: '-100%' }}
+                    animate={{ x: ['-100%', '0%', '100%'] }}
+                    transition={{
+                      duration: 1.7,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: 'easeInOut',
+                    }}
+                  />
+                </div>
+                {progressLog.length > 0 ? (
+                  <div className="mt-3 space-y-1.5 text-xs text-sky-800/90">
+                    {progressLog.map((item, index) => (
+                      <motion.p
+                        key={`${item}-${index}`}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.2,
+                          delay: Math.min(index * 0.04, 0.24),
+                        }}
+                      >
+                        {`${index + 1}. ${item}`}
+                      </motion.p>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
-          ) : null}
-        </div>
-      ) : null}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <div className="space-y-3">
-        {files.map((file) => (
-          <div
-            key={file.id}
-            className="flex flex-col gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 md:flex-row md:items-center md:justify-between"
-          >
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex size-11 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
-                <FileText className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate font-semibold text-slate-900">
-                  {file.nome_arquivo ?? 'Arquivo sem nome'}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {(file.tipo_documento ?? 'outros').toUpperCase()} ·{' '}
-                  {file.visivel_publico ? 'Publico' : 'Nao publico'} ·{' '}
-                  {file.visivel_pagantes ? 'Pagantes' : 'Nao pagantes'}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {file.url_storage ? (
-                <a
-                  href={file.url_storage}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm font-semibold text-primary transition hover:text-primary/80"
+        <AnimatePresence initial={false}>
+          {files.map((file, index) => (
+            <motion.div
+              key={file.id}
+              layout
+              initial={{ opacity: 0, y: 18, scale: 0.985 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -14, scale: 0.985 }}
+              transition={{
+                duration: 0.24,
+                delay: Math.min(index * 0.03, 0.12),
+                ease: 'easeOut',
+              }}
+              whileHover={{ y: -2 }}
+              className="flex flex-col gap-4 rounded-[1.5rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(241,245,249,0.92))] p-4 shadow-[0_20px_45px_-38px_rgba(15,23,42,0.45)] md:flex-row md:items-center md:justify-between"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <motion.div
+                  initial={{ rotate: -6, scale: 0.92 }}
+                  animate={{ rotate: 0, scale: 1 }}
+                  transition={{
+                    duration: 0.22,
+                    delay: Math.min(index * 0.03, 0.12),
+                  }}
+                  className="flex size-11 items-center justify-center rounded-2xl bg-white text-primary shadow-sm"
                 >
-                  Abrir
-                </a>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => handleRemove(file.id)}
-                disabled={isRemoving}
-                className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isRemoving ? <LoaderCircle className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
-                Remover
-              </button>
-            </div>
-          </div>
-        ))}
+                  <FileText className="size-5" />
+                </motion.div>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-slate-900">
+                    {file.nome_arquivo ?? 'Arquivo sem nome'}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {(file.tipo_documento ?? 'outros').toUpperCase()} ·{' '}
+                    {file.visivel_publico ? 'Publico' : 'Nao publico'} ·{' '}
+                    {file.visivel_pagantes ? 'Pagantes' : 'Nao pagantes'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {file.url_storage ? (
+                  <motion.a
+                    whileHover={{ y: -1 }}
+                    href={file.url_storage}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm font-semibold text-primary transition hover:text-primary/80"
+                  >
+                    Abrir
+                  </motion.a>
+                ) : null}
+                <motion.button
+                  whileHover={{ y: -1, scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  onClick={() => handleRemove(file.id)}
+                  disabled={isRemoving}
+                  className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isRemoving ? (
+                    <LoaderCircle className="size-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="size-4" />
+                  )}
+                  Remover
+                </motion.button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
         {files.length === 0 ? (
-          <div className="rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50 p-8 text-sm text-slate-500">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-[1.75rem] border border-dashed border-slate-300 bg-[linear-gradient(180deg,rgba(248,250,252,0.9),rgba(241,245,249,0.9))] p-8 text-sm text-slate-500"
+          >
             Nenhum arquivo cadastrado para este imovel.
-          </div>
+          </motion.div>
         ) : null}
       </div>
     </section>
