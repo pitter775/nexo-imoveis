@@ -21,13 +21,11 @@ import {
   Heart,
   Home,
   Landmark,
-  LoaderCircle,
   MapPin,
   Menu,
   MessageCircle,
   Scale,
   Search,
-  Send,
   Share2,
   ShieldCheck,
   Square,
@@ -37,7 +35,7 @@ import {
   X,
 } from 'lucide-react';
 import { logoutAction } from '@/app/actions/auth';
-import { ChatMessage, Property, User as UserType } from '@/lib/types';
+import { Property, User as UserType } from '@/lib/types';
 import { SiteFooter } from '@/components/site-footer';
 
 type InfraChatWindow = Window & {
@@ -719,7 +717,6 @@ function HomeView({
 
   return (
     <div className="space-y-12 pb-12">
-      <InfraChatHomeWidget />
       <section
         id="topo"
         className="flex scroll-mt-24 flex-col items-center gap-12 py-6 lg:flex-row"
@@ -1078,9 +1075,15 @@ function HomeView({
   );
 }
 
-function InfraChatHomeWidget() {
+function InfraChatWidget({
+  propertyId,
+  enabled = true,
+}: {
+  propertyId: string;
+  enabled?: boolean;
+}) {
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    if (!enabled || typeof window === 'undefined') {
       return;
     }
 
@@ -1103,7 +1106,7 @@ function InfraChatHomeWidget() {
         theme: 'light',
         accent: '#ff6a00',
         transparent: true,
-        id: 'd4993358-4644-43e8-b0db-fa8fb5669caf',
+        id: propertyId,
       });
 
       window.clearInterval(intervalId);
@@ -1113,7 +1116,11 @@ function InfraChatHomeWidget() {
     applyContext();
 
     return () => window.clearInterval(intervalId);
-  }, []);
+  }, [enabled, propertyId]);
+
+  if (!enabled) {
+    return null;
+  }
 
   return (
     <Script
@@ -1509,146 +1516,18 @@ function PropertyDetailsView({
   const isAdmin = user?.tipo_usuario === 'admin';
   const [hasUnlockedPremium, setHasUnlockedPremium] = useState(false);
   const [activePremiumTab, setActivePremiumTab] = useState<'geral' | 'dossie' | 'analise' | 'arquivos'>('geral');
-  const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
-  const [isDesktopChatVisible, setIsDesktopChatVisible] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [chatConversationId, setChatConversationId] = useState<string | null>(null);
-  const [isSubmittingChat, setIsSubmittingChat] = useState(false);
-  const [isLoadingChatHistory, setIsLoadingChatHistory] = useState(false);
-  const [hasAttemptedHistoryLoad, setHasAttemptedHistoryLoad] = useState(false);
 
   useEffect(() => {
     setActiveImage(property.image_url);
     setHasUnlockedPremium(false);
     setActivePremiumTab('geral');
-    setIsMobileChatOpen(false);
-    setIsDesktopChatVisible(false);
-    setChatMessages(createInitialChatMessages(property.title));
-    setChatInput('');
-    setChatConversationId(null);
-    setIsSubmittingChat(false);
-    setIsLoadingChatHistory(false);
-    setHasAttemptedHistoryLoad(false);
   }, [property.id, property.image_url]);
-
-  useEffect(() => {
-    if (!hasUnlockedPremium || !user?.id || hasAttemptedHistoryLoad) {
-      return;
-    }
-
-    let isCancelled = false;
-
-    async function loadChatHistory() {
-      try {
-        setIsLoadingChatHistory(true);
-
-        const response = await fetch(
-          `/api/chat/imovel?propertyId=${encodeURIComponent(property.id)}`,
-          { cache: 'no-store' },
-        );
-
-        const data = (await response.json()) as {
-          conversationId?: string | null;
-          messages?: ChatMessage[];
-          error?: string;
-        };
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Falha ao carregar historico do chat.');
-        }
-
-        if (isCancelled) {
-          return;
-        }
-
-        if ((data.messages?.length ?? 0) > 0) {
-          setChatMessages(data.messages ?? []);
-          setChatConversationId(data.conversationId ?? null);
-        } else {
-          setChatMessages(createInitialChatMessages(property.title));
-          setChatConversationId(null);
-        }
-      } catch (error) {
-        console.error(error);
-
-        if (!isCancelled) {
-          setChatMessages(createInitialChatMessages(property.title));
-          setChatConversationId(null);
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoadingChatHistory(false);
-          setHasAttemptedHistoryLoad(true);
-        }
-      }
-    }
-
-    loadChatHistory();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [hasAttemptedHistoryLoad, hasUnlockedPremium, property.id, property.title, user?.id]);
 
   const gallery = property.images?.length ? property.images : [property.image_url];
 
   const handleUnlockInformation = () => {
     setHasUnlockedPremium(true);
     setActivePremiumTab('dossie');
-    setIsMobileChatOpen(true);
-    setIsDesktopChatVisible(true);
-  };
-
-  const submitChatMessage = async () => {
-    const trimmedInput = chatInput.trim();
-
-    if (!trimmedInput || isSubmittingChat || isLoadingChatHistory) {
-      return;
-    }
-
-    setChatMessages((current) => [...current, { role: 'user', text: trimmedInput }]);
-    setChatInput('');
-
-    try {
-      setIsSubmittingChat(true);
-
-      const response = await fetch('/api/chat/imovel', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          propertyId: property.id,
-          message: trimmedInput,
-          conversationId: chatConversationId,
-        }),
-      });
-
-      const data = (await response.json()) as {
-        conversationId?: string;
-        reply?: string;
-        error?: string;
-      };
-
-      if (!response.ok || !data.reply) {
-        throw new Error(data.error || 'Falha ao responder no chat.');
-      }
-
-      setChatConversationId(data.conversationId ?? null);
-      setChatMessages((current) => [...current, { role: 'model', text: data.reply ?? '' }]);
-    } catch (error) {
-      console.error(error);
-      setChatMessages((current) => [
-        ...current,
-        {
-          role: 'model',
-          text: 'Nao consegui responder agora. Tente novamente em alguns instantes.',
-        },
-      ]);
-    } finally {
-      setIsSubmittingChat(false);
-    }
   };
 
   return (
@@ -1962,151 +1841,8 @@ function PropertyDetailsView({
       </div>
       </motion.div>
 
-      <PropertyChatAssistant
-        isEnabled={hasUnlockedPremium}
-        isDesktopVisible={isDesktopChatVisible}
-        isMobileOpen={isMobileChatOpen}
-        property={property}
-        messages={chatMessages}
-        input={chatInput}
-        onInputChange={setChatInput}
-        onSubmit={submitChatMessage}
-        isSubmitting={isSubmittingChat}
-        isLoadingHistory={isLoadingChatHistory}
-        onDesktopMinimize={() => setIsDesktopChatVisible(false)}
-        onDesktopExpand={() => setIsDesktopChatVisible(true)}
-        onDesktopClose={() => setIsDesktopChatVisible(false)}
-        onMobileClose={() => setIsMobileChatOpen(false)}
-      />
+      <InfraChatWidget propertyId={property.id} enabled={hasUnlockedPremium} />
     </>
-  );
-}
-
-function PropertyChatAssistant({
-  isEnabled,
-  isDesktopVisible,
-  isMobileOpen,
-  property,
-  messages,
-  input,
-  onInputChange,
-  onSubmit,
-  isSubmitting,
-  isLoadingHistory,
-  onDesktopMinimize,
-  onDesktopExpand,
-  onDesktopClose,
-  onMobileClose,
-}: {
-  isEnabled: boolean;
-  isDesktopVisible: boolean;
-  isMobileOpen: boolean;
-  property: Property;
-  messages: ChatMessage[];
-  input: string;
-  onInputChange: (value: string) => void;
-  onSubmit: () => void | Promise<void>;
-  isSubmitting: boolean;
-  isLoadingHistory: boolean;
-  onDesktopMinimize: () => void;
-  onDesktopExpand: () => void;
-  onDesktopClose: () => void;
-  onMobileClose: () => void;
-}) {
-  return (
-    <AnimatePresence>
-      {isEnabled ? (
-        <>
-          {isMobileOpen ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[70] bg-slate-950/45 backdrop-blur-sm lg:hidden"
-              onClick={onMobileClose}
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 24, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 24, scale: 0.98 }}
-                transition={{ duration: 0.2 }}
-                className="absolute inset-x-4 bottom-4 top-auto mx-auto flex max-h-[85vh] w-auto max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl sm:inset-x-6"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <ChatPanelHeader
-                  propertyTitle={property.title}
-                  onClose={onMobileClose}
-                />
-                <ChatMessages messages={messages} isLoadingHistory={isLoadingHistory} />
-                <ChatComposer
-                  input={input}
-                  onChange={onInputChange}
-                  onSubmit={onSubmit}
-                  isSubmitting={isSubmitting}
-                  isLoadingHistory={isLoadingHistory}
-                />
-              </motion.div>
-            </motion.div>
-          ) : null}
-
-          <div className="fixed bottom-6 right-6 z-[70] hidden lg:block">
-            {!isDesktopVisible ? (
-              <button
-                type="button"
-                onClick={onDesktopExpand}
-                className="inline-flex items-center gap-3 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white shadow-2xl shadow-slate-900/20 transition hover:bg-slate-900"
-              >
-                <MessageCircle className="size-5" />
-                Abrir assistente
-              </button>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, y: 24, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 24, scale: 0.98 }}
-                transition={{ duration: 0.2 }}
-                className="flex h-[70vh] max-h-[680px] w-[420px] flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-900/15"
-              >
-                <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary/80">
-                      Atendimento do imovel
-                    </p>
-                    <h3 className="mt-2 text-xl font-bold text-slate-900">
-                      {property.title}
-                    </h3>
-                  </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={onDesktopMinimize}
-                    className="inline-flex size-10 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
-                  >
-                    <MessageCircle className="size-4" />
-                    </button>
-                  <button
-                    type="button"
-                    onClick={onDesktopClose}
-                    className="inline-flex size-10 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
-                  >
-                    <X className="size-5" />
-                    </button>
-                  </div>
-                </div>
-                <ChatMessages messages={messages} isLoadingHistory={isLoadingHistory} />
-                <ChatComposer
-                  input={input}
-                  onChange={onInputChange}
-                  onSubmit={onSubmit}
-                  isSubmitting={isSubmitting}
-                  isLoadingHistory={isLoadingHistory}
-                />
-              </motion.div>
-            )}
-          </div>
-        </>
-      ) : null}
-    </AnimatePresence>
   );
 }
 
@@ -2144,123 +1880,6 @@ function LongDetailBlock({
       </p>
     </div>
   );
-}
-
-function ChatPanelHeader({
-  propertyTitle,
-  onClose,
-}: {
-  propertyTitle: string;
-  onClose: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary/80">
-          Atendimento do imovel
-        </p>
-        <h3 className="mt-2 text-xl font-bold text-slate-900">{propertyTitle}</h3>
-      </div>
-      <button
-        type="button"
-        onClick={onClose}
-        className="inline-flex size-10 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
-      >
-        <X className="size-5" />
-      </button>
-    </div>
-  );
-}
-
-function ChatMessages({
-  messages,
-  isLoadingHistory,
-}: {
-  messages: ChatMessage[];
-  isLoadingHistory: boolean;
-}) {
-  return (
-    <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/70 px-6 py-5">
-      {isLoadingHistory ? (
-        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-          <LoaderCircle className="size-4 animate-spin" />
-          Carregando historico da conversa...
-        </div>
-      ) : null}
-      {messages.map((message, index) => (
-        <div
-          key={`${message.role}-${index}`}
-          className={`flex ${
-            message.role === 'user' ? 'justify-end' : 'justify-start'
-          }`}
-        >
-          <div
-            className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm ${
-              message.role === 'user'
-                ? 'bg-primary text-white'
-                : 'border border-slate-200 bg-white text-slate-700'
-            }`}
-          >
-            {message.text}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ChatComposer({
-  input,
-  onChange,
-  onSubmit,
-  isSubmitting,
-  isLoadingHistory,
-}: {
-  input: string;
-  onChange: (value: string) => void;
-  onSubmit: () => void | Promise<void>;
-  isSubmitting: boolean;
-  isLoadingHistory: boolean;
-}) {
-  return (
-    <div className="border-t border-slate-200 bg-white px-6 py-5">
-      <div className="flex items-end gap-3">
-        <textarea
-          value={input}
-          onChange={(event) => onChange(event.target.value)}
-          rows={2}
-          placeholder={
-            isLoadingHistory
-              ? 'Carregando historico da conversa...'
-              : 'Escreva sua mensagem sobre este imovel'
-          }
-          disabled={isSubmitting || isLoadingHistory}
-          className="min-h-[56px] flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
-        />
-        <button
-          type="button"
-          onClick={onSubmit}
-          disabled={isSubmitting || isLoadingHistory}
-          className="inline-flex size-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
-        >
-          {isSubmitting || isLoadingHistory ? (
-            <LoaderCircle className="size-4 animate-spin" />
-          ) : (
-            <Send className="size-4" />
-          )}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function createInitialChatMessages(propertyTitle: string): ChatMessage[] {
-  return [
-    {
-      role: 'model',
-      text: `Oi! Posso te ajudar com informacoes sobre ${propertyTitle}. Pergunte sobre valor, leilao, localizacao ou caracteristicas do imovel.`,
-    },
-  ];
 }
 
 function AdminEditPropertyLink({
