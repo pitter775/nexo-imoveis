@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { FileText, LoaderCircle, Trash2, Upload } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -33,14 +34,80 @@ export function AdminImovelFiles({
   imovelId,
   initialFiles,
 }: AdminImovelFilesProps) {
+  const router = useRouter();
+  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const clearUiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState(initialFiles);
   const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [progressMessage, setProgressMessage] = useState<string | null>(null);
+  const [progressLog, setProgressLog] = useState<string[]>([]);
   const [tipoDocumento, setTipoDocumento] = useState('edital');
   const [visivelPublico, setVisivelPublico] = useState(false);
   const [visivelPagantes, setVisivelPagantes] = useState(true);
   const [isUploading, startUploadTransition] = useTransition();
   const [isRemoving, startRemoveTransition] = useTransition();
+
+  useEffect(() => {
+    return () => {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+      }
+      if (clearUiTimerRef.current) {
+        clearTimeout(clearUiTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    setFiles(initialFiles);
+  }, [initialFiles]);
+
+  const stopProgressTicker = () => {
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+  };
+
+  const scheduleUiCleanup = () => {
+    if (clearUiTimerRef.current) {
+      clearTimeout(clearUiTimerRef.current);
+    }
+
+    clearUiTimerRef.current = setTimeout(() => {
+      setFeedback(null);
+      setProgressMessage(null);
+      setProgressLog([]);
+    }, 5000);
+  };
+
+  const startProgressTicker = (fileName: string) => {
+    stopProgressTicker();
+
+    const steps = [
+      `Analisando a estrutura do PDF ${fileName}...`,
+      `Identificando campos principais do documento ${fileName}...`,
+      `Mapeando os dados do PDF ${fileName} para o cadastro...`,
+      `Salvando os campos encontrados no banco de dados...`,
+    ];
+
+    let index = 0;
+    progressTimerRef.current = setInterval(() => {
+      if (index >= steps.length) {
+        stopProgressTicker();
+        return;
+      }
+
+      const message = steps[index];
+      setProgressMessage(message);
+      setProgressLog((current) =>
+        current.includes(message) ? current : [...current, message],
+      );
+      index += 1;
+    }, 2200);
+  };
 
   const handleUpload = async (selectedFiles: FileList | null) => {
     if (!selectedFiles?.length) {
@@ -48,11 +115,20 @@ export function AdminImovelFiles({
     }
 
     setError(null);
+    setFeedback(null);
+    setProgressMessage(null);
+    setProgressLog([]);
     startUploadTransition(async () => {
       const uploadedFiles: ImovelArquivo[] = [];
+      const processingMessages: string[] = [];
 
       try {
         for (const [index, file] of Array.from(selectedFiles).entries()) {
+          setProgressMessage(`Enviando ${file.name} para o storage...`);
+          setProgressLog((current) => [
+            ...current,
+            `Enviando ${file.name} para o storage...`,
+          ]);
           const fileName = `arquivos/imovel-${imovelId}/${Date.now()}-${index}-${file.name}`;
 
           const { error: uploadError } = await supabase.storage
@@ -67,6 +143,12 @@ export function AdminImovelFiles({
             .from('imoveis')
             .getPublicUrl(fileName);
 
+          setProgressMessage(`Lendo ${file.name} e mapeando os campos do PDF...`);
+          setProgressLog((current) => [
+            ...current,
+            `Lendo ${file.name} e mapeando os campos do PDF...`,
+          ]);
+          startProgressTicker(file.name);
           const response = await fetch(`/api/admin/imoveis/${imovelId}/arquivos`, {
             method: 'POST',
             headers: {
@@ -86,18 +168,67 @@ export function AdminImovelFiles({
             throw new Error('Nao foi possivel salvar o arquivo do dossie.');
           }
 
-          const data = (await response.json()) as { arquivo: ImovelArquivo };
+          stopProgressTicker();
+
+          const data = (await response.json()) as {
+            arquivo: ImovelArquivo;
+            processamento?: {
+              status?: string;
+              error?: string;
+              summary?: string | null;
+              extractedFields?: {
+                detalhes?: Record<string, unknown>;
+              } | null;
+            } | null;
+          };
           uploadedFiles.push(data.arquivo);
+
+          if (data.processamento?.status === 'concluido') {
+            processingMessages.push(`${file.name}: PDF lido e dados aproveitados no banco.`);
+            if (data.processamento.extractedFields?.detalhes) {
+              window.sessionStorage.setItem(
+                `admin-imovel-dossie-preview:${imovelId}`,
+                JSON.stringify(data.processamento.extractedFields.detalhes),
+              );
+              window.dispatchEvent(
+                new CustomEvent('imovel-dossie-updated', {
+                  detail: data.processamento.extractedFields.detalhes,
+                }),
+              );
+            }
+            setProgressLog((current) => [
+              ...current,
+              `${file.name}: processamento concluido com sucesso.`,
+            ]);
+          } else if (data.processamento?.status === 'erro') {
+            processingMessages.push(
+              `${file.name}: arquivo salvo, mas a leitura automatica falhou. ${data.processamento.error ?? ''}`.trim(),
+            );
+            setProgressLog((current) => [
+              ...current,
+              `${file.name}: falha na leitura automatica. ${data.processamento?.error ?? ''}`.trim(),
+            ]);
+          }
         }
 
         setFiles((current) => [...uploadedFiles, ...current]);
+        setFeedback(processingMessages[0] ?? 'Arquivo enviado com sucesso.');
+        setProgressMessage('Processo concluido. Voce pode enviar outro arquivo.');
+        setProgressLog((current) => [
+          ...current,
+          'Processo concluido. Voce pode enviar outro arquivo.',
+        ]);
+        router.refresh();
+        scheduleUiCleanup();
 
         if (inputRef.current) {
           inputRef.current.value = '';
         }
       } catch (uploadError) {
         console.error(uploadError);
+        stopProgressTicker();
         setError('Nao foi possivel concluir o upload dos arquivos.');
+        setProgressMessage(null);
       }
     });
   };
@@ -107,6 +238,8 @@ export function AdminImovelFiles({
 
     startRemoveTransition(async () => {
       try {
+        setProgressMessage('Removendo arquivo...');
+        setProgressLog((current) => [...current, 'Removendo arquivo...']);
         const response = await fetch(`/api/admin/imoveis/${imovelId}/arquivos`, {
           method: 'DELETE',
           headers: {
@@ -120,9 +253,14 @@ export function AdminImovelFiles({
         }
 
         setFiles((current) => current.filter((file) => file.id !== arquivoId));
+        router.refresh();
+        setProgressMessage('Arquivo removido com sucesso.');
+        setProgressLog((current) => [...current, 'Arquivo removido com sucesso.']);
+        scheduleUiCleanup();
       } catch (removeError) {
         console.error(removeError);
         setError('Nao foi possivel remover o arquivo selecionado.');
+        setProgressMessage(null);
       }
     });
   };
@@ -193,6 +331,25 @@ export function AdminImovelFiles({
       {error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
+        </div>
+      ) : null}
+
+      {feedback ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {feedback}
+        </div>
+      ) : null}
+
+      {progressMessage ? (
+        <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
+          <p className="font-semibold">{progressMessage}</p>
+          {progressLog.length > 0 ? (
+            <div className="mt-3 space-y-1 text-xs text-sky-800/90">
+              {progressLog.map((item, index) => (
+                <p key={`${item}-${index}`}>{`${index + 1}. ${item}`}</p>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

@@ -1,3 +1,7 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
 type ImovelDetalhesFormValues = {
   id?: string;
   imovel_id?: string;
@@ -29,6 +33,59 @@ export function AdminImovelDetalhesForm({
   action,
   initialValues,
 }: AdminImovelDetalhesFormProps) {
+  const storageKey = `admin-imovel-dossie-preview:${imovelId}`;
+  const [values, setValues] = useState<ImovelDetalhesFormValues>(
+    initialValues ?? {},
+  );
+
+  useEffect(() => {
+    setValues(initialValues ?? {});
+  }, [initialValues]);
+
+  useEffect(() => {
+    const stored = window.sessionStorage.getItem(storageKey);
+    if (!stored) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(stored) as Partial<ImovelDetalhesFormValues>;
+      setValues((current) => ({
+        ...current,
+        ...Object.fromEntries(
+          Object.entries(parsed).filter(
+            ([, value]) => value !== undefined && value !== null && value !== '',
+          ),
+        ),
+      }));
+    } catch {
+      window.sessionStorage.removeItem(storageKey);
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
+    const handleAutoFill = (event: Event) => {
+      const customEvent = event as CustomEvent<Partial<ImovelDetalhesFormValues>>;
+      const nextValues = customEvent.detail ?? {};
+      const filteredValues = Object.fromEntries(
+        Object.entries(nextValues).filter(
+          ([, value]) => value !== undefined && value !== null && value !== '',
+        ),
+      );
+
+      window.sessionStorage.setItem(storageKey, JSON.stringify(filteredValues));
+
+      setValues((current) => ({
+        ...current,
+        ...filteredValues,
+      }));
+    };
+
+    window.addEventListener('imovel-dossie-updated', handleAutoFill);
+    return () =>
+      window.removeEventListener('imovel-dossie-updated', handleAutoFill);
+  }, [storageKey]);
+
   return (
     <form action={action} className="space-y-6 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:p-8">
       <input type="hidden" name="id" value={imovelId} />
@@ -49,31 +106,36 @@ export function AdminImovelDetalhesForm({
         <TextareaField
           label="Resumo executivo"
           name="resumo_executivo"
-          defaultValue={initialValues?.resumo_executivo ?? ''}
+          value={values.resumo_executivo ?? ''}
+          onChange={(value) => setValues((current) => ({ ...current, resumo_executivo: value }))}
           className="md:col-span-2 xl:col-span-12"
         />
         <Field
           label="Ocupacao do imovel"
           name="ocupacao"
-          defaultValue={initialValues?.ocupacao ?? ''}
+          value={values.ocupacao ?? ''}
+          onChange={(value) => setValues((current) => ({ ...current, ocupacao: value }))}
           className="md:col-span-1 xl:col-span-4"
         />
         <Field
           label="Matricula"
           name="matricula"
-          defaultValue={initialValues?.matricula ?? ''}
+          value={values.matricula ?? ''}
+          onChange={(value) => setValues((current) => ({ ...current, matricula: value }))}
           className="md:col-span-1 xl:col-span-4"
         />
         <Field
           label="Cartorio"
           name="cartorio"
-          defaultValue={initialValues?.cartorio ?? ''}
+          value={values.cartorio ?? ''}
+          onChange={(value) => setValues((current) => ({ ...current, cartorio: value }))}
           className="md:col-span-2 xl:col-span-4"
         />
         <Field
           label="Numero do processo"
           name="numero_processo"
-          defaultValue={initialValues?.numero_processo ?? ''}
+          value={values.numero_processo ?? ''}
+          onChange={(value) => setValues((current) => ({ ...current, numero_processo: value }))}
           className="md:col-span-2 xl:col-span-6"
         />
         <Field
@@ -81,7 +143,8 @@ export function AdminImovelDetalhesForm({
           name="valor_mercado"
           type="number"
           step="0.01"
-          defaultValue={initialValues?.valor_mercado ?? ''}
+          value={formatNumericValue(values.valor_mercado)}
+          onChange={(value) => setValues((current) => ({ ...current, valor_mercado: parseNumericValue(value) }))}
           className="md:col-span-1 xl:col-span-3"
         />
         <Field
@@ -89,7 +152,8 @@ export function AdminImovelDetalhesForm({
           name="lance_recomendado"
           type="number"
           step="0.01"
-          defaultValue={initialValues?.lance_recomendado ?? ''}
+          value={formatNumericValue(values.lance_recomendado)}
+          onChange={(value) => setValues((current) => ({ ...current, lance_recomendado: parseNumericValue(value) }))}
           className="md:col-span-1 xl:col-span-3"
         />
         <Field
@@ -97,7 +161,8 @@ export function AdminImovelDetalhesForm({
           name="lucro_estimado"
           type="number"
           step="0.01"
-          defaultValue={initialValues?.lucro_estimado ?? ''}
+          value={formatNumericValue(values.lucro_estimado)}
+          onChange={(value) => setValues((current) => ({ ...current, lucro_estimado: parseNumericValue(value) }))}
           className="md:col-span-1 xl:col-span-3"
         />
         <Field
@@ -105,7 +170,8 @@ export function AdminImovelDetalhesForm({
           name="roi_estimado"
           type="number"
           step="0.01"
-          defaultValue={initialValues?.roi_estimado ?? ''}
+          value={formatNumericValue(values.roi_estimado)}
+          onChange={(value) => setValues((current) => ({ ...current, roi_estimado: parseNumericValue(value) }))}
           className="md:col-span-1 xl:col-span-3"
         />
         <Field
@@ -113,7 +179,8 @@ export function AdminImovelDetalhesForm({
           name="divida_iptu"
           type="number"
           step="0.01"
-          defaultValue={initialValues?.divida_iptu ?? ''}
+          value={formatNumericValue(values.divida_iptu)}
+          onChange={(value) => setValues((current) => ({ ...current, divida_iptu: parseNumericValue(value) }))}
           className="md:col-span-1 xl:col-span-3"
         />
         <Field
@@ -121,31 +188,36 @@ export function AdminImovelDetalhesForm({
           name="divida_condominio"
           type="number"
           step="0.01"
-          defaultValue={initialValues?.divida_condominio ?? ''}
+          value={formatNumericValue(values.divida_condominio)}
+          onChange={(value) => setValues((current) => ({ ...current, divida_condominio: parseNumericValue(value) }))}
           className="md:col-span-1 xl:col-span-3"
         />
         <TextareaField
           label="Analise do investimento"
           name="analise"
-          defaultValue={initialValues?.analise ?? ''}
+          value={values.analise ?? ''}
+          onChange={(value) => setValues((current) => ({ ...current, analise: value }))}
           className="md:col-span-2 xl:col-span-12"
         />
         <TextareaField
           label="Riscos"
           name="riscos"
-          defaultValue={initialValues?.riscos ?? ''}
+          value={values.riscos ?? ''}
+          onChange={(value) => setValues((current) => ({ ...current, riscos: value }))}
           className="md:col-span-2 xl:col-span-6"
         />
         <TextareaField
           label="Observacoes juridicas"
           name="observacoes_juridicas"
-          defaultValue={initialValues?.observacoes_juridicas ?? ''}
+          value={values.observacoes_juridicas ?? ''}
+          onChange={(value) => setValues((current) => ({ ...current, observacoes_juridicas: value }))}
           className="md:col-span-2 xl:col-span-6"
         />
         <TextareaField
           label="Estrategia recomendada"
           name="estrategia"
-          defaultValue={initialValues?.estrategia ?? ''}
+          value={values.estrategia ?? ''}
+          onChange={(value) => setValues((current) => ({ ...current, estrategia: value }))}
           className="md:col-span-2 xl:col-span-12"
         />
       </div>
@@ -162,14 +234,16 @@ export function AdminImovelDetalhesForm({
 function Field({
   label,
   name,
-  defaultValue,
+  value,
+  onChange,
   type = 'text',
   step,
   className = '',
 }: {
   label: string;
   name: string;
-  defaultValue: string | number;
+  value: string | number;
+  onChange: (value: string) => void;
   type?: string;
   step?: string;
   className?: string;
@@ -181,7 +255,8 @@ function Field({
         name={name}
         type={type}
         step={step}
-        defaultValue={defaultValue}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
       />
     </label>
@@ -191,12 +266,14 @@ function Field({
 function TextareaField({
   label,
   name,
-  defaultValue,
+  value,
+  onChange,
   className = '',
 }: {
   label: string;
   name: string;
-  defaultValue: string;
+  value: string;
+  onChange: (value: string) => void;
   className?: string;
 }) {
   return (
@@ -204,10 +281,24 @@ function TextareaField({
       <span className="text-sm font-semibold text-slate-700">{label}</span>
       <textarea
         name={name}
-        defaultValue={defaultValue}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         rows={5}
         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
       />
     </label>
   );
+}
+
+function formatNumericValue(value: number | null | undefined) {
+  return value == null ? '' : String(value);
+}
+
+function parseNumericValue(value: string) {
+  if (!value.trim()) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getCurrentAuthenticatedUser } from '@/lib/auth';
 import { addImovelArquivo, removeImovelArquivo } from '@/lib/admin/imoveis';
+import { processPropertyDocument } from '@/lib/ai/property-document-intake';
 
 type RouteProps = {
   params: Promise<{
@@ -45,7 +47,23 @@ export async function POST(request: NextRequest, { params }: RouteProps) {
     visivel_pagantes: body.visivel_pagantes ?? true,
   });
 
-  return NextResponse.json({ arquivo });
+  let processamento: Awaited<ReturnType<typeof processPropertyDocument>> | null = null;
+
+  if (arquivo.url_storage && arquivo.nome_arquivo) {
+    processamento = await processPropertyDocument({
+      arquivoId: arquivo.id,
+      propertyId: id,
+      fileName: arquivo.nome_arquivo,
+      fileUrl: arquivo.url_storage,
+      fileType: arquivo.tipo_arquivo,
+      documentType: arquivo.tipo_documento,
+    });
+  }
+
+  revalidatePath('/admin/imoveis');
+  revalidatePath(`/admin/imoveis/${id}`);
+
+  return NextResponse.json({ arquivo, processamento });
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteProps) {
@@ -67,5 +85,7 @@ export async function DELETE(request: NextRequest, { params }: RouteProps) {
   }
 
   await removeImovelArquivo(id, body.arquivoId);
+  revalidatePath('/admin/imoveis');
+  revalidatePath(`/admin/imoveis/${id}`);
   return NextResponse.json({ success: true });
 }

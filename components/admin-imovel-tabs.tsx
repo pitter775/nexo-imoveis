@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 type TabKey = 'dados' | 'dossie' | 'arquivos' | 'imagens';
 
@@ -38,6 +38,17 @@ export function AdminImovelTabs({
   summary,
 }: AdminImovelTabsProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('dados');
+
+  useEffect(() => {
+    const stored = window.sessionStorage.getItem('admin-imovel-active-tab');
+    if (stored === 'dados' || stored === 'dossie' || stored === 'arquivos' || stored === 'imagens') {
+      setActiveTab(stored);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.sessionStorage.setItem('admin-imovel-active-tab', activeTab);
+  }, [activeTab]);
 
   return (
     <div className="space-y-6">

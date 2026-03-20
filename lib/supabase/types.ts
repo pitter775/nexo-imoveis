@@ -1,5 +1,13 @@
 export type UserRole = 'admin' | 'cliente';
 
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
 export type Database = {
   public: {
     Tables: {
@@ -144,6 +152,45 @@ export type Database = {
           created_at?: string | null;
           tipo_documento?: string | null;
           visivel_publico?: boolean | null;
+        };
+        Relationships: [];
+      };
+      imovel_arquivo_extracoes: {
+        Row: {
+          id: string;
+          arquivo_id: string;
+          imovel_id: string;
+          status: string;
+          texto_extraido: string | null;
+          resumo: string | null;
+          campos_extraidos: Json;
+          erro: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          arquivo_id: string;
+          imovel_id: string;
+          status?: string;
+          texto_extraido?: string | null;
+          resumo?: string | null;
+          campos_extraidos?: Json;
+          erro?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          arquivo_id?: string;
+          imovel_id?: string;
+          status?: string;
+          texto_extraido?: string | null;
+          resumo?: string | null;
+          campos_extraidos?: Json;
+          erro?: string | null;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

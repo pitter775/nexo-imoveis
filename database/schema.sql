@@ -69,6 +69,21 @@ CREATE TABLE public.imoveis (
   ordem_destaque integer,
   CONSTRAINT imoveis_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.imovel_arquivo_extracoes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  arquivo_id uuid NOT NULL UNIQUE,
+  imovel_id uuid NOT NULL,
+  status text NOT NULL DEFAULT 'pendente'::text,
+  texto_extraido text,
+  resumo text,
+  campos_extraidos jsonb NOT NULL DEFAULT '{}'::jsonb,
+  erro text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT imovel_arquivo_extracoes_pkey PRIMARY KEY (id),
+  CONSTRAINT imovel_arquivo_extracoes_arquivo_id_fkey FOREIGN KEY (arquivo_id) REFERENCES public.imovel_arquivos(id),
+  CONSTRAINT imovel_arquivo_extracoes_imovel_id_fkey FOREIGN KEY (imovel_id) REFERENCES public.imoveis(id)
+);
 CREATE TABLE public.imovel_arquivos (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   imovel_id uuid,
