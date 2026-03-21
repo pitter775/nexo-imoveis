@@ -328,6 +328,29 @@ export function PublicMarketplace({
     activeChatPropertyId != null &&
     activeChatPropertyId === selectedProperty?.id;
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || isChatEnabled) {
+      return;
+    }
+
+    cleanupInfraChatWidget();
+
+    const observer = new MutationObserver(() => {
+      cleanupInfraChatWidget();
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    const intervalId = window.setInterval(() => {
+      cleanupInfraChatWidget();
+    }, 500);
+
+    return () => {
+      observer.disconnect();
+      window.clearInterval(intervalId);
+    };
+  }, [isChatEnabled]);
+
   const featuredProperties = useMemo(() => {
     const highlighted = properties
       .filter((property) => property.destaque)
