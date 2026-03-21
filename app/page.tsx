@@ -56,8 +56,21 @@ type InfraChatWindow = Window & {
         id: string;
       };
     }) => void;
+    updateContext?: (context: {
+      route: { path: string };
+      ui: {
+        title: string;
+        theme: string;
+        accent: string;
+        transparent: boolean;
+      };
+      resource: { id: string; tipo: string };
+      id: string;
+    }) => void;
     hide?: () => void;
     destroy?: () => void;
+    isMounted?: () => boolean;
+    getState?: () => unknown;
   };
   __infraChatScriptPromise__?: Promise<void>;
 };
@@ -70,7 +83,6 @@ function cleanupInfraChatWidget() {
   const infraWindow = window as InfraChatWindow;
 
   try {
-    infraWindow.InfraChat?.hide?.();
     infraWindow.InfraChat?.destroy?.();
   } catch (error) {
     console.error('Failed to cleanup InfraChat widget', error);
@@ -79,10 +91,8 @@ function cleanupInfraChatWidget() {
   document
     .querySelectorAll(
       [
-        '#infra-chat-widget',
         '[id="infra-chat-root"]',
         '[data-infra-chat-root]',
-        'script[src*="infrastudio.vercel.app/chat.js"]',
         'iframe[src*="infrastudio.vercel.app"]',
       ].join(','),
     )
@@ -110,6 +120,11 @@ function loadInfraChatScript() {
     const existingScript = document.getElementById('infra-chat-widget');
 
     if (existingScript) {
+      if (infraWindow.InfraChat) {
+        resolve();
+        return;
+      }
+
       existingScript.addEventListener('load', () => resolve(), { once: true });
       existingScript.addEventListener(
         'error',
@@ -137,6 +152,20 @@ function loadInfraChatScript() {
   });
 
   return infraWindow.__infraChatScriptPromise__;
+}
+
+function buildInfraChatContext(propertyId: string, pathname: string) {
+  return {
+    route: { path: pathname },
+    ui: {
+      title: 'nexo leiloes',
+      theme: 'light',
+      accent: '#ff6a00',
+      transparent: true,
+    },
+    resource: { id: propertyId, tipo: 'imovel' },
+    id: propertyId,
+  };
 }
 
 const HERO_FALLBACK_IMAGE =
@@ -1222,8 +1251,6 @@ function InfraChatWidget({
 
     let isCancelled = false;
 
-    cleanupInfraChatWidget();
-
     loadInfraChatScript()
       .then(() => {
         if (isCancelled) {
@@ -1231,23 +1258,19 @@ function InfraChatWidget({
         }
 
         const infraChat = (window as InfraChatWindow).InfraChat;
+        const context = buildInfraChatContext(propertyId, pathname);
+
+        if (infraChat?.isMounted?.()) {
+          infraChat.updateContext?.(context);
+          return;
+        }
 
         infraChat?.mount?.({
           projeto: 'nexo',
           agente: 'agente-imovel',
           apiBase: 'https://infrastudio.vercel.app',
           strictHostControl: true,
-          context: {
-            route: { path: window.location.pathname },
-            ui: {
-              title: 'nexo leiloes',
-              theme: 'light',
-              accent: '#ff6a00',
-              transparent: true,
-            },
-            resource: { id: propertyId, tipo: 'imovel' },
-            id: propertyId,
-          },
+          context,
         });
       })
       .catch((error) => {
