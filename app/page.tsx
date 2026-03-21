@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import Script from 'next/script';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
 import {
@@ -642,7 +641,7 @@ export function PublicMarketplace({
           <span className="text-[10px] font-bold">Buscar</span>
         </button>
       </div>
-      <InfraChatWidget propertyId={activeChatPropertyId} enabled={isChatEnabled} />
+      {isChatEnabled ? <InfraChatWidget propertyId={activeChatPropertyId} /> : null}
     </div>
   );
 }
@@ -1144,27 +1143,17 @@ function HomeView({
 
 function InfraChatWidget({
   propertyId,
-  enabled = true,
 }: {
   propertyId: string | null;
-  enabled?: boolean;
 }) {
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
 
-    if (!enabled || !propertyId) {
+    if (!propertyId) {
       cleanupInfraChatWidget();
-      const observer = new MutationObserver(() => cleanupInfraChatWidget());
-      observer.observe(document.body, { childList: true, subtree: true });
-
-      const intervalId = window.setInterval(cleanupInfraChatWidget, 500);
-
-      return () => {
-        observer.disconnect();
-        window.clearInterval(intervalId);
-      };
+      return;
     }
 
     let attempts = 0;
@@ -1199,17 +1188,16 @@ function InfraChatWidget({
       window.clearInterval(intervalId);
       cleanupInfraChatWidget();
     };
-  }, [enabled, propertyId]);
+  }, [propertyId]);
 
-  if (!enabled || !propertyId) {
+  if (!propertyId) {
     return null;
   }
 
   return (
-    <Script
+    <script
       id="infra-chat-widget"
       src="https://infrastudio.vercel.app/chat.js"
-      strategy="afterInteractive"
       data-projeto="nexo"
       data-agente="agente-imovel"
     />
