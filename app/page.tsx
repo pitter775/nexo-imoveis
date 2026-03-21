@@ -8,28 +8,40 @@ import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowLeft,
   BriefcaseBusiness,
+  Building2,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   Bath,
   Bed,
+  BookText,
   Calendar,
   CheckCircle2,
+  CircleDollarSign,
+  ClipboardList,
   Filter,
+  File,
+  FileBadge2,
   FileSearch,
+  Gavel,
   Heart,
   Home,
   Landmark,
+  Map,
   MapPin,
   Menu,
   MessageCircle,
+  PiggyBank,
+  Receipt,
   Scale,
   Search,
   Share2,
   ShieldCheck,
   Square,
   Target,
+  TrendingUp,
   UserRound,
+  Wallet,
   UserCog,
   X,
 } from 'lucide-react';
@@ -1683,6 +1695,16 @@ function PropertyDetailsView({
   }, [property.id, property.image_url]);
 
   const gallery = property.images?.length ? property.images : [property.image_url];
+  const premiumTabs: Array<{
+    key: 'geral' | 'dossie' | 'analise' | 'arquivos';
+    label: string;
+    icon: React.ReactNode;
+  }> = [
+    { key: 'geral', label: 'Informacoes basicas', icon: <Home className="size-4" /> },
+    { key: 'dossie', label: 'Visao geral', icon: <BookText className="size-4" /> },
+    { key: 'analise', label: 'Dossie', icon: <ClipboardList className="size-4" /> },
+    { key: 'arquivos', label: 'Arquivos', icon: <File className="size-4" /> },
+  ];
 
   const handleUnlockInformation = () => {
     setHasUnlockedPremium(true);
@@ -1753,19 +1775,52 @@ function PropertyDetailsView({
 
         <div className="lg:h-full">
           <div className="flex h-full flex-col space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-xl font-bold">Resumo do Imovel</h3>
+            <h3 className="flex items-center gap-2 text-xl font-bold">
+              <ClipboardList className="size-5 text-primary" />
+              Resumo do Imovel
+            </h3>
             <div className="space-y-4">
-              <SummaryRow label="Valor minimo" value={formatCurrency(property.price)} valueClassName="text-primary" />
               <SummaryRow
+                icon={<CircleDollarSign className="size-4 text-primary" />}
+                label="Valor minimo"
+                value={formatCurrency(property.price)}
+                valueClassName="text-primary"
+              />
+              <SummaryRow
+                icon={<Wallet className="size-4 text-primary" />}
                 label="Valor de avaliacao"
                 value={property.valuation_price == null ? '-' : formatCurrency(property.valuation_price)}
               />
-              <SummaryRow label="Tipo de propriedade" value={property.type} />
-              <SummaryRow label="Tipo de leilao" value={property.auction_type || '-'} />
-              <SummaryRow label="Status" value={property.status || '-'} />
-              <SummaryRow label="Data do leilao" value={formatDate(property.auction_date)} />
-              <SummaryRow label="Area construida" value={formatArea(property.built_area)} />
-              <SummaryRow label="CEP" value={property.cep || '-'} />
+              <SummaryRow
+                icon={<Building2 className="size-4 text-primary" />}
+                label="Tipo de propriedade"
+                value={property.type}
+              />
+              <SummaryRow
+                icon={<Gavel className="size-4 text-primary" />}
+                label="Tipo de leilao"
+                value={property.auction_type || '-'}
+              />
+              <SummaryRow
+                icon={<CheckCircle2 className="size-4 text-primary" />}
+                label="Status"
+                value={property.status || '-'}
+              />
+              <SummaryRow
+                icon={<Calendar className="size-4 text-primary" />}
+                label="Data do leilao"
+                value={formatDate(property.auction_date)}
+              />
+              <SummaryRow
+                icon={<Square className="size-4 text-primary" />}
+                label="Area construida"
+                value={formatArea(property.built_area)}
+              />
+              <SummaryRow
+                icon={<MapPin className="size-4 text-primary" />}
+                label="CEP"
+                value={property.cep || '-'}
+              />
             </div>
             <div className="mt-auto space-y-3">
               <button
@@ -1793,12 +1848,7 @@ function PropertyDetailsView({
         <div className="space-y-6 lg:col-span-2">
           {hasUnlockedPremium ? (
             <div className="grid w-full grid-cols-2 gap-3 md:grid-cols-4">
-              {[
-                { key: 'geral', label: 'Informacoes basicas' },
-                { key: 'dossie', label: 'Visao geral' },
-                { key: 'analise', label: 'Dossie' },
-                { key: 'arquivos', label: 'Arquivos' },
-              ].map((tab) => (
+              {premiumTabs.map((tab) => (
                 <button
                   key={tab.key}
                   type="button"
@@ -1807,12 +1857,13 @@ function PropertyDetailsView({
                       tab.key as 'geral' | 'dossie' | 'analise' | 'arquivos',
                     )
                   }
-                  className={`w-full rounded-xl border px-4 py-3 text-center text-sm font-bold transition ${
+                  className={`flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-center text-sm font-bold leading-tight transition ${
                     activePremiumTab === tab.key
                       ? 'border-primary text-primary shadow-sm'
                       : 'border-slate-200 bg-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
                   }`}
                 >
+                  {tab.icon}
                   {tab.label}
                 </button>
               ))}
@@ -1823,7 +1874,10 @@ function PropertyDetailsView({
             <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
               <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
                 <div>
-                  <h1 className="mb-2 text-3xl font-bold tracking-tight">{property.title}</h1>
+                  <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold tracking-tight">
+                    <Home className="size-7 text-primary" />
+                    <span>{property.title}</span>
+                  </h1>
                   <p className="flex items-center gap-2 text-lg text-slate-500">
                     <MapPin className="size-5 text-primary" />
                     {property.address || property.location || 'Endereco nao informado'}
@@ -1863,7 +1917,10 @@ function PropertyDetailsView({
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-xl font-bold">Descricao</h3>
+                <h3 className="flex items-center gap-2 text-xl font-bold">
+                  <BookText className="size-5 text-primary" />
+                  Descricao
+                </h3>
                 <p className="leading-relaxed text-slate-600">{property.description}</p>
               </div>
             </div>
@@ -1872,46 +1929,57 @@ function PropertyDetailsView({
           {hasUnlockedPremium && activePremiumTab === 'dossie' ? (
             <div className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm md:grid-cols-2">
               <DetailPanelCard
+                icon={<BookText className="size-4 text-primary" />}
                 label="Resumo executivo"
                 value={property.dossier?.resumo_executivo}
               />
               <DetailPanelCard
+                icon={<Home className="size-4 text-primary" />}
                 label="Ocupacao"
                 value={property.dossier?.ocupacao}
               />
               <DetailPanelCard
+                icon={<FileBadge2 className="size-4 text-primary" />}
                 label="Matricula"
                 value={property.dossier?.matricula}
               />
               <DetailPanelCard
+                icon={<Landmark className="size-4 text-primary" />}
                 label="Cartorio"
                 value={property.dossier?.cartorio}
               />
               <DetailPanelCard
+                icon={<Scale className="size-4 text-primary" />}
                 label="Numero do processo"
                 value={property.dossier?.numero_processo}
               />
               <DetailPanelCard
+                icon={<CircleDollarSign className="size-4 text-primary" />}
                 label="Valor de mercado"
                 value={formatOptionalCurrency(property.dossier?.valor_mercado)}
               />
               <DetailPanelCard
+                icon={<Target className="size-4 text-primary" />}
                 label="Lance recomendado"
                 value={formatOptionalCurrency(property.dossier?.lance_recomendado)}
               />
               <DetailPanelCard
+                icon={<PiggyBank className="size-4 text-primary" />}
                 label="Lucro estimado"
                 value={formatOptionalCurrency(property.dossier?.lucro_estimado)}
               />
               <DetailPanelCard
+                icon={<TrendingUp className="size-4 text-primary" />}
                 label="ROI estimado"
                 value={formatPercent(property.dossier?.roi_estimado)}
               />
               <DetailPanelCard
+                icon={<Receipt className="size-4 text-primary" />}
                 label="Divida de IPTU"
                 value={formatOptionalCurrency(property.dossier?.divida_iptu)}
               />
               <DetailPanelCard
+                icon={<BriefcaseBusiness className="size-4 text-primary" />}
                 label="Divida de condominio"
                 value={formatOptionalCurrency(property.dossier?.divida_condominio)}
               />
@@ -1921,18 +1989,22 @@ function PropertyDetailsView({
           {hasUnlockedPremium && activePremiumTab === 'analise' ? (
             <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
               <LongDetailBlock
+                icon={<Target className="size-4 text-primary" />}
                 label="Analise do investimento"
                 value={property.dossier?.analise}
               />
               <LongDetailBlock
+                icon={<ShieldCheck className="size-4 text-primary" />}
                 label="Riscos"
                 value={property.dossier?.riscos}
               />
               <LongDetailBlock
+                icon={<Scale className="size-4 text-primary" />}
                 label="Observacoes juridicas"
                 value={property.dossier?.observacoes_juridicas}
               />
               <LongDetailBlock
+                icon={<Gavel className="size-4 text-primary" />}
                 label="Estrategia recomendada"
                 value={property.dossier?.estrategia}
               />
@@ -1948,10 +2020,12 @@ function PropertyDetailsView({
                     className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div>
-                      <p className="font-semibold text-slate-900">
+                      <p className="flex items-center gap-2 font-semibold text-slate-900">
+                        <File className="size-4 text-primary" />
                         {file.nome_arquivo || 'Arquivo sem nome'}
                       </p>
-                      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
+                      <p className="mt-1 flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] leading-none text-slate-400">
+                        <FileSearch className="size-3.5" />
                         {file.tipo_documento || 'Documento'}
                       </p>
                     </div>
@@ -1978,11 +2052,16 @@ function PropertyDetailsView({
 
         <div className="lg:self-start">
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-xl font-bold">Localizacao</h3>
-            <p className="text-sm leading-relaxed text-slate-600">
+            <h3 className="flex items-center gap-2 text-xl font-bold">
+              <Map className="size-5 text-primary" />
+              Localizacao
+            </h3>
+            <p className="flex items-start gap-2 text-sm leading-5 text-slate-600">
+              <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
               {property.address || 'Endereco nao informado'}
             </p>
-            <p className="text-sm leading-relaxed text-slate-500">
+            <p className="flex items-start gap-2 text-sm leading-5 text-slate-500">
+              <Landmark className="mt-0.5 size-4 shrink-0 text-primary" />
               {property.location || 'Cidade e estado nao informados'}
             </p>
             <div className="overflow-hidden rounded-2xl border border-slate-200">
@@ -2005,15 +2084,18 @@ function PropertyDetailsView({
 }
 
 function DetailPanelCard({
+  icon,
   label,
   value,
 }: {
+  icon: React.ReactNode;
   label: string;
   value: string | null | undefined;
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+      <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] leading-none text-slate-400">
+        {icon}
         {label}
       </p>
       <p className="mt-2 text-sm leading-6 text-slate-700">{value || '-'}</p>
@@ -2022,15 +2104,18 @@ function DetailPanelCard({
 }
 
 function LongDetailBlock({
+  icon,
   label,
   value,
 }: {
+  icon: React.ReactNode;
   label: string;
   value: string | null | undefined;
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+      <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] leading-none text-slate-400">
+        {icon}
         {label}
       </p>
       <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">
@@ -2117,17 +2202,22 @@ function FactCard({
 }
 
 function SummaryRow({
+  icon,
   label,
   value,
   valueClassName,
 }: {
+  icon: React.ReactNode;
   label: string;
   value: string;
   valueClassName?: string;
 }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-slate-500">{label}</span>
+      <span className="flex items-center gap-2 text-slate-500">
+        {icon}
+        {label}
+      </span>
       <span className={`text-right font-bold ${valueClassName ?? ''}`}>{value}</span>
     </div>
   );
