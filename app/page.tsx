@@ -457,6 +457,103 @@ export function PublicMarketplace({
     return [...highlighted, ...fallback].slice(0, 3);
   }, [properties]);
 
+  const similarProperties = useMemo(() => {
+    if (!selectedProperty) {
+      return [];
+    }
+
+    const selectedPrice = selectedProperty.price || 0;
+
+    return properties
+      .filter((property) => property.id !== selectedProperty.id)
+      .map((property) => {
+        let score = 0;
+
+        if (
+          property.type &&
+          selectedProperty.type &&
+          property.type.toLowerCase() === selectedProperty.type.toLowerCase()
+        ) {
+          score += 4;
+        }
+
+        if (
+          property.city &&
+          selectedProperty.city &&
+          property.city.toLowerCase() === selectedProperty.city.toLowerCase()
+        ) {
+          score += 3;
+        }
+
+        if (
+          property.state &&
+          selectedProperty.state &&
+          property.state.toLowerCase() === selectedProperty.state.toLowerCase()
+        ) {
+          score += 1;
+        }
+
+        if (
+          property.auction_type &&
+          selectedProperty.auction_type &&
+          property.auction_type.toLowerCase() ===
+            selectedProperty.auction_type.toLowerCase()
+        ) {
+          score += 2;
+        }
+
+        if (
+          property.beds != null &&
+          selectedProperty.beds != null &&
+          property.beds === selectedProperty.beds
+        ) {
+          score += 1;
+        }
+
+        if (
+          property.baths != null &&
+          selectedProperty.baths != null &&
+          property.baths === selectedProperty.baths
+        ) {
+          score += 1;
+        }
+
+        if (
+          property.sqft != null &&
+          selectedProperty.sqft != null &&
+          Math.abs(property.sqft - selectedProperty.sqft) <= 25
+        ) {
+          score += 1;
+        }
+
+        if (selectedPrice > 0 && property.price > 0) {
+          const priceDifferenceRatio =
+            Math.abs(property.price - selectedPrice) / selectedPrice;
+
+          if (priceDifferenceRatio <= 0.15) {
+            score += 3;
+          } else if (priceDifferenceRatio <= 0.3) {
+            score += 2;
+          } else if (priceDifferenceRatio <= 0.5) {
+            score += 1;
+          }
+        }
+
+        return { property, score };
+      })
+      .sort((first, second) => {
+        if (second.score !== first.score) {
+          return second.score - first.score;
+        }
+
+        return (second.property.created_at ?? '').localeCompare(
+          first.property.created_at ?? '',
+        );
+      })
+      .map(({ property }) => property)
+      .slice(0, 3);
+  }, [properties, selectedProperty]);
+
   return (
     <div className="min-h-screen bg-[#f6f7f8] font-sans text-slate-900 selection:bg-primary/30">
       <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
@@ -707,8 +804,10 @@ export function PublicMarketplace({
               {view === 'details' && selectedProperty && (
                 <PropertyDetailsView
                   property={selectedProperty}
+                  similarProperties={similarProperties}
                   user={user}
                   onBack={handleBackToListings}
+                  onPropertyClick={handlePropertyClick}
                   onUnlockInformation={() => setActiveChatPropertyId(selectedProperty.id)}
                 />
               )}
@@ -1684,13 +1783,17 @@ function FilterField({
 
 function PropertyDetailsView({
   property,
+  similarProperties,
   user,
   onBack,
+  onPropertyClick,
   onUnlockInformation,
 }: {
   property: Property;
+  similarProperties: Property[];
   user: UserType | null;
   onBack: () => void;
+  onPropertyClick: (property: Property) => void;
   onUnlockInformation: () => void;
 }) {
   const [activeImage, setActiveImage] = useState(property.image_url);
@@ -2088,6 +2191,36 @@ function PropertyDetailsView({
           </div>
         </div>
       </div>
+
+      {similarProperties.length ? (
+        <section className="space-y-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+                Descubra mais
+              </p>
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+                Imoveis parecidos com este
+              </h2>
+            </div>
+            <p className="max-w-2xl text-sm text-slate-500">
+              Selecionamos opcoes com perfil parecido em tipo, faixa de valor e
+              localizacao para manter o interesse do cliente no fluxo.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {similarProperties.map((similarProperty) => (
+              <PropertyCard
+                key={similarProperty.id}
+                isAdmin={isAdmin}
+                property={similarProperty}
+                onClick={() => onPropertyClick(similarProperty)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
       </motion.div>
     </>
   );
