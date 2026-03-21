@@ -105,6 +105,7 @@ export function PublicMarketplace({
   const [view, setView] = useState<'home' | 'listings' | 'details'>(initialView);
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [activeChatPropertyId, setActiveChatPropertyId] = useState<string | null>(null);
   const [user, setUser] = useState<UserType | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -160,6 +161,7 @@ export function PublicMarketplace({
   useEffect(() => {
     if (initialView !== 'details') {
       setSelectedProperty(null);
+      setActiveChatPropertyId(null);
       return;
     }
 
@@ -233,15 +235,25 @@ export function PublicMarketplace({
     const isPropertyDetailPath = /^\/imoveis\/[^/]+$/.test(pathname);
 
     if (view !== 'details' || !isPropertyDetailPath) {
+      setActiveChatPropertyId(null);
       cleanupInfraChatWidget();
     }
   }, [pathname, view]);
+
+  useEffect(() => {
+    if (!selectedProperty || activeChatPropertyId === selectedProperty.id) {
+      return;
+    }
+
+    setActiveChatPropertyId(null);
+  }, [activeChatPropertyId, selectedProperty]);
 
   const handleMenuNavigation = (sectionId: string) => {
     cleanupInfraChatWidget();
     setIsMenuOpen(false);
     setView('home');
     setSelectedProperty(null);
+    setActiveChatPropertyId(null);
 
     if (typeof window === 'undefined') {
       return;
@@ -271,6 +283,7 @@ export function PublicMarketplace({
   };
 
   const handlePropertyClick = (property: Property) => {
+    setActiveChatPropertyId(null);
     setSelectedProperty(property);
     setView('details');
     router.push(`/imoveis/${property.id}`);
@@ -280,6 +293,7 @@ export function PublicMarketplace({
     cleanupInfraChatWidget();
     setView('listings');
     setSelectedProperty(null);
+    setActiveChatPropertyId(null);
     router.push('/imoveis');
   };
 
@@ -287,6 +301,7 @@ export function PublicMarketplace({
     cleanupInfraChatWidget();
     setView('home');
     setSelectedProperty(null);
+    setActiveChatPropertyId(null);
     router.push('/');
   };
 
@@ -299,8 +314,17 @@ export function PublicMarketplace({
     cleanupInfraChatWidget();
     setView('listings');
     setSelectedProperty(null);
+    setActiveChatPropertyId(null);
     router.push('/imoveis');
   };
+
+  const isPropertyDetailPath = /^\/imoveis\/[^/]+$/.test(pathname);
+  const isChatEnabled =
+    view === 'details' &&
+    isPropertyDetailPath &&
+    Boolean(selectedProperty) &&
+    activeChatPropertyId != null &&
+    activeChatPropertyId === selectedProperty?.id;
 
   const featuredProperties = useMemo(() => {
     const highlighted = properties
@@ -574,6 +598,7 @@ export function PublicMarketplace({
                   property={selectedProperty}
                   user={user}
                   onBack={handleBackToListings}
+                  onUnlockInformation={() => setActiveChatPropertyId(selectedProperty.id)}
                 />
               )}
               {view === 'details' && !selectedProperty && !isLoadingProperties ? (
@@ -617,6 +642,7 @@ export function PublicMarketplace({
           <span className="text-[10px] font-bold">Buscar</span>
         </button>
       </div>
+      <InfraChatWidget propertyId={activeChatPropertyId} enabled={isChatEnabled} />
     </div>
   );
 }
@@ -1120,7 +1146,7 @@ function InfraChatWidget({
   propertyId,
   enabled = true,
 }: {
-  propertyId: string;
+  propertyId: string | null;
   enabled?: boolean;
 }) {
   useEffect(() => {
@@ -1128,9 +1154,17 @@ function InfraChatWidget({
       return;
     }
 
-    if (!enabled) {
+    if (!enabled || !propertyId) {
       cleanupInfraChatWidget();
-      return;
+      const observer = new MutationObserver(() => cleanupInfraChatWidget());
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      const intervalId = window.setInterval(cleanupInfraChatWidget, 500);
+
+      return () => {
+        observer.disconnect();
+        window.clearInterval(intervalId);
+      };
     }
 
     let attempts = 0;
@@ -1167,7 +1201,7 @@ function InfraChatWidget({
     };
   }, [enabled, propertyId]);
 
-  if (!enabled) {
+  if (!enabled || !propertyId) {
     return null;
   }
 
@@ -1556,10 +1590,12 @@ function PropertyDetailsView({
   property,
   user,
   onBack,
+  onUnlockInformation,
 }: {
   property: Property;
   user: UserType | null;
   onBack: () => void;
+  onUnlockInformation: () => void;
 }) {
   const [activeImage, setActiveImage] = useState(property.image_url);
   const isAdmin = user?.tipo_usuario === 'admin';
@@ -1577,6 +1613,7 @@ function PropertyDetailsView({
   const handleUnlockInformation = () => {
     setHasUnlockedPremium(true);
     setActivePremiumTab('dossie');
+    onUnlockInformation();
   };
 
   return (
@@ -1889,8 +1926,6 @@ function PropertyDetailsView({
         </div>
       </div>
       </motion.div>
-
-      <InfraChatWidget propertyId={property.id} enabled={hasUnlockedPremium} />
     </>
   );
 }
