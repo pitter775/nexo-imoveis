@@ -550,8 +550,7 @@ export function PublicMarketplace({
           first.property.created_at ?? '',
         );
       })
-      .map(({ property }) => property)
-      .slice(0, 3);
+      .map(({ property }) => property);
   }, [properties, selectedProperty]);
 
   return (
@@ -1800,14 +1799,27 @@ function PropertyDetailsView({
   const isAdmin = user?.tipo_usuario === 'admin';
   const [hasUnlockedPremium, setHasUnlockedPremium] = useState(false);
   const [activePremiumTab, setActivePremiumTab] = useState<'geral' | 'dossie' | 'analise' | 'arquivos'>('geral');
+  const [similarPage, setSimilarPage] = useState(0);
 
   useEffect(() => {
     setActiveImage(property.image_url);
     setHasUnlockedPremium(false);
     setActivePremiumTab('geral');
+    setSimilarPage(0);
   }, [property.id, property.image_url]);
 
   const gallery = property.images?.length ? property.images : [property.image_url];
+  const SIMILAR_PROPERTIES_PER_PAGE = 3;
+  const similarPropertyPages = useMemo(() => {
+    const pages: Property[][] = [];
+
+    for (let index = 0; index < similarProperties.length; index += SIMILAR_PROPERTIES_PER_PAGE) {
+      pages.push(similarProperties.slice(index, index + SIMILAR_PROPERTIES_PER_PAGE));
+    }
+
+    return pages;
+  }, [similarProperties]);
+  const visibleSimilarProperties = similarPropertyPages[similarPage] ?? [];
   const premiumTabs: Array<{
     key: 'geral' | 'dossie' | 'analise' | 'arquivos';
     label: string;
@@ -1824,6 +1836,18 @@ function PropertyDetailsView({
     setActivePremiumTab('dossie');
     onUnlockInformation();
   };
+
+  useEffect(() => {
+    if (similarPropertyPages.length <= 1) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setSimilarPage((currentPage) => (currentPage + 1) % similarPropertyPages.length);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [similarPropertyPages.length]);
 
   return (
     <>
@@ -2194,7 +2218,7 @@ function PropertyDetailsView({
 
       {similarProperties.length ? (
         <section className="space-y-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
                 Descubra mais
@@ -2203,14 +2227,25 @@ function PropertyDetailsView({
                 Imoveis parecidos com este
               </h2>
             </div>
-            <p className="max-w-2xl text-sm text-slate-500">
-              Selecionamos opcoes com perfil parecido em tipo, faixa de valor e
-              localizacao para manter o interesse do cliente no fluxo.
-            </p>
+            {similarPropertyPages.length > 1 ? (
+              <div className="flex items-center gap-2">
+                {similarPropertyPages.map((_, index) => (
+                  <button
+                    key={`similar-page-${index}`}
+                    type="button"
+                    onClick={() => setSimilarPage(index)}
+                    aria-label={`Ver grupo ${index + 1} de imoveis parecidos`}
+                    className={`h-2.5 rounded-full transition-all ${
+                      index === similarPage ? 'w-8 bg-primary' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                    }`}
+                  />
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {similarProperties.map((similarProperty) => (
+            {visibleSimilarProperties.map((similarProperty) => (
               <PropertyCard
                 key={similarProperty.id}
                 isAdmin={isAdmin}
