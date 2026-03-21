@@ -39,16 +39,27 @@ import { SiteFooter } from '@/components/site-footer';
 
 type InfraChatWindow = Window & {
   InfraChat?: {
-    setContext: (context: {
-      title: string;
-      theme: string;
-      accent: string;
-      transparent: boolean;
-      id: string;
+    mount?: (config: {
+      projeto: string;
+      agente: string;
+      apiBase: string;
+      strictHostControl: boolean;
+      context: {
+        route: { path: string };
+        ui: {
+          title: string;
+          theme: string;
+          accent: string;
+          transparent: boolean;
+        };
+        resource: { id: string; tipo: string };
+        id: string;
+      };
     }) => void;
     hide?: () => void;
     destroy?: () => void;
   };
+  __infraChatScriptPromise__?: Promise<void>;
 };
 
 function cleanupInfraChatWidget() {
@@ -80,12 +91,52 @@ function cleanupInfraChatWidget() {
   delete infraWindow.InfraChat;
 }
 
-function navigateWithFullReload(href: string) {
+function loadInfraChatScript() {
   if (typeof window === 'undefined') {
-    return;
+    return Promise.resolve();
   }
 
-  window.location.assign(href);
+  const infraWindow = window as InfraChatWindow;
+
+  if (infraWindow.InfraChat) {
+    return Promise.resolve();
+  }
+
+  if (infraWindow.__infraChatScriptPromise__) {
+    return infraWindow.__infraChatScriptPromise__;
+  }
+
+  infraWindow.__infraChatScriptPromise__ = new Promise<void>((resolve, reject) => {
+    const existingScript = document.getElementById('infra-chat-widget');
+
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve(), { once: true });
+      existingScript.addEventListener(
+        'error',
+        () => reject(new Error('Failed to load InfraChat script.')),
+        { once: true },
+      );
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'infra-chat-widget';
+    script.src = 'https://infrastudio.vercel.app/chat.js';
+    script.async = true;
+    script.dataset.projeto = 'nexo';
+    script.dataset.agente = 'agente-imovel';
+    script.addEventListener('load', () => resolve(), { once: true });
+    script.addEventListener(
+      'error',
+      () => reject(new Error('Failed to load InfraChat script.')),
+      { once: true },
+    );
+    document.body.appendChild(script);
+  }).finally(() => {
+    delete infraWindow.__infraChatScriptPromise__;
+  });
+
+  return infraWindow.__infraChatScriptPromise__;
 }
 
 const HERO_FALLBACK_IMAGE =
@@ -272,7 +323,7 @@ export function PublicMarketplace({
     const targetHref = sectionId === 'topo' ? '/' : `/#${sectionId}`;
 
     if (window.location.pathname !== '/') {
-      navigateWithFullReload(targetHref);
+      router.push(targetHref);
       return;
     }
 
@@ -296,7 +347,7 @@ export function PublicMarketplace({
     setActiveChatPropertyId(null);
     setSelectedProperty(property);
     setView('details');
-    navigateWithFullReload(`/imoveis/${property.id}`);
+    router.push(`/imoveis/${property.id}`);
   };
 
   const handleBrowse = () => {
@@ -304,7 +355,7 @@ export function PublicMarketplace({
     setView('listings');
     setSelectedProperty(null);
     setActiveChatPropertyId(null);
-    navigateWithFullReload('/imoveis');
+    router.push('/imoveis');
   };
 
   const handleGoHome = () => {
@@ -312,7 +363,7 @@ export function PublicMarketplace({
     setView('home');
     setSelectedProperty(null);
     setActiveChatPropertyId(null);
-    navigateWithFullReload('/');
+    router.push('/');
   };
 
   const adminHref = user?.tipo_usuario === 'admin' ? '/admin' : null;
@@ -325,7 +376,7 @@ export function PublicMarketplace({
     setView('listings');
     setSelectedProperty(null);
     setActiveChatPropertyId(null);
-    navigateWithFullReload('/imoveis');
+    router.push('/imoveis');
   };
 
   const isPropertyDetailPath = /^\/imoveis\/[^/]+$/.test(pathname);
@@ -335,29 +386,6 @@ export function PublicMarketplace({
     Boolean(selectedProperty) &&
     activeChatPropertyId != null &&
     activeChatPropertyId === selectedProperty?.id;
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || isChatEnabled) {
-      return;
-    }
-
-    cleanupInfraChatWidget();
-
-    const observer = new MutationObserver(() => {
-      cleanupInfraChatWidget();
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    const intervalId = window.setInterval(() => {
-      cleanupInfraChatWidget();
-    }, 500);
-
-    return () => {
-      observer.disconnect();
-      window.clearInterval(intervalId);
-    };
-  }, [isChatEnabled]);
 
   const featuredProperties = useMemo(() => {
     const highlighted = properties
@@ -675,7 +703,7 @@ export function PublicMarketplace({
           <span className="text-[10px] font-bold">Buscar</span>
         </button>
       </div>
-      {isChatEnabled ? <InfraChatWidget propertyId={activeChatPropertyId} /> : null}
+      {isChatEnabled ? <InfraChatWidget propertyId={activeChatPropertyId} pathname={pathname} /> : null}
     </div>
   );
 }
@@ -1177,8 +1205,10 @@ function HomeView({
 
 function InfraChatWidget({
   propertyId,
+  pathname,
 }: {
   propertyId: string | null;
+  pathname: string;
 }) {
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -1190,49 +1220,45 @@ function InfraChatWidget({
       return;
     }
 
+    let isCancelled = false;
+
     cleanupInfraChatWidget();
 
-    const script = document.createElement('script');
-    script.id = 'infra-chat-widget';
-    script.src = 'https://infrastudio.vercel.app/chat.js';
-    script.async = true;
-    script.dataset.projeto = 'nexo';
-    script.dataset.agente = 'agente-imovel';
-    document.body.appendChild(script);
-
-    let attempts = 0;
-    let intervalId = 0;
-
-    const applyContext = () => {
-      const infraChat = (window as InfraChatWindow).InfraChat;
-
-      if (!infraChat) {
-        attempts += 1;
-        if (attempts >= 40) {
-          window.clearInterval(intervalId);
+    loadInfraChatScript()
+      .then(() => {
+        if (isCancelled) {
+          return;
         }
-        return;
-      }
 
-      infraChat.setContext({
-        title: 'nexo leiloes',
-        theme: 'light',
-        accent: '#ff6a00',
-        transparent: true,
-        id: propertyId,
+        const infraChat = (window as InfraChatWindow).InfraChat;
+
+        infraChat?.mount?.({
+          projeto: 'nexo',
+          agente: 'agente-imovel',
+          apiBase: 'https://infrastudio.vercel.app',
+          strictHostControl: true,
+          context: {
+            route: { path: window.location.pathname },
+            ui: {
+              title: 'nexo leiloes',
+              theme: 'light',
+              accent: '#ff6a00',
+              transparent: true,
+            },
+            resource: { id: propertyId, tipo: 'imovel' },
+            id: propertyId,
+          },
+        });
+      })
+      .catch((error) => {
+        console.error('Failed to mount InfraChat widget', error);
       });
 
-      window.clearInterval(intervalId);
-    };
-
-    intervalId = window.setInterval(applyContext, 300);
-    applyContext();
-
     return () => {
-      window.clearInterval(intervalId);
+      isCancelled = true;
       cleanupInfraChatWidget();
     };
-  }, [propertyId]);
+  }, [propertyId, pathname]);
 
   if (!propertyId) {
     return null;
