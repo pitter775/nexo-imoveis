@@ -550,7 +550,8 @@ export function PublicMarketplace({
           first.property.created_at ?? '',
         );
       })
-      .map(({ property }) => property);
+      .map(({ property }) => property)
+      .slice(0, 15);
   }, [properties, selectedProperty]);
 
   return (
@@ -2218,30 +2219,13 @@ function PropertyDetailsView({
 
       {similarProperties.length ? (
         <section className="space-y-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
-                Descubra mais
-              </p>
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-                Imoveis parecidos com este
-              </h2>
-            </div>
-            {similarPropertyPages.length > 1 ? (
-              <div className="flex items-center gap-2">
-                {similarPropertyPages.map((_, index) => (
-                  <button
-                    key={`similar-page-${index}`}
-                    type="button"
-                    onClick={() => setSimilarPage(index)}
-                    aria-label={`Ver grupo ${index + 1} de imoveis parecidos`}
-                    className={`h-2.5 rounded-full transition-all ${
-                      index === similarPage ? 'w-8 bg-primary' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
-                    }`}
-                  />
-                ))}
-              </div>
-            ) : null}
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+              Descubra mais
+            </p>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+              Imoveis parecidos com este
+            </h2>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -2254,6 +2238,24 @@ function PropertyDetailsView({
               />
             ))}
           </div>
+
+          {similarPropertyPages.length > 1 ? (
+            <div className="flex items-center justify-center gap-2">
+              {similarPropertyPages.map((_, index) => (
+                <button
+                  key={`similar-page-${index}`}
+                  type="button"
+                  onClick={() => setSimilarPage(index)}
+                  aria-label={`Ver grupo ${index + 1} de imoveis parecidos`}
+                  className={`h-2.5 rounded-full transition-all ${
+                    index === similarPage
+                      ? 'w-8 bg-primary'
+                      : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                  }`}
+                />
+              ))}
+            </div>
+          ) : null}
         </section>
       ) : null}
       </motion.div>
