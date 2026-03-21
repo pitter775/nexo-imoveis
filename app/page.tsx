@@ -80,6 +80,14 @@ function cleanupInfraChatWidget() {
   delete infraWindow.InfraChat;
 }
 
+function navigateWithFullReload(href: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.location.assign(href);
+}
+
 const HERO_FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1000';
 
@@ -264,7 +272,7 @@ export function PublicMarketplace({
     const targetHref = sectionId === 'topo' ? '/' : `/#${sectionId}`;
 
     if (window.location.pathname !== '/') {
-      router.push(targetHref);
+      navigateWithFullReload(targetHref);
       return;
     }
 
@@ -288,7 +296,7 @@ export function PublicMarketplace({
     setActiveChatPropertyId(null);
     setSelectedProperty(property);
     setView('details');
-    router.push(`/imoveis/${property.id}`);
+    navigateWithFullReload(`/imoveis/${property.id}`);
   };
 
   const handleBrowse = () => {
@@ -296,7 +304,7 @@ export function PublicMarketplace({
     setView('listings');
     setSelectedProperty(null);
     setActiveChatPropertyId(null);
-    router.push('/imoveis');
+    navigateWithFullReload('/imoveis');
   };
 
   const handleGoHome = () => {
@@ -304,7 +312,7 @@ export function PublicMarketplace({
     setView('home');
     setSelectedProperty(null);
     setActiveChatPropertyId(null);
-    router.push('/');
+    navigateWithFullReload('/');
   };
 
   const adminHref = user?.tipo_usuario === 'admin' ? '/admin' : null;
@@ -317,7 +325,7 @@ export function PublicMarketplace({
     setView('listings');
     setSelectedProperty(null);
     setActiveChatPropertyId(null);
-    router.push('/imoveis');
+    navigateWithFullReload('/imoveis');
   };
 
   const isPropertyDetailPath = /^\/imoveis\/[^/]+$/.test(pathname);
