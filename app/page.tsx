@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import Script from 'next/script';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
 import {
@@ -69,18 +68,14 @@ function cleanupInfraChatWidget() {
   document
     .querySelectorAll(
       [
+        '#infra-chat-widget',
         '[id="infra-chat-root"]',
         '[data-infra-chat-root]',
+        'script[src*="infrastudio.vercel.app/chat.js"]',
         'iframe[src*="infrastudio.vercel.app"]',
       ].join(','),
     )
-    .forEach((element) => {
-      if (element instanceof HTMLElement && element.id === 'infra-chat-widget') {
-        return;
-      }
-
-      element.remove();
-    });
+    .forEach((element) => element.remove());
 
   delete infraWindow.InfraChat;
 }
@@ -1164,6 +1159,16 @@ function InfraChatWidget({
       return;
     }
 
+    cleanupInfraChatWidget();
+
+    const script = document.createElement('script');
+    script.id = 'infra-chat-widget';
+    script.src = 'https://infrastudio.vercel.app/chat.js';
+    script.async = true;
+    script.dataset.projeto = 'nexo';
+    script.dataset.agente = 'agente-imovel';
+    document.body.appendChild(script);
+
     let attempts = 0;
     let intervalId = 0;
 
@@ -1202,15 +1207,7 @@ function InfraChatWidget({
     return null;
   }
 
-  return (
-    <Script
-      id="infra-chat-widget"
-      src="https://infrastudio.vercel.app/chat.js"
-      strategy="afterInteractive"
-      data-projeto="nexo"
-      data-agente="agente-imovel"
-    />
-  );
+  return null;
 }
 
 function PropertyCard({
