@@ -1,4 +1,5 @@
 import { redirectIfAuthenticated } from '@/lib/auth';
+import { BrandLogo } from '@/components/brand-logo';
 import { LoginForm } from '@/components/login-form';
 import { SiteFooter } from '@/components/site-footer';
 
@@ -20,9 +21,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,106,0,0.16),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(255,166,77,0.18),_transparent_30%)]" />
         <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-6xl flex-col items-center justify-center gap-10 lg:flex-row lg:justify-between">
           <section className="max-w-xl space-y-6">
-            <div className="inline-flex items-center rounded-full bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.3em] text-primary">
-              Nexo Leiloes
-            </div>
+            <BrandLogo href="/" />
             <div className="space-y-4">
               <h2 className="text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl">
                 Inteligencia, seguranca e acompanhamento para cada oportunidade

@@ -1,6 +1,16 @@
 'use client';
 
 import { useState, type ChangeEvent, type HTMLAttributes } from 'react';
+import {
+  BadgeDollarSign,
+  BedDouble,
+  Building2,
+  CalendarDays,
+  FileText,
+  Home,
+  MapPin,
+  Sparkles,
+} from 'lucide-react';
 import { FormSelect } from '@/components/form-select';
 
 const TIPO_LEILAO_OPTIONS = [
@@ -110,7 +120,8 @@ export function AdminImovelForm({
     <div className="space-y-8">
       {showIntro ? (
         <div className="px-1 sm:px-0">
-          <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+          <p className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+            <Building2 className="size-4" />
             Modulo de imoveis
           </p>
           <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
@@ -128,7 +139,8 @@ export function AdminImovelForm({
       >
         {!showIntro ? (
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+            <p className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+              <Home className="size-4" />
               Dados publicos
             </p>
             <h2 className="mt-2 text-2xl font-bold text-slate-900">
@@ -309,7 +321,10 @@ export function AdminImovelForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700">Descricao</label>
+          <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <FileText className="size-4 text-primary" />
+            Descricao
+          </label>
           <textarea
             name="descricao"
             defaultValue={initialValues?.descricao ?? ''}
@@ -354,7 +369,10 @@ function Field({
 }) {
   return (
     <label className={`space-y-2 ${className}`}>
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <FieldIcon label={label} />
+        {label}
+      </span>
       <input
         name={name}
         type={type}
@@ -368,6 +386,43 @@ function Field({
       />
     </label>
   );
+}
+
+function FieldIcon({ label }: { label: string }) {
+  const normalizedLabel = label.toLowerCase();
+
+  if (normalizedLabel.includes('valor')) {
+    return <BadgeDollarSign className="size-4 text-primary" />;
+  }
+
+  if (normalizedLabel.includes('quarto') || normalizedLabel.includes('banheiro')) {
+    return <BedDouble className="size-4 text-primary" />;
+  }
+
+  if (normalizedLabel.includes('data')) {
+    return <CalendarDays className="size-4 text-primary" />;
+  }
+
+  if (
+    normalizedLabel.includes('rua') ||
+    normalizedLabel.includes('cidade') ||
+    normalizedLabel.includes('estado') ||
+    normalizedLabel.includes('cep') ||
+    normalizedLabel.includes('numero') ||
+    normalizedLabel.includes('complemento')
+  ) {
+    return <MapPin className="size-4 text-primary" />;
+  }
+
+  if (
+    normalizedLabel.includes('tipo') ||
+    normalizedLabel.includes('status') ||
+    normalizedLabel.includes('destaque')
+  ) {
+    return <Sparkles className="size-4 text-primary" />;
+  }
+
+  return <Home className="size-4 text-primary" />;
 }
 
 function SelectField({

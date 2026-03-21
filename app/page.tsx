@@ -46,6 +46,7 @@ import {
   X,
 } from 'lucide-react';
 import { logoutAction } from '@/app/actions/auth';
+import { BrandLogo } from '@/components/brand-logo';
 import { Property, User as UserType } from '@/lib/types';
 import { SiteFooter } from '@/components/site-footer';
 
@@ -244,11 +245,12 @@ const HERO_FALLBACK_IMAGE =
 const HOME_MENU_ITEMS: ReadonlyArray<{
   label: string;
   id: string;
+  icon: React.ComponentType<{ className?: string }>;
 }> = [
-  { label: 'Home', id: 'topo' },
-  { label: 'Sobre Nos', id: 'sobre' },
-  { label: 'Servicos', id: 'servicos' },
-  { label: 'Planos', id: 'planos' },
+  { label: 'Home', id: 'topo', icon: Home },
+  { label: 'Sobre Nos', id: 'sobre', icon: Building2 },
+  { label: 'Servicos', id: 'servicos', icon: BriefcaseBusiness },
+  { label: 'Planos', id: 'planos', icon: ClipboardList },
 ] as const;
 
 type PublicMarketplaceProps = {
@@ -607,29 +609,20 @@ export function PublicMarketplace({
     <div className="min-h-screen bg-[#f6f7f8] font-sans text-slate-900 selection:bg-primary/30">
       <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div
-            className="flex cursor-pointer items-center gap-2"
-            onClick={handleGoHome}
-          >
-            <div className="rounded-lg bg-primary p-1.5">
-              <Home className="size-5 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900">
-              Nexo Leiloes
-            </span>
-          </div>
+          <BrandLogo onClick={handleGoHome} className="shrink-0" />
 
           <div className="hidden items-center gap-3 md:flex">
             {HOME_MENU_ITEMS.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleMenuNavigation(item.id)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
                   activeSection === item.id
                     ? 'bg-primary/10 text-primary'
                     : 'text-slate-600 hover:text-primary'
                 }`}
               >
+                <item.icon className="size-4" />
                 {item.label}
               </button>
             ))}
@@ -747,12 +740,15 @@ export function PublicMarketplace({
                 <button
                   key={item.id}
                   onClick={() => handleMenuNavigation(item.id)}
-                  className={`rounded-2xl px-4 py-3 text-left font-semibold transition ${
+                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-left font-semibold transition ${
                     activeSection === item.id
                       ? 'bg-primary/10 text-primary'
                       : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
+                  <span className="inline-flex size-9 items-center justify-center rounded-xl bg-white/80 shadow-sm">
+                    <item.icon className="size-4" />
+                  </span>
                   {item.label}
                 </button>
               ))}
@@ -771,8 +767,11 @@ export function PublicMarketplace({
                   router.push('/imoveis');
                   setIsMenuOpen(false);
                 }}
-                className="rounded-2xl bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700 hover:bg-slate-100"
+                className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700 hover:bg-slate-100"
               >
+                <span className="inline-flex size-9 items-center justify-center rounded-xl bg-white shadow-sm">
+                  <Search className="size-4" />
+                </span>
                 Oportunidades
               </button>
               {isLoadingUser ? (
@@ -783,16 +782,22 @@ export function PublicMarketplace({
                     <Link
                       href={adminHref}
                       onClick={() => setIsMenuOpen(false)}
-                      className="rounded-2xl bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700 hover:bg-slate-100"
+                      className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700 hover:bg-slate-100"
                     >
+                      <span className="inline-flex size-9 items-center justify-center rounded-xl bg-white shadow-sm">
+                        <UserCog className="size-4" />
+                      </span>
                       Ambiente administrativo
                     </Link>
                   ) : null}
                   <form action={logoutAction}>
                     <button
                       type="submit"
-                      className="w-full rounded-2xl bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700 hover:bg-slate-100"
+                      className="flex w-full items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700 hover:bg-slate-100"
                     >
+                      <span className="inline-flex size-9 items-center justify-center rounded-xl bg-white shadow-sm">
+                        <ArrowLeft className="size-4" />
+                      </span>
                       Sair
                     </button>
                   </form>
@@ -801,8 +806,11 @@ export function PublicMarketplace({
                 <Link
                   href="/login"
                   onClick={() => setIsMenuOpen(false)}
-                  className="rounded-2xl bg-slate-950 px-4 py-3 text-left font-semibold text-white"
+                  className="flex items-center gap-3 rounded-2xl bg-slate-950 px-4 py-3 text-left font-semibold text-white"
                 >
+                  <span className="inline-flex size-9 items-center justify-center rounded-xl bg-white/10">
+                    <UserRound className="size-4" />
+                  </span>
                   Login
                 </Link>
               )}

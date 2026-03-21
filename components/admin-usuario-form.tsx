@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { CalendarDays, KeyRound, Mail, Shield, UserRound } from 'lucide-react';
 import { FormSelect } from '@/components/form-select';
 
 const PERFIL_OPTIONS = [
@@ -42,7 +43,8 @@ export function AdminUsuarioForm({
   return (
     <div className="space-y-6">
       <div className="px-1 sm:px-0">
-        <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+        <p className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+          <UserRound className="size-4" />
           Modulo de usuarios
         </p>
         <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
@@ -160,7 +162,10 @@ function Field({
 }) {
   return (
     <label className={`space-y-2 ${className}`}>
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <UserFieldIcon label={label} />
+        {label}
+      </span>
       <input
         name={name}
         type={type}
@@ -183,12 +188,33 @@ function InfoField({
 }) {
   return (
     <div className={`space-y-2 ${className}`}>
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <CalendarDays className="size-4 text-primary" />
+        {label}
+      </span>
       <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
         {value}
       </div>
     </div>
   );
+}
+
+function UserFieldIcon({ label }: { label: string }) {
+  const normalizedLabel = label.toLowerCase();
+
+  if (normalizedLabel.includes('email')) {
+    return <Mail className="size-4 text-primary" />;
+  }
+
+  if (normalizedLabel.includes('senha')) {
+    return <KeyRound className="size-4 text-primary" />;
+  }
+
+  if (normalizedLabel.includes('perfil') || normalizedLabel.includes('status')) {
+    return <Shield className="size-4 text-primary" />;
+  }
+
+  return <UserRound className="size-4 text-primary" />;
 }
 
 function formatDate(value?: string | null) {

@@ -2,8 +2,18 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
-import { ArrowDown, ArrowDownUp, ArrowUp, Search } from 'lucide-react';
+import { useMemo, useState, type ReactNode } from 'react';
+import {
+  ArrowDown,
+  ArrowDownUp,
+  ArrowUp,
+  Mail,
+  Pencil,
+  Plus,
+  Search,
+  Shield,
+  UserRound,
+} from 'lucide-react';
 import type { UsuarioRecord } from '@/lib/admin/usuarios';
 
 type AdminUsuariosTableProps = {
@@ -70,7 +80,8 @@ export function AdminUsuariosTable({
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+              <p className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+                <UserRound className="size-4" />
                 Usuarios
               </p>
               <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
@@ -83,8 +94,9 @@ export function AdminUsuariosTable({
 
             <Link
               href={createHref}
-              className="rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
+              className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
             >
+              <Plus className="size-4" />
               Novo usuario
             </Link>
           </div>
@@ -156,10 +168,11 @@ export function AdminUsuariosTable({
                 </div>
               </div>
 
-              <DataCell label="Email" value={usuario.email} />
+              <DataCell label="Email" value={usuario.email} icon={<Mail className="size-3.5 text-slate-400" />} />
               <DataCell
                 label="Perfil"
                 value={usuario.tipo_usuario === 'admin' ? 'Admin' : 'Cliente'}
+                icon={<Shield className="size-3.5 text-slate-400" />}
               />
               <DataCell
                 label="Status"
@@ -176,8 +189,9 @@ export function AdminUsuariosTable({
                 </span>
                 <Link
                   href={`/admin/usuarios/${usuario.id}`}
-                  className="font-semibold text-primary transition hover:text-primary/80"
+                  className="inline-flex items-center gap-2 font-semibold text-primary transition hover:text-primary/80"
                 >
+                  <Pencil className="size-3.5" />
                   Editar
                 </Link>
               </div>
@@ -185,7 +199,8 @@ export function AdminUsuariosTable({
           ))}
 
           {filteredUsuarios.length === 0 ? (
-            <div className="px-6 py-10 text-sm text-slate-500">
+            <div className="flex items-center gap-3 px-6 py-10 text-sm text-slate-500">
+              <Search className="size-4 text-primary" />
               Nenhum usuario encontrado com essa busca.
             </div>
           ) : null}
@@ -195,13 +210,24 @@ export function AdminUsuariosTable({
   );
 }
 
-function DataCell({ label, value }: { label: string; value: string }) {
+function DataCell({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  icon?: ReactNode;
+}) {
   return (
     <div className="lg:self-center">
       <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-400 lg:hidden">
         {label}
       </span>
-      <span>{value}</span>
+      <span className="inline-flex items-center gap-2">
+        {icon}
+        {value}
+      </span>
     </div>
   );
 }

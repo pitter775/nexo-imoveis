@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useState, type ReactNode } from 'react';
+import { BookText, FileText, Home, ImageIcon, MapPin } from 'lucide-react';
 
 type TabKey = 'dados' | 'dossie' | 'arquivos' | 'imagens';
 
@@ -23,11 +24,11 @@ type AdminImovelTabsProps = {
   summary: ImovelHeaderSummary;
 };
 
-const tabs: Array<{ key: TabKey; label: string }> = [
-  { key: 'dados', label: 'Dados do imovel' },
-  { key: 'dossie', label: 'Conteudo do dossie' },
-  { key: 'arquivos', label: 'Arquivos do dossie' },
-  { key: 'imagens', label: 'Imagens' },
+const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
+  { key: 'dados', label: 'Dados do imovel', icon: <Home className="size-4" /> },
+  { key: 'dossie', label: 'Conteudo do dossie', icon: <BookText className="size-4" /> },
+  { key: 'arquivos', label: 'Arquivos do dossie', icon: <FileText className="size-4" /> },
+  { key: 'imagens', label: 'Imagens', icon: <ImageIcon className="size-4" /> },
 ];
 
 export function AdminImovelTabs({
@@ -56,7 +57,8 @@ export function AdminImovelTabs({
         <div className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr] lg:items-start">
           <div className="space-y-5">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+              <p className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+                <Home className="size-4" />
                 Modulo de imoveis
               </p>
               <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
@@ -75,12 +77,13 @@ export function AdminImovelTabs({
                     key={tab.key}
                     type="button"
                     onClick={() => setActiveTab(tab.key)}
-                    className={`whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-bold transition ${
+                    className={`inline-flex whitespace-nowrap items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition ${
                       activeTab === tab.key
                         ? 'bg-primary text-white shadow-lg shadow-primary/20'
                         : 'text-slate-600 hover:bg-white'
                     }`}
                   >
+                    {tab.icon}
                     {tab.label}
                   </button>
                 ))}
@@ -114,7 +117,10 @@ export function AdminImovelTabs({
                   {formatCurrency(summary.valor_minimo)}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  {[summary.cidade, summary.estado].filter(Boolean).join(' - ') || 'Localizacao nao informada'}
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin className="size-3.5 text-primary" />
+                    {[summary.cidade, summary.estado].filter(Boolean).join(' - ') || 'Localizacao nao informada'}
+                  </span>
                 </p>
               </div>
             </div>

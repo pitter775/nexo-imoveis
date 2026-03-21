@@ -1,3 +1,5 @@
+import { Clock3 } from 'lucide-react';
+
 export function PlaceholderPage({
   title,
   description,
@@ -7,7 +9,8 @@ export function PlaceholderPage({
 }) {
   return (
     <div className="px-1 sm:px-0">
-      <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+      <p className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+        <Clock3 className="size-4" />
         Em breve
       </p>
       <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">

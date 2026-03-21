@@ -4,7 +4,19 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowDownUp, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import {
+  ArrowDownUp,
+  ArrowUp,
+  ArrowDown,
+  BadgeDollarSign,
+  Building2,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  Pencil,
+  Plus,
+  Search,
+} from 'lucide-react';
 import type { ImovelRecord } from '@/lib/admin/imoveis';
 
 type AdminImoveisTableProps = {
@@ -109,7 +121,8 @@ export function AdminImoveisTable({
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+              <p className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+                <Building2 className="size-4" />
                 Imoveis
               </p>
               <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
@@ -122,8 +135,9 @@ export function AdminImoveisTable({
 
             <Link
               href={createHref}
-              className="rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
+              className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
             >
+              <Plus className="size-4" />
               Novo imovel
             </Link>
           </div>
@@ -204,13 +218,26 @@ export function AdminImoveisTable({
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-5">{imovel.cidade ?? '-'}</td>
-                    <td className="px-6 py-5">{imovel.tipo_leilao ?? '-'}</td>
                     <td className="px-6 py-5">
-                      {(imovel.valor_minimo ?? 0).toLocaleString('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                      })}
+                      <span className="inline-flex items-center gap-2">
+                        <MapPin className="size-3.5 text-slate-400" />
+                        {imovel.cidade ?? '-'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="inline-flex items-center gap-2">
+                        <Building2 className="size-3.5 text-slate-400" />
+                        {imovel.tipo_leilao ?? '-'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="inline-flex items-center gap-2">
+                        <BadgeDollarSign className="size-3.5 text-slate-400" />
+                        {(imovel.valor_minimo ?? 0).toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        })}
+                      </span>
                     </td>
                     <td className="px-6 py-5">
                       <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
@@ -220,8 +247,9 @@ export function AdminImoveisTable({
                     <td className="px-6 py-5">
                       <Link
                         href={`/admin/imoveis/${imovel.id}`}
-                        className="font-semibold text-primary transition hover:text-primary/80"
+                        className="inline-flex items-center gap-2 font-semibold text-primary transition hover:text-primary/80"
                       >
+                        <Pencil className="size-3.5" />
                         Editar
                       </Link>
                     </td>
@@ -296,8 +324,9 @@ export function AdminImoveisTable({
               <div className="flex justify-end">
                 <Link
                   href={`/admin/imoveis/${imovel.id}`}
-                  className="inline-flex h-9 items-center rounded-lg border border-primary/20 bg-primary/10 px-2.5 text-[11px] font-semibold text-primary transition hover:border-primary/30 hover:bg-primary/15"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-2.5 text-[11px] font-semibold text-primary transition hover:border-primary/30 hover:bg-primary/15"
                 >
+                  <Pencil className="size-3.5" />
                   Editar
                 </Link>
               </div>
@@ -305,7 +334,8 @@ export function AdminImoveisTable({
           ))}
 
           {sortedImoveis.length === 0 ? (
-            <div className="px-6 py-10 text-sm text-slate-500">
+            <div className="flex items-center gap-3 px-6 py-10 text-sm text-slate-500">
+              <Search className="size-4 text-primary" />
               Nenhum imovel encontrado com essa busca.
             </div>
           ) : null}
