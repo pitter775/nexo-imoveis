@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Script from 'next/script';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowLeft,
@@ -101,6 +101,7 @@ export function PublicMarketplace({
   initialPropertyId,
 }: PublicMarketplaceProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [view, setView] = useState<'home' | 'listings' | 'details'>(initialView);
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -228,7 +229,16 @@ export function PublicMarketplace({
     return () => observer.disconnect();
   }, [view]);
 
+  useEffect(() => {
+    const isPropertyDetailPath = /^\/imoveis\/[^/]+$/.test(pathname);
+
+    if (view !== 'details' || !isPropertyDetailPath) {
+      cleanupInfraChatWidget();
+    }
+  }, [pathname, view]);
+
   const handleMenuNavigation = (sectionId: string) => {
+    cleanupInfraChatWidget();
     setIsMenuOpen(false);
     setView('home');
     setSelectedProperty(null);
@@ -267,12 +277,14 @@ export function PublicMarketplace({
   };
 
   const handleBrowse = () => {
+    cleanupInfraChatWidget();
     setView('listings');
     setSelectedProperty(null);
     router.push('/imoveis');
   };
 
   const handleGoHome = () => {
+    cleanupInfraChatWidget();
     setView('home');
     setSelectedProperty(null);
     router.push('/');
@@ -284,6 +296,7 @@ export function PublicMarketplace({
   const isContentReady = !isLoadingProperties && !isDetailPending;
 
   const handleBackToListings = () => {
+    cleanupInfraChatWidget();
     setView('listings');
     setSelectedProperty(null);
     router.push('/imoveis');
