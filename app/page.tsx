@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -186,6 +186,55 @@ function buildInfraChatPolicy() {
   return {
     allowed: true,
     allowedRoutes: ['/imoveis/*'],
+  };
+}
+
+function useSwipeNavigation({
+  onSwipeLeft,
+  onSwipeRight,
+  minDistance = 44,
+}: {
+  onSwipeLeft: () => void;
+  onSwipeRight: () => void;
+  minDistance?: number;
+}) {
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLElement>) => {
+    const touch = event.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
+    const touchStart = touchStartRef.current;
+    const touch = event.changedTouches[0];
+    touchStartRef.current = null;
+
+    if (!touchStart || !touch) {
+      return false;
+    }
+
+    const deltaX = touch.clientX - touchStart.x;
+    const deltaY = touch.clientY - touchStart.y;
+
+    if (Math.abs(deltaX) < minDistance || Math.abs(deltaX) < Math.abs(deltaY)) {
+      return false;
+    }
+
+    if (deltaX < 0) {
+      onSwipeLeft();
+    } else {
+      onSwipeRight();
+    }
+
+    return true;
+  };
+
+  return {
+    swipeHandlers: {
+      onTouchStart: handleTouchStart,
+      onTouchEnd: handleTouchEnd,
+    },
   };
 }
 
@@ -975,6 +1024,26 @@ function HomeView({
   const visibleProperties = properties.slice(0, visibleCount);
   const hasMoreProperties = visibleCount < properties.length;
   const featuredProperty = featuredProperties[featuredIndex] ?? null;
+  const goToPreviousFeatured = () => {
+    if (featuredProperties.length <= 1) {
+      return;
+    }
+
+    setFeaturedIndex((currentIndex) =>
+      currentIndex === 0 ? featuredProperties.length - 1 : currentIndex - 1,
+    );
+  };
+  const goToNextFeatured = () => {
+    if (featuredProperties.length <= 1) {
+      return;
+    }
+
+    setFeaturedIndex((currentIndex) => (currentIndex + 1) % featuredProperties.length);
+  };
+  const { swipeHandlers: featuredSwipeHandlers } = useSwipeNavigation({
+    onSwipeLeft: goToNextFeatured,
+    onSwipeRight: goToPreviousFeatured,
+  });
 
   useEffect(() => {
     setFeaturedIndex(0);
@@ -1014,7 +1083,11 @@ function HomeView({
         </div>
 
         <div className="w-full flex-1">
-          <div className="relative h-[300px] w-full overflow-hidden rounded-2xl shadow-2xl sm:h-[450px]">
+          <div
+            {...featuredSwipeHandlers}
+            className="relative h-[300px] w-full overflow-hidden rounded-2xl shadow-2xl sm:h-[450px]"
+            style={{ touchAction: 'pan-y' }}
+          >
             <Image
               src={featuredProperty?.image_url ?? HERO_FALLBACK_IMAGE}
               fill
@@ -1423,6 +1496,7 @@ function PropertyCard({
   const gallery = property.images?.length ? property.images : [property.image_url];
   const [imageIndex, setImageIndex] = useState(0);
   const currentImage = gallery[imageIndex] ?? property.image_url;
+  const suppressCardClickRef = useRef(false);
 
   const showPreviousImage = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -1434,12 +1508,38 @@ function PropertyCard({
     setImageIndex((current) => (current === gallery.length - 1 ? 0 : current + 1));
   };
 
+  const showPreviousImageFromGesture = () => {
+    suppressCardClickRef.current = true;
+    setImageIndex((current) => (current === 0 ? gallery.length - 1 : current - 1));
+  };
+
+  const showNextImageFromGesture = () => {
+    suppressCardClickRef.current = true;
+    setImageIndex((current) => (current === gallery.length - 1 ? 0 : current + 1));
+  };
+
+  const { swipeHandlers: cardSwipeHandlers } = useSwipeNavigation({
+    onSwipeLeft: showNextImageFromGesture,
+    onSwipeRight: showPreviousImageFromGesture,
+  });
+
   return (
     <div
-      onClick={onClick}
+      onClick={() => {
+        if (suppressCardClickRef.current) {
+          suppressCardClickRef.current = false;
+          return;
+        }
+
+        onClick();
+      }}
       className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-xl"
     >
-      <div className="relative aspect-[4/3] w-full overflow-hidden">
+      <div
+        {...cardSwipeHandlers}
+        className="relative aspect-[4/3] w-full overflow-hidden"
+        style={{ touchAction: 'pan-y' }}
+      >
         <Image
           src={currentImage}
           fill
@@ -1821,6 +1921,32 @@ function PropertyDetailsView({
     return pages;
   }, [similarProperties]);
   const visibleSimilarProperties = similarPropertyPages[similarPage] ?? [];
+  const goToPreviousDetailImage = () => {
+    const currentIndex = gallery.findIndex((imageUrl) => imageUrl === activeImage);
+    const previousIndex = currentIndex <= 0 ? gallery.length - 1 : currentIndex - 1;
+    setActiveImage(gallery[previousIndex] ?? property.image_url);
+  };
+  const goToNextDetailImage = () => {
+    const currentIndex = gallery.findIndex((imageUrl) => imageUrl === activeImage);
+    const nextIndex = currentIndex === -1 || currentIndex === gallery.length - 1 ? 0 : currentIndex + 1;
+    setActiveImage(gallery[nextIndex] ?? property.image_url);
+  };
+  const goToPreviousSimilarPage = () => {
+    setSimilarPage((currentPage) =>
+      currentPage === 0 ? similarPropertyPages.length - 1 : currentPage - 1,
+    );
+  };
+  const goToNextSimilarPage = () => {
+    setSimilarPage((currentPage) => (currentPage + 1) % similarPropertyPages.length);
+  };
+  const { swipeHandlers: detailImageSwipeHandlers } = useSwipeNavigation({
+    onSwipeLeft: goToNextDetailImage,
+    onSwipeRight: goToPreviousDetailImage,
+  });
+  const { swipeHandlers: similarSectionSwipeHandlers } = useSwipeNavigation({
+    onSwipeLeft: goToNextSimilarPage,
+    onSwipeRight: goToPreviousSimilarPage,
+  });
   const premiumTabs: Array<{
     key: 'geral' | 'dossie' | 'analise' | 'arquivos';
     label: string;
@@ -1864,7 +1990,11 @@ function PropertyDetailsView({
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <div className="space-y-4">
-            <div className="relative aspect-video overflow-hidden rounded-2xl shadow-xl">
+            <div
+              {...detailImageSwipeHandlers}
+              className="relative aspect-video overflow-hidden rounded-2xl shadow-xl"
+              style={{ touchAction: 'pan-y' }}
+            >
               <Image
                 src={activeImage}
                 fill
@@ -2228,7 +2358,11 @@ function PropertyDetailsView({
             </h2>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div
+            {...similarSectionSwipeHandlers}
+            className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"
+            style={{ touchAction: 'pan-y' }}
+          >
             {visibleSimilarProperties.map((similarProperty) => (
               <PropertyCard
                 key={similarProperty.id}
