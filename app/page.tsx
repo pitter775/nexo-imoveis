@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import Script from 'next/script';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
 import {
@@ -58,21 +59,28 @@ function cleanupInfraChatWidget() {
 
   const infraWindow = window as InfraChatWindow;
 
-  infraWindow.InfraChat?.hide?.();
-  infraWindow.InfraChat?.destroy?.();
-
-  document.getElementById('infra-chat-widget')?.remove();
+  try {
+    infraWindow.InfraChat?.hide?.();
+    infraWindow.InfraChat?.destroy?.();
+  } catch (error) {
+    console.error('Failed to cleanup InfraChat widget', error);
+  }
 
   document
     .querySelectorAll(
       [
         '[id="infra-chat-root"]',
-        '[id*="infra-chat"]',
-        '[class*="infra-chat"]',
+        '[data-infra-chat-root]',
         'iframe[src*="infrastudio.vercel.app"]',
       ].join(','),
     )
-    .forEach((element) => element.remove());
+    .forEach((element) => {
+      if (element instanceof HTMLElement && element.id === 'infra-chat-widget') {
+        return;
+      }
+
+      element.remove();
+    });
 
   delete infraWindow.InfraChat;
 }
@@ -1195,9 +1203,10 @@ function InfraChatWidget({
   }
 
   return (
-    <script
+    <Script
       id="infra-chat-widget"
       src="https://infrastudio.vercel.app/chat.js"
+      strategy="afterInteractive"
       data-projeto="nexo"
       data-agente="agente-imovel"
     />
