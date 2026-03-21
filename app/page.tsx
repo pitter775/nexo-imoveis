@@ -56,6 +56,10 @@ type InfraChatWindow = Window & {
       agente: string;
       apiBase: string;
       strictHostControl: boolean;
+      policy?: {
+        allowed: boolean;
+        allowedRoutes: string[];
+      };
       context: {
         route: { path: string };
         ui: {
@@ -109,8 +113,6 @@ function cleanupInfraChatWidget() {
       ].join(','),
     )
     .forEach((element) => element.remove());
-
-  delete infraWindow.InfraChat;
 }
 
 function loadInfraChatScript() {
@@ -177,6 +179,13 @@ function buildInfraChatContext(propertyId: string, pathname: string) {
     },
     resource: { id: propertyId, tipo: 'imovel' },
     id: propertyId,
+  };
+}
+
+function buildInfraChatPolicy() {
+  return {
+    allowed: true,
+    allowedRoutes: ['/imoveis/*'],
   };
 }
 
@@ -1282,6 +1291,7 @@ function InfraChatWidget({
           agente: 'agente-imovel',
           apiBase: 'https://infrastudio.vercel.app',
           strictHostControl: true,
+          policy: buildInfraChatPolicy(),
           context,
         });
       })
