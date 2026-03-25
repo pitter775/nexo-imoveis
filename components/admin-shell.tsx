@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import type { AppUserProfile } from '@/lib/types';
 import { logoutAction } from '@/app/actions/auth';
-import { BrandLogo } from '@/components/brand-logo';
 import { SiteFooter } from '@/components/site-footer';
 
 type AdminShellProps = {
@@ -77,17 +76,15 @@ export function AdminShell({ children, profile }: AdminShellProps) {
               isDesktopCollapsed ? 'justify-center lg:px-0' : 'justify-between'
             }`}
           >
-            <div className={`flex items-center gap-3 ${isDesktopCollapsed ? 'lg:justify-center' : ''}`}>
-              <BrandLogo
-                href="/admin"
-                compact={isDesktopCollapsed}
-                className={isDesktopCollapsed ? 'lg:[&_div:last-child]:hidden' : '[&_p]:text-white [&_p:last-child]:text-slate-400'}
-              />
-              <div className={isDesktopCollapsed ? 'hidden' : ''}>
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-300">
-                  <Shield className="size-3.5 text-primary" />
-                  Administracao
-                </div>
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-primary p-3">
+                <Shield className="size-6" />
+              </div>
+              <div className={isDesktopCollapsed ? 'lg:hidden' : ''}>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                  Nexo
+                </p>
+                <h1 className="text-xl font-bold">Administracao</h1>
               </div>
             </div>
 

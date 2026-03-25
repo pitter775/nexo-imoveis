@@ -178,7 +178,10 @@ async function extractStructuredDataFromPdf({
           'Leia o PDF inteiro e identifique o maximo de informacoes confiaveis.',
           'Retorne apenas JSON valido, sem markdown.',
           'Nao invente nenhum valor.',
-          'Se um campo nao estiver claramente presente, retorne null.',
+          'Se um campo nao estiver claramente presente, retorne null, exceto nos campos de inteligencia financeira permitidos abaixo.',
+          'Para lance_recomendado, lucro_estimado, roi_estimado e analise, se esses campos nao estiverem explicitos no PDF mas houver dados suficientes no proprio documento para estimar ou redigir uma recomendacao coerente, voce deve cria-los a partir desses dados.',
+          'Quando estimar esses campos, use apenas informacoes obtidas no documento, como valor minimo, valor de avaliacao, valor de mercado, debitos, ocupacao, riscos, liquidez, custos e contexto juridico.',
+          'Se faltar base suficiente para uma estimativa confiavel, retorne null nesses campos.',
           'Corrija pequenos erros visuais do documento quando forem obvios.',
           'Use datas em formato ISO quando houver dia completo.',
           'Use numeros decimais sem simbolo monetario.',
@@ -290,8 +293,28 @@ async function applyStructuredUpdates(
   extraction: StructuredExtraction,
 ) {
   const supabase = createAdminClient();
+  const [{ data: imovelAtual, error: imovelAtualError }, { data: detalhesAtuais, error: detalhesAtuaisError }] =
+    await Promise.all([
+      supabase.from('imoveis').select('*').eq('id', propertyId).maybeSingle(),
+      supabase
+        .from('imovel_detalhes')
+        .select('*')
+        .eq('imovel_id', propertyId)
+        .maybeSingle(),
+    ]);
 
-  const imovelUpdate = compactObject(extraction.imovel ?? {});
+  if (imovelAtualError) {
+    throw new Error(`Falha ao carregar os dados atuais do imovel: ${imovelAtualError.message}`);
+  }
+
+  if (detalhesAtuaisError) {
+    throw new Error(`Falha ao carregar o dossie atual do imovel: ${detalhesAtuaisError.message}`);
+  }
+
+  const imovelUpdate = mergeOnlyEmptyFields(
+    (imovelAtual ?? {}) as Record<string, unknown>,
+    compactObject(extraction.imovel ?? {}),
+  );
   if (Object.keys(imovelUpdate).length > 0) {
     const { error } = await supabase
       .from('imoveis')
@@ -303,7 +326,10 @@ async function applyStructuredUpdates(
     }
   }
 
-  const detalhesUpdate = compactObject(extraction.detalhes ?? {});
+  const detalhesUpdate = mergeOnlyEmptyFields(
+    (detalhesAtuais ?? {}) as Record<string, unknown>,
+    compactObject(extraction.detalhes ?? {}),
+  );
   if (Object.keys(detalhesUpdate).length > 0) {
     const { error } = await supabase.from('imovel_detalhes').upsert(
       {
@@ -411,4 +437,31 @@ function compactObject<T extends Record<string, unknown>>(value: T) {
       ([, entry]) => entry !== undefined && entry !== null && entry !== '',
     ),
   ) as Partial<T>;
+}
+
+function mergeOnlyEmptyFields<TIncoming extends Record<string, unknown>>(
+  existing: Record<string, unknown>,
+  incoming: TIncoming,
+) {
+  return Object.fromEntries(
+    Object.entries(incoming).filter(([key, value]) => {
+      if (value === undefined || value === null || value === '') {
+        return false;
+      }
+
+      return isEmptyValue(existing[key]);
+    }),
+  ) as Partial<TIncoming>;
+}
+
+function isEmptyValue(value: unknown) {
+  if (value === undefined || value === null) {
+    return true;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim() === '';
+  }
+
+  return false;
 }
