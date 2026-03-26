@@ -249,121 +249,121 @@ const HOME_MENU_ITEMS: ReadonlyArray<{
   icon: React.ComponentType<{ className?: string }>;
 }> = [
   { label: 'Home', id: 'topo', icon: Home },
-  { label: 'Sobre Nos', id: 'sobre', icon: Building2 },
-  { label: 'Servicos', id: 'servicos', icon: BriefcaseBusiness },
+  { label: 'Sobre Nós', id: 'sobre', icon: Building2 },
+  { label: 'Serviços', id: 'servicos', icon: BriefcaseBusiness },
   { label: 'Oportunidades', id: 'planos', icon: ClipboardList },
   { label: 'FAQ', id: 'faq', icon: BookText },
 ] as const;
 
 const ABOUT_PILLARS = [
-  'Democratizamos o acesso aos leiloes de imoveis com suporte claro, humano e estrategico.',
-  'Atuamos como ponte entre clientes e oportunidades de alto valor com leitura juridica, financeira e operacional.',
-  'Nossa prioridade e garantir seguranca, transparencia e previsibilidade para familias e investidores.',
+  'Democratizamos o acesso aos leilões de imóveis com suporte claro, humano e estratégico.',
+  'Atuamos como ponte entre clientes e oportunidades de alto valor com leitura jurídica, financeira e operacional.',
+  'Nossa prioridade é garantir segurança, transparência e previsibilidade para famílias e investidores.',
 ] as const;
 
 const HISTORY_HIGHLIGHTS = [
   {
-    eyebrow: 'Nossa historia',
+    eyebrow: 'Nossa história',
     title: 'Uma ponte segura para quem quer comprar melhor',
-    text: 'A Nexo Leiloes nasceu para abrir as portas dos leiloes de imoveis a quem busca a casa propria ou deseja investir com seguranca, criterio e acesso a informacoes confiaveis.',
+    text: 'A Nexo Leilões nasceu para abrir as portas dos leilões de imóveis a quem busca a casa própria ou deseja investir com segurança, critério e acesso a informações confiáveis.',
   },
   {
     eyebrow: 'Origem',
-    title: 'Visao construida a partir de oportunidades perdidas',
-    text: 'Servolo Tobias percebeu que familias e investidores deixavam bons negocios para tras por falta de informacao, confianca e leitura tecnica do processo.',
+    title: 'Visão construída a partir de oportunidades perdidas',
+    text: 'Servolo Tobias percebeu que famílias e investidores deixavam bons negócios para trás por falta de informação, confiança e leitura técnica do processo.',
   },
   {
-    eyebrow: 'Metodo',
-    title: 'Analise profunda para reduzir risco e ampliar ganho',
-    text: 'Cada oportunidade passa por estudo detalhado do edital, matricula, custos, cenarios e estrategia de arremate para evitar surpresas e elevar a qualidade da decisao.',
+    eyebrow: 'Método',
+    title: 'Análise profunda para reduzir risco e ampliar ganho',
+    text: 'Cada oportunidade passa por estudo detalhado do edital, matrícula, custos, cenários e estratégia de arremate para evitar surpresas e elevar a qualidade da decisão.',
   },
 ] as const;
 
 const BRAND_VALUES = [
-  'Transparencia',
+  'Transparência',
   'Acessibilidade',
-  'Seguranca',
+  'Segurança',
   'Compromisso',
   'Oportunidade',
-  'Humanizacao',
-  'Etica',
+  'Humanização',
+  'Ética',
 ] as const;
 
 const FAQ_ITEMS = [
   {
-    question: 'O que e um leilao de imoveis?',
+    question: 'O que é um leilão de imóveis?',
     answer:
-      'E uma forma de venda publica em que imoveis sao disponibilizados por decisao judicial ou extrajudicial, geralmente com valores abaixo do mercado.',
+      'É uma forma de venda pública em que imóveis são disponibilizados por decisão judicial ou extrajudicial, geralmente com valores abaixo do mercado.',
   },
   {
-    question: 'Posso participar de um leilao mesmo sem experiencia?',
+    question: 'Posso participar de um leilão mesmo sem experiência?',
     answer:
-      'Sim. Nossa plataforma ajuda investidores iniciantes e experientes, oferecendo informacoes claras e assessoria completa em todas as etapas.',
+      'Sim. Nossa plataforma ajuda investidores iniciantes e experientes, oferecendo informações claras e assessoria completa em todas as etapas.',
   },
   {
-    question: 'Os imoveis tem desconto real?',
+    question: 'Os imóveis têm desconto real?',
     answer:
-      'Sim. Em muitos casos os imoveis sao vendidos com descontos de 30% a 70% em relacao ao valor de mercado.',
+      'Sim. Em muitos casos os imóveis são vendidos com descontos de 30% a 70% em relação ao valor de mercado.',
   },
   {
-    question: 'Preciso pagar para acessar as informacoes?',
+    question: 'Preciso pagar para acessar as informações?',
     answer:
-      'Voce pode visualizar informacoes basicas gratuitamente. Para liberar um relatorio detalhado, existe um pagamento simbolico com dados como matricula, parecer juridico e analise de rentabilidade.',
+      'Você pode visualizar informações básicas gratuitamente. Para liberar um relatório detalhado, existe um pagamento simbólico com dados como matrícula, parecer jurídico e análise de rentabilidade.',
   },
   {
-    question: 'Como funciona o relatorio basico?',
+    question: 'Como funciona o relatório básico?',
     answer:
-      'Apos o pagamento, voce recebe automaticamente um PDF com data do leilao, valor de avaliacao e lance minimo, percentual de desconto, matricula resumida, breve parecer juridico e margem de ganho estimada.',
+      'Após o pagamento, você recebe automaticamente um PDF com data do leilão, valor de avaliação e lance mínimo, percentual de desconto, matrícula resumida, breve parecer jurídico e margem de ganho estimada.',
   },
   {
-    question: 'O que acontece se eu quiser mais detalhes apos o relatorio basico?',
+    question: 'O que acontece se eu quiser mais detalhes após o relatório básico?',
     answer:
-      'Voce pode contratar nossa assessoria completa para aprofundar a analise juridica, representacao no leilao e regularizacao do imovel.',
+      'Você pode contratar nossa assessoria completa para aprofundar a análise jurídica, representação no leilão e regularização do imóvel.',
   },
   {
     question: 'Os valores informados incluem todas as taxas?',
     answer:
-      'Nos relatorios indicamos os principais custos envolvidos, como ITBI, dividas e taxas cartorarias, para que voce tenha uma visao mais real do investimento.',
+      'Nos relatórios indicamos os principais custos envolvidos, como ITBI, dívidas e taxas cartorárias, para que você tenha uma visão mais real do investimento.',
   },
   {
-    question: 'Posso perder dinheiro em um leilao?',
+    question: 'Posso perder dinheiro em um leilão?',
     answer:
-      'Como em qualquer investimento, existem riscos. Nossa assessoria reduz significativamente esse risco com seguranca juridica, leitura de mercado e estrategia.',
+      'Como em qualquer investimento, existem riscos. Nossa assessoria reduz significativamente esse risco com segurança jurídica, leitura de mercado e estratégia.',
   },
   {
-    question: 'A plataforma divulga quem e o leiloeiro?',
+    question: 'A plataforma divulga quem é o leiloeiro?',
     answer:
-      'Nao. Nosso objetivo e centralizar oportunidades e entregar a analise pronta, sem expor diretamente os leiloeiros.',
+      'Não. Nosso objetivo é centralizar oportunidades e entregar a análise pronta, sem expor diretamente os leiloeiros.',
   },
   {
-    question: 'Como e feito o pagamento da taxa simbolica?',
+    question: 'Como é feito o pagamento da taxa simbólica?',
     answer:
-      'O pagamento pode ser feito via Pix, cartao de credito ou boleto diretamente na plataforma, de forma segura.',
+      'O pagamento pode ser feito via Pix, cartão de crédito ou boleto diretamente na plataforma, de forma segura.',
   },
   {
-    question: 'Voces me representam no leilao?',
+    question: 'Vocês me representam no leilão?',
     answer:
-      'Sim. Na assessoria completa, nossa equipe acompanha o processo desde os lances ate a finalizacao da arrematacao.',
+      'Sim. Na assessoria completa, nossa equipe acompanha o processo desde os lances até a finalização da arrematação.',
   },
   {
-    question: 'O que acontece se o imovel estiver ocupado?',
+    question: 'O que acontece se o imóvel estiver ocupado?',
     answer:
-      'No relatorio informamos a situacao do imovel. Se estiver ocupado, nossa assessoria pode estruturar estrategias juridicas para desocupacao ou negociacao.',
+      'No relatório informamos a situação do imóvel. Se estiver ocupado, nossa assessoria pode estruturar estratégias jurídicas para desocupação ou negociação.',
   },
   {
-    question: 'Eu posso visitar o imovel antes de comprar?',
+    question: 'Eu posso visitar o imóvel antes de comprar?',
     answer:
-      'Na maioria dos casos, nao. Por isso analisamos matricula, fotos oficiais, localizacao e outros dados para oferecer a melhor leitura possivel do ativo.',
+      'Na maioria dos casos, não. Por isso analisamos matrícula, fotos oficiais, localização e outros dados para oferecer a melhor leitura possível do ativo.',
   },
   {
-    question: 'Voces garantem que vou ter lucro?',
+    question: 'Vocês garantem que vou ter lucro?',
     answer:
-      'Nao existe garantia absoluta. Nosso trabalho e identificar imoveis com alto potencial de rentabilidade e entregar as informacoes necessarias para uma decisao segura.',
+      'Não existe garantia absoluta. Nosso trabalho é identificar imóveis com alto potencial de rentabilidade e entregar as informações necessárias para uma decisão segura.',
   },
   {
-    question: 'Posso parcelar o valor do imovel em leilao?',
+    question: 'Posso parcelar o valor do imóvel em leilão?',
     answer:
-      'Alguns leiloes permitem parcelamento e outros exigem pagamento a vista. Essa condicao sempre e informada no relatorio do imovel.',
+      'Alguns leilões permitem parcelamento e outros exigem pagamento à vista. Essa condição sempre é informada no relatório do imóvel.',
   },
 ] as const;
 
@@ -1197,15 +1197,15 @@ function HomeView({
       >
         <div className="flex-1 space-y-3">
           <div className="inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-accent">
-            Assessoria especializada em leiloes imobiliarios
+            Assessoria especializada em leilões imobiliários
           </div>
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-            Compre imoveis de leilao com{' '}
-            <span className="text-primary">seguranca e estrategia comprovada</span>
+            Compre imóveis de leilão com{' '}
+            <span className="text-primary">segurança e estratégia comprovada</span>
           </h1>
           <p className="max-w-xl text-lg text-slate-600">
-            Da analise do edital a posse cuidamos de todo o processo para voce
-            investir com seguranca e aumentar suas chances de lucro.
+            Da análise do edital à posse cuidamos de todo o processo para você
+            investir com segurança e aumentar suas chances de lucro.
           </p>
 
         </div>
@@ -1238,11 +1238,11 @@ function HomeView({
                           {featuredProperty.title}
                         </p>
                         <p className="mt-1 text-xs text-slate-500">
-                          {featuredProperty.location || 'Localizacao nao informada'}
+                          {featuredProperty.location || 'Localização não informada'}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-slate-500">Lance minimo</p>
+                        <p className="text-xs text-slate-500">Lance mínimo</p>
                         <p className="text-sm font-bold text-slate-900">
                           {formatCurrency(featuredProperty.price)}
                         </p>
@@ -1269,7 +1269,7 @@ function HomeView({
                         onClick={() => onPropertyClick(featuredProperty)}
                         className="rounded-full bg-slate-900 px-3.5 py-2 text-[11px] font-bold text-white transition hover:bg-slate-800"
                       >
-                        Ver imovel
+                        Ver imóvel
                       </button>
                       {isAdmin ? (
                         <AdminEditPropertyLink propertyId={featuredProperty.id} compact />
@@ -1279,10 +1279,10 @@ function HomeView({
                 ) : (
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-                      Nenhum imovel encontrado
+                      Nenhum imóvel encontrado
                     </p>
                     <p className="text-sm text-slate-600">
-                      Cadastre imoveis no admin para alimentar esta vitrine.
+                      Cadastre imóveis no admin para alimentar esta vitrine.
                     </p>
                   </div>
                 )}
@@ -1298,25 +1298,25 @@ function HomeView({
             Diferenciais
           </p>
           <h2 className="w-full text-[1.8rem] font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-[2rem] lg:whitespace-nowrap lg:text-[2.45rem]">
-            Inteligencia, seguranca e acompanhamento em todas as etapas
+            Inteligência, segurança e acompanhamento em todas as etapas
           </h2>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {[
             {
               icon: <BriefcaseBusiness className="size-6 text-primary" />,
-              title: 'Assessoria completa do lance a chave na mao',
-              text: 'Acompanhamos todo o processo, desde a analise do edital ate a entrega do imovel.',
+              title: 'Assessoria completa do lance à chave na mão',
+              text: 'Acompanhamos todo o processo, desde a análise do edital até a entrega do imóvel.',
             },
             {
               icon: <ShieldCheck className="size-6 text-primary" />,
-              title: 'Seguranca total em cada etapa do leilao',
-              text: 'Nossa equipe analisa os riscos juridicos e financeiros antes de qualquer recomendacao.',
+              title: 'Segurança total em cada etapa do leilão',
+              text: 'Nossa equipe analisa os riscos jurídicos e financeiros antes de qualquer recomendação.',
             },
             {
               icon: <Scale className="size-6 text-primary" />,
-              title: 'Analise juridica completa',
-              text: 'Verificamos processos, matricula, dividas e possiveis riscos antes do arremate.',
+              title: 'Análise jurídica completa',
+              text: 'Verificamos processos, matrícula, dívidas e possíveis riscos antes do arremate.',
             },
           ].map((item) => (
             <div
@@ -1337,25 +1337,25 @@ function HomeView({
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="rounded-[2.25rem] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-8 text-white shadow-sm sm:p-10">
             <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
-              Missao e visao
+              Missão e visão
             </p>
             <div className="mt-6 space-y-6">
               <div>
-                <h3 className="text-2xl font-bold">Missao</h3>
+                <h3 className="text-2xl font-bold">Missão</h3>
                 <p className="mt-3 text-sm leading-8 text-slate-300">
-                  Oferecer assessoria completa e transparente em leiloes de
-                  imoveis, conectando pessoas, familias e investidores a
-                  oportunidades reais para conquistar a casa propria ou ampliar o
-                  patrimonio com seguranca e economia.
+                  Oferecer assessoria completa e transparente em leilões de
+                  imóveis, conectando pessoas, famílias e investidores a
+                  oportunidades reais para conquistar a casa própria ou ampliar o
+                  patrimônio com segurança e economia.
                 </p>
               </div>
               <div className="h-px bg-white/10" />
               <div>
-                <h3 className="text-2xl font-bold">Visao</h3>
+                <h3 className="text-2xl font-bold">Visão</h3>
                 <p className="mt-3 text-sm leading-8 text-slate-300">
-                  Ser reconhecida como a principal referencia em assessoria de
-                  leiloes no Brasil, tornando esse mercado mais acessivel, seguro
-                  e confiavel para todos.
+                  Ser reconhecida como a principal referência em assessoria de
+                  leilões no Brasil, tornando esse mercado mais acessível, seguro
+                  e confiável para todos.
                 </p>
               </div>
             </div>
@@ -1366,12 +1366,12 @@ function HomeView({
               Valores
             </p>
             <h3 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
-              Principios que sustentam cada recomendacao
+              Princípios que sustentam cada recomendação
             </h3>
             <p className="mt-4 max-w-2xl text-base leading-8 text-slate-600">
-              Nossa atuacao combina criterio tecnico com proximidade humana para
-              oferecer uma experiencia premium, segura e objetiva do primeiro
-              contato ate a arrematacao.
+              Nossa atuação combina critério técnico com proximidade humana para
+              oferecer uma experiência premium, segura e objetiva do primeiro
+              contato até a arrematação.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               {BRAND_VALUES.map((value) => (
@@ -1390,20 +1390,20 @@ function HomeView({
       <section className="scroll-mt-24" id="planos">
         <div className="mb-8 max-w-3xl space-y-3">
           <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
-            Oportunidades de imoveis
+            Oportunidades de imóveis
           </p>
           <h3 className="text-3xl font-bold text-slate-900">
-            Oportunidades exclusivas de imoveis em leilao
+            Oportunidades exclusivas de imóveis em leilão
           </h3>
           <p className="text-base leading-8 text-slate-600">
-            Explore imoveis selecionados com analise previa da equipe Nexo.
-            Encontre oportunidades com valores abaixo do mercado e potencial real de valorizacao.
+            Explore imóveis selecionados com análise prévia da equipe Nexo.
+            Encontre oportunidades com valores abaixo do mercado e potencial real de valorização.
           </p>
         </div>
 
         <div className="mb-8 flex items-center justify-between">
           <h3 className="text-2xl font-bold text-slate-900">
-            Imoveis selecionados
+            Imóveis selecionados
           </h3>
           <button
             onClick={onBrowse}
@@ -1415,11 +1415,11 @@ function HomeView({
 
         {isLoading ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500 shadow-sm">
-            Carregando imoveis...
+            Carregando imóveis...
           </div>
         ) : properties.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500 shadow-sm">
-            Nenhum imovel disponivel no momento.
+            Nenhum imóvel disponível no momento.
           </div>
         ) : (
           <div className="space-y-8">
@@ -1441,7 +1441,7 @@ function HomeView({
                   onClick={() => setVisibleCount((current) => current + 6)}
                   className="rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-primary/30 hover:text-primary"
                 >
-                  Carregar mais 6 imoveis
+                  Carregar mais 6 imóveis
                 </button>
               </div>
             ) : null}
@@ -1462,23 +1462,23 @@ function HomeView({
           {[
             {
               icon: <Target className="size-5 text-primary" />,
-              title: 'Analise e Estrategia',
-              text: 'Entendemos seu objetivo: investir, revender ou adquirir um imovel para moradia.',
+              title: 'Análise e Estratégia',
+              text: 'Entendemos seu objetivo: investir, revender ou adquirir um imóvel para moradia.',
             },
             {
               icon: <FileSearch className="size-5 text-primary" />,
-              title: 'Selecao e Due Diligence',
-              text: 'Filtramos imoveis e realizamos uma analise juridica e financeira detalhada.',
+              title: 'Seleção e Due Diligence',
+              text: 'Filtramos imóveis e realizamos uma análise jurídica e financeira detalhada.',
             },
             {
               icon: <Landmark className="size-5 text-primary" />,
               title: 'Lances e Arremate',
-              text: 'Acompanhamos voce durante o processo do leilao e orientamos na estrategia de lances.',
+              text: 'Acompanhamos você durante o processo do leilão e orientamos na estratégia de lances.',
             },
             {
               icon: <Home className="size-5 text-primary" />,
-              title: 'Regularizacao e Posse',
-              text: 'Auxiliamos nos tramites apos o arremate ate a regularizacao e posse do imovel.',
+              title: 'Regularização e Posse',
+              text: 'Auxiliamos nos trâmites após o arremate até a regularização e posse do imóvel.',
             },
           ].map((item, index) => (
             <div
@@ -1514,23 +1514,23 @@ function HomeView({
                   Sobre a Nexo
                 </p>
                 <h2 className="max-w-2xl text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.2rem]">
-                  Tornamos o leilao imobiliario mais acessivel, seguro e confiavel
+                  Tornamos o leilão imobiliário mais acessível, seguro e confiável
                 </h2>
               </div>
               <p className="max-w-2xl text-base leading-8 text-slate-600">
-                Na Nexo Leiloes, democratizamos o acesso aos leiloes de imoveis,
+                Na Nexo Leilões, democratizamos o acesso aos leilões de imóveis,
                 transformando uma oportunidade antes exclusiva em um caminho seguro,
-                transparente e acessivel para todos.
+                transparente e acessível para todos.
               </p>
               <p className="max-w-2xl text-base leading-8 text-slate-600">
-                Atuamos como uma ponte entre voce e as melhores oportunidades do
-                mercado, oferecendo suporte juridico, financeiro e estrategico em
+                Atuamos como uma ponte entre você e as melhores oportunidades do
+                mercado, oferecendo suporte jurídico, financeiro e estratégico em
                 cada etapa do processo.
               </p>
               <p className="max-w-2xl text-base leading-8 text-slate-600">
-                Nossa missao e garantir que familias e investidores avancem com
-                confianca para conquistar imoveis de alto valor por precos justos,
-                sem surpresas e com total seguranca.
+                Nossa missão é garantir que famílias e investidores avancem com
+                confiança para conquistar imóveis de alto valor por preços justos,
+                sem surpresas e com total segurança.
               </p>
               <div className="grid gap-4 sm:grid-cols-3">
                 {ABOUT_PILLARS.map((item) => (
@@ -1564,29 +1564,29 @@ function HomeView({
                   Servolo Tobias
                 </h3>
                 <p className="mt-4 text-base leading-8 text-slate-300">
-                  Ha mais de 20 anos, Servolo cria solucoes que entregam economia
-                  e seguranca para pessoas e empresas, sempre orientado por gerar
+                  Há mais de 20 anos, Servolo cria soluções que entregam economia
+                  e segurança para pessoas e empresas, sempre orientado por gerar
                   valor real.
                 </p>
                 <p className="mt-4 text-base leading-8 text-slate-300">
-                  Sua relacao com leiloes nasceu da curiosidade em estudar editais,
-                  calcular riscos e ajudar amigos a arrematar bons negocios. Dessa
-                  paixao surgiu um metodo proprio, baseado em leitura profunda do
-                  imovel, custos, cenarios e estrategia.
+                  Sua relação com leilões nasceu da curiosidade em estudar editais,
+                  calcular riscos e ajudar amigos a arrematar bons negócios. Dessa
+                  paixão surgiu um método próprio, baseado em leitura profunda do
+                  imóvel, custos, cenários e estratégia.
                 </p>
                 <p className="mt-4 text-base leading-8 text-slate-300">
-                  Na Nexo, esse olhar se transforma em assessoria proxima,
+                  Na Nexo, esse olhar se transforma em assessoria próxima,
                   transparente e criteriosa, seja para quem busca o primeiro lar,
-                  seja para quem quer acelerar o proximo investimento.
+                  seja para quem quer acelerar o próximo investimento.
                 </p>
               </div>
               <div className="rounded-[1.8rem] border border-white/10 bg-white/5 p-6">
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">
-                  De paixao a metodo
+                  De paixão a método
                 </p>
                 <p className="mt-3 text-sm leading-7 text-slate-200">
-                  Mais do que assessorar, Servolo construiu uma reputacao de
-                  confianca e compromisso absoluto com o resultado de cada cliente.
+                  Mais do que assessorar, Servolo construiu uma reputação de
+                  confiança e compromisso absoluto com o resultado de cada cliente.
                 </p>
               </div>
             </div>
@@ -1595,10 +1595,10 @@ function HomeView({
         <div className="border-t border-slate-200 bg-white p-8 sm:p-10">
           <div className="mb-8 max-w-3xl space-y-3">
             <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
-              Nossa trajetoria
+              Nossa trajetória
             </p>
             <h3 className="text-3xl font-bold tracking-tight text-slate-900">
-              Historia, criterio e compromisso com seu resultado
+              História, critério e compromisso com seu resultado
             </h3>
           </div>
           <div className="grid gap-5 lg:grid-cols-3">
@@ -1628,13 +1628,13 @@ function HomeView({
               Diferenciais da Nexo
             </p>
             <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-              Por que escolher a Nexo Leiloes?
+              Por que escolher a Nexo Leilões?
             </h2>
             <div className="relative hidden overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm lg:block">
               <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-950/20 via-transparent to-transparent" />
               <Image
                 src="/images/analise-imovel.png"
-                alt="Analise estrategica de imovel da Nexo"
+                alt="Análise estratégica de imóvel da Nexo"
                 width={1200}
                 height={900}
                 className="h-[380px] w-full object-cover object-center"
@@ -1645,19 +1645,19 @@ function HomeView({
                   Curadoria inteligente
                 </p>
                 <p className="mt-2 text-sm leading-7 text-slate-700">
-                  Oportunidades analisadas com foco em liquidez, seguranca juridica
-                  e potencial real de valorizacao.
+                  Oportunidades analisadas com foco em liquidez, segurança jurídica
+                  e potencial real de valorização.
                 </p>
               </div>
             </div>
           </div>
           <div className="grid gap-4">
             {[
-              'Analise juridica combinada com estrategia de investimento',
-              'Identificacao de oportunidades reais com potencial de valorizacao',
+              'Análise jurídica combinada com estratégia de investimento',
+              'Identificação de oportunidades reais com potencial de valorização',
               'Atendimento consultivo e acompanhamento especializado',
-              'Avaliacao inicial do perfil do investidor',
-              'Curadoria de ativos com maior liquidez e leitura de saida',
+              'Avaliação inicial do perfil do investidor',
+              'Curadoria de ativos com maior liquidez e leitura de saída',
             ].map((item) => (
               <div
                 key={item}
@@ -1682,11 +1682,11 @@ function HomeView({
             FAQ
           </p>
           <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-            Perguntas frequentes para decidir com mais seguranca
+            Perguntas frequentes para decidir com mais segurança
           </h2>
           <p className="text-base leading-8 text-slate-600">
-            Reunimos as duvidas mais comuns sobre leiloes de imoveis, relatorios e
-            assessoria para voce avancar com clareza desde o primeiro passo.
+            Reunimos as dúvidas mais comuns sobre leilões de imóveis, relatórios e
+            assessoria para você avançar com clareza desde o primeiro passo.
           </p>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
@@ -1792,6 +1792,7 @@ function PropertyCard({
   const [imageIndex, setImageIndex] = useState(0);
   const currentImage = gallery[imageIndex] ?? property.image_url;
   const suppressCardClickRef = useRef(false);
+  const cardDescriptionPreview = createPropertyCardPreview(property.description);
 
   const showPreviousImage = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -1902,8 +1903,8 @@ function PropertyCard({
         <h4 className="mb-2 line-clamp-1 text-lg font-bold text-slate-900">
           {property.title}
         </h4>
-        <p className="mb-4 line-clamp-2 text-sm text-slate-600">
-          {property.description}
+        <p className="mb-4 line-clamp-2 text-sm leading-6 text-slate-600">
+          {cardDescriptionPreview}
         </p>
         <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
           <div className="flex gap-4">
@@ -2113,11 +2114,11 @@ function ListingsView({
 
       {isLoading ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500 shadow-sm">
-          Carregando imoveis...
+          Carregando imóveis...
         </div>
       ) : filteredProperties.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500 shadow-sm">
-          Nenhum imovel encontrado para essa busca.
+          Nenhum imóvel encontrado para essa busca.
         </div>
       ) : (
         <div className="space-y-8">
@@ -2721,6 +2722,27 @@ function DetailPanelCard({
     </div>
   );
 }
+function createPropertyCardPreview(value: string | null | undefined) {
+  if (!value) {
+    return 'Descrição não informada.';
+  }
+
+  const plainText = value
+    .replace(/\r\n/g, '\n')
+    .replace(/#{1,6}\s*/g, ' ')
+    .replace(/\*\*/g, '')
+    .replace(/[-*â€¢]+\s*/g, ' ')
+    .replace(/[|_[\]{}<>~`]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!plainText) {
+    return 'Descrição não informada.';
+  }
+
+  const normalized = plainText.toLocaleLowerCase('pt-BR');
+  return normalized.charAt(0).toLocaleUpperCase('pt-BR') + normalized.slice(1);
+}
 
 function LongDetailBlock({
   icon,
@@ -2885,6 +2907,9 @@ function formatDate(value: string | null | undefined) {
     year: 'numeric',
   }).format(date);
 }
+
+
+
 
 
 
