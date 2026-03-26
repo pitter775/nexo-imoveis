@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
@@ -764,10 +764,10 @@ export function PublicMarketplace({
               href="https://wa.me/5511916751213"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
+              aria-label="Conversar no WhatsApp"
+              className="inline-flex size-11 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
             >
               <MessageCircle className="size-4" />
-              (11) 91675-1213
             </a>
           </div>
 
@@ -797,14 +797,13 @@ export function PublicMarketplace({
                     {adminHref ? (
                       <Link
                         href={adminHref}
-                        className="flex h-11 w-[208px] items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 transition hover:border-primary/30 hover:bg-primary/5"
+                        aria-label="Abrir area da conta"
+                        className="flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white transition hover:border-primary/30 hover:bg-primary/5"
                       >
-                        <span className="truncate text-sm font-medium">{user.email}</span>
                         <UserAvatar email={user.email} />
                       </Link>
                     ) : (
-                      <div className="flex h-11 w-[208px] items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2">
-                        <span className="truncate text-sm font-medium">{user.email}</span>
+                      <div className="flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white">
                         <UserAvatar email={user.email} />
                       </div>
                     )}
@@ -1344,123 +1343,6 @@ function HomeView({
         </div>
       </section>
 
-      <section
-        id="sobre"
-        className="scroll-mt-24 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-sm"
-      >
-        <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr]">
-          <div className="relative p-8 sm:p-10">
-            <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-r from-primary/10 via-secondary/10 to-transparent" />
-            <div className="relative space-y-6">
-              <div className="space-y-3">
-                <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
-                  Sobre a Nexo
-                </p>
-                <h2 className="max-w-2xl text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.2rem]">
-                  Tornamos o leilao imobiliario mais acessivel, seguro e confiavel
-                </h2>
-              </div>
-              <p className="max-w-2xl text-base leading-8 text-slate-600">
-                Na Nexo Leiloes, democratizamos o acesso aos leiloes de imoveis,
-                transformando uma oportunidade antes exclusiva em um caminho seguro,
-                transparente e acessivel para todos.
-              </p>
-              <p className="max-w-2xl text-base leading-8 text-slate-600">
-                Atuamos como uma ponte entre voce e as melhores oportunidades do
-                mercado, oferecendo suporte juridico, financeiro e estrategico em
-                cada etapa do processo.
-              </p>
-              <p className="max-w-2xl text-base leading-8 text-slate-600">
-                Nossa missao e garantir que familias e investidores avancem com
-                confianca para conquistar imoveis de alto valor por precos justos,
-                sem surpresas e com total seguranca.
-              </p>
-              <div className="grid gap-4 sm:grid-cols-3">
-                {ABOUT_PILLARS.map((item) => (
-                  <div
-                    key={item}
-                    className="rounded-[1.6rem] border border-slate-200 bg-slate-50/90 p-5"
-                  >
-                    <CheckCircle2 className="mb-3 size-5 text-primary" />
-                    <p className="text-sm leading-7 text-slate-600">{item}</p>
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  window.open('https://wa.me/5511916751213', '_blank', 'noopener,noreferrer')
-                }
-                className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
-              >
-                Falar com a equipe
-              </button>
-            </div>
-          </div>
-          <div className="border-t border-slate-200 bg-slate-950 p-8 text-white sm:p-10 lg:border-l lg:border-t-0">
-            <div className="space-y-6">
-              <div>
-                <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
-                  Fundador
-                </p>
-                <h3 className="mt-3 text-3xl font-bold tracking-tight">
-                  Servolo Tobias
-                </h3>
-                <p className="mt-4 text-base leading-8 text-slate-300">
-                  Ha mais de 20 anos, Servolo cria solucoes que entregam economia
-                  e seguranca para pessoas e empresas, sempre orientado por gerar
-                  valor real.
-                </p>
-                <p className="mt-4 text-base leading-8 text-slate-300">
-                  Sua relacao com leiloes nasceu da curiosidade em estudar editais,
-                  calcular riscos e ajudar amigos a arrematar bons negocios. Dessa
-                  paixao surgiu um metodo proprio, baseado em leitura profunda do
-                  imovel, custos, cenarios e estrategia.
-                </p>
-                <p className="mt-4 text-base leading-8 text-slate-300">
-                  Na Nexo, esse olhar se transforma em assessoria proxima,
-                  transparente e criteriosa, seja para quem busca o primeiro lar,
-                  seja para quem quer acelerar o proximo investimento.
-                </p>
-              </div>
-              <div className="rounded-[1.8rem] border border-white/10 bg-white/5 p-6">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">
-                  De paixao a metodo
-                </p>
-                <p className="mt-3 text-sm leading-7 text-slate-200">
-                  Mais do que assessorar, Servolo construiu uma reputacao de
-                  confianca e compromisso absoluto com o resultado de cada cliente.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="border-t border-slate-200 bg-white p-8 sm:p-10">
-          <div className="mb-8 max-w-3xl space-y-3">
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
-              Nossa trajetoria
-            </p>
-            <h3 className="text-3xl font-bold tracking-tight text-slate-900">
-              Historia, criterio e compromisso com seu resultado
-            </h3>
-          </div>
-          <div className="grid gap-5 lg:grid-cols-3">
-            {HISTORY_HIGHLIGHTS.map((item) => (
-              <div
-                key={item.title}
-                className="rounded-[1.8rem] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6"
-              >
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                  {item.eyebrow}
-                </p>
-                <h4 className="mt-3 text-xl font-bold text-slate-900">{item.title}</h4>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{item.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="scroll-mt-24" id="institucional">
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="rounded-[2.25rem] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-8 text-white shadow-sm sm:p-10">
@@ -1623,6 +1505,123 @@ function HomeView({
               <p className="mt-3 text-sm leading-7 text-slate-600">{item.text}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section
+        id="sobre"
+        className="scroll-mt-24 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-sm"
+      >
+        <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr]">
+          <div className="relative p-8 sm:p-10">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-primary/15 via-secondary/10 to-white/0 sm:h-64" />
+            <div className="relative space-y-6">
+              <div className="space-y-3">
+                <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+                  Sobre a Nexo
+                </p>
+                <h2 className="max-w-2xl text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.2rem]">
+                  Tornamos o leilao imobiliario mais acessivel, seguro e confiavel
+                </h2>
+              </div>
+              <p className="max-w-2xl text-base leading-8 text-slate-600">
+                Na Nexo Leiloes, democratizamos o acesso aos leiloes de imoveis,
+                transformando uma oportunidade antes exclusiva em um caminho seguro,
+                transparente e acessivel para todos.
+              </p>
+              <p className="max-w-2xl text-base leading-8 text-slate-600">
+                Atuamos como uma ponte entre voce e as melhores oportunidades do
+                mercado, oferecendo suporte juridico, financeiro e estrategico em
+                cada etapa do processo.
+              </p>
+              <p className="max-w-2xl text-base leading-8 text-slate-600">
+                Nossa missao e garantir que familias e investidores avancem com
+                confianca para conquistar imoveis de alto valor por precos justos,
+                sem surpresas e com total seguranca.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {ABOUT_PILLARS.map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-[1.6rem] border border-slate-200 bg-slate-50/90 p-5"
+                  >
+                    <CheckCircle2 className="mb-3 size-5 text-primary" />
+                    <p className="text-sm leading-7 text-slate-600">{item}</p>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open('https://wa.me/5511916751213', '_blank', 'noopener,noreferrer')
+                }
+                className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+              >
+                Falar com a equipe
+              </button>
+            </div>
+          </div>
+          <div className="border-t border-slate-200 bg-slate-950 p-8 text-white sm:p-10 lg:border-l lg:border-t-0">
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+                  Fundador
+                </p>
+                <h3 className="mt-3 text-3xl font-bold tracking-tight">
+                  Servolo Tobias
+                </h3>
+                <p className="mt-4 text-base leading-8 text-slate-300">
+                  Ha mais de 20 anos, Servolo cria solucoes que entregam economia
+                  e seguranca para pessoas e empresas, sempre orientado por gerar
+                  valor real.
+                </p>
+                <p className="mt-4 text-base leading-8 text-slate-300">
+                  Sua relacao com leiloes nasceu da curiosidade em estudar editais,
+                  calcular riscos e ajudar amigos a arrematar bons negocios. Dessa
+                  paixao surgiu um metodo proprio, baseado em leitura profunda do
+                  imovel, custos, cenarios e estrategia.
+                </p>
+                <p className="mt-4 text-base leading-8 text-slate-300">
+                  Na Nexo, esse olhar se transforma em assessoria proxima,
+                  transparente e criteriosa, seja para quem busca o primeiro lar,
+                  seja para quem quer acelerar o proximo investimento.
+                </p>
+              </div>
+              <div className="rounded-[1.8rem] border border-white/10 bg-white/5 p-6">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">
+                  De paixao a metodo
+                </p>
+                <p className="mt-3 text-sm leading-7 text-slate-200">
+                  Mais do que assessorar, Servolo construiu uma reputacao de
+                  confianca e compromisso absoluto com o resultado de cada cliente.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-slate-200 bg-white p-8 sm:p-10">
+          <div className="mb-8 max-w-3xl space-y-3">
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+              Nossa trajetoria
+            </p>
+            <h3 className="text-3xl font-bold tracking-tight text-slate-900">
+              Historia, criterio e compromisso com seu resultado
+            </h3>
+          </div>
+          <div className="grid gap-5 lg:grid-cols-3">
+            {HISTORY_HIGHLIGHTS.map((item) => (
+              <div
+                key={item.title}
+                className="rounded-[1.8rem] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6"
+              >
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                  {item.eyebrow}
+                </p>
+                <h4 className="mt-3 text-xl font-bold text-slate-900">{item.title}</h4>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{item.text}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -2651,7 +2650,7 @@ function PropertyDetailsView({
       </div>
 
       {similarProperties.length ? (
-        <section className="mt-12 border-t border-slate-200 pt-10 sm:mt-16 sm:pt-12">
+        <section className="mt-12 pt-10 sm:mt-16 sm:pt-12">
           <div className="space-y-6">
             <div className="flex items-center gap-4">
               <div className="h-px flex-1 bg-slate-200" />
@@ -2893,3 +2892,6 @@ function formatDate(value: string | null | undefined) {
     year: 'numeric',
   }).format(date);
 }
+
+
+
