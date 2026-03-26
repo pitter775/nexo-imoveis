@@ -2,7 +2,13 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { createImovel, updateImovel, upsertImovelDetalhes } from '@/lib/admin/imoveis';
+import {
+  createImovel,
+  deleteImovel,
+  updateImovel,
+  updateImovelStatus,
+  upsertImovelDetalhes,
+} from '@/lib/admin/imoveis';
 import { requireAdmin } from '@/lib/auth';
 
 export async function createImovelAction(formData: FormData) {
@@ -41,14 +47,49 @@ export async function updateImovelDetalhesAction(formData: FormData) {
   redirect(`/admin/imoveis/${id}`);
 }
 
+export async function inactivateImovelAction(formData: FormData) {
+  await requireAdmin();
+
+  const id = String(formData.get('id') ?? '');
+  if (!id) {
+    throw new Error('Imovel id is required.');
+  }
+
+  await updateImovelStatus(id, 'inativo');
+  revalidatePath('/admin/imoveis');
+  revalidatePath(`/admin/imoveis/${id}`);
+}
+
+export async function deleteImovelAction(formData: FormData) {
+  await requireAdmin();
+
+  const id = String(formData.get('id') ?? '');
+  if (!id) {
+    throw new Error('Imovel id is required.');
+  }
+
+  await deleteImovel(id);
+  revalidatePath('/admin/imoveis');
+  redirect('/admin/imoveis');
+}
+
 function parseImovelFormData(formData: FormData) {
+  const dataPrimeiroLeilao = normalizeOptionalString(formData.get('data_primeiro_leilao'));
+  const valorPrimeiroLeilao = parseOptionalNumber(formData.get('valor_primeiro_leilao'));
+  const dataSegundoLeilao = normalizeOptionalString(formData.get('data_segundo_leilao'));
+  const valorSegundoLeilao = parseOptionalNumber(formData.get('valor_segundo_leilao'));
+
   return {
     titulo: String(formData.get('titulo') ?? '').trim(),
     descricao: String(formData.get('descricao') ?? '').trim(),
     tipo_leilao: String(formData.get('tipo_leilao') ?? '').trim(),
     tipo_propriedade: String(formData.get('tipo_propriedade') ?? '').trim(),
     valor_avaliacao: Number(formData.get('valor_avaliacao') ?? 0),
-    valor_minimo: Number(formData.get('valor_minimo') ?? 0),
+    valor_minimo: valorPrimeiroLeilao ?? 0,
+    data_primeiro_leilao: dataPrimeiroLeilao,
+    valor_primeiro_leilao: valorPrimeiroLeilao,
+    data_segundo_leilao: dataSegundoLeilao,
+    valor_segundo_leilao: valorSegundoLeilao,
     quartos: parseOptionalInteger(formData.get('quartos')),
     banheiros: parseOptionalInteger(formData.get('banheiros')),
     area_total: parseOptionalNumber(formData.get('area_total')),
@@ -60,7 +101,7 @@ function parseImovelFormData(formData: FormData) {
     cidade: String(formData.get('cidade') ?? '').trim(),
     estado: String(formData.get('estado') ?? '').trim(),
     cep: String(formData.get('cep') ?? '').trim(),
-    data_leilao: String(formData.get('data_leilao') ?? ''),
+    data_leilao: dataPrimeiroLeilao,
     status: String(formData.get('status') ?? '').trim(),
     destaque: formData.get('destaque') === 'on',
     ordem_destaque: parseOptionalInteger(formData.get('ordem_destaque')),
@@ -107,4 +148,9 @@ function parseOptionalNumber(value: FormDataEntryValue | null) {
 
   const parsedValue = Number(rawValue);
   return Number.isNaN(parsedValue) ? null : parsedValue;
+}
+
+function normalizeOptionalString(value: FormDataEntryValue | null) {
+  const rawValue = String(value ?? '').trim();
+  return rawValue || null;
 }

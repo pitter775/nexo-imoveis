@@ -10,6 +10,10 @@ export type ImovelRecord = {
   tipo_propriedade: string | null;
   valor_avaliacao: number | null;
   valor_minimo: number | null;
+  data_primeiro_leilao?: string | null;
+  valor_primeiro_leilao?: number | null;
+  data_segundo_leilao?: string | null;
+  valor_segundo_leilao?: number | null;
   quartos: number | null;
   banheiros: number | null;
   area_total: number | null;
@@ -25,6 +29,7 @@ export type ImovelRecord = {
   status: string | null;
   destaque: boolean;
   ordem_destaque: number | null;
+  created_at?: string | null;
   capa_url?: string | null;
 };
 
@@ -98,7 +103,7 @@ export async function listImoveisPage({
   let request = supabase
     .from('imoveis')
     .select(
-      'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status, destaque, ordem_destaque',
+      'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, data_primeiro_leilao, valor_primeiro_leilao, data_segundo_leilao, valor_segundo_leilao, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status, destaque, ordem_destaque, created_at',
       { count: 'exact' },
     )
     .order('data_leilao', { ascending: true })
@@ -188,7 +193,7 @@ export async function getImovelById(id: string) {
   const { data, error } = await supabase
     .from('imoveis')
     .select(
-      'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status, destaque, ordem_destaque',
+      'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, data_primeiro_leilao, valor_primeiro_leilao, data_segundo_leilao, valor_segundo_leilao, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status, destaque, ordem_destaque, created_at',
     )
     .eq('id', id)
     .maybeSingle();
@@ -221,6 +226,112 @@ export async function updateImovel(id: string, input: Omit<ImovelRecord, 'id'>) 
 
   if (error) {
     throw new Error(`Failed to update imovel: ${error.message}`);
+  }
+}
+
+export async function updateImovelStatus(id: string, status: string) {
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from('imoveis')
+    .update({ status })
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(`Failed to update imovel status: ${error.message}`);
+  }
+}
+
+export async function deleteImovel(id: string) {
+  const supabase = createAdminClient();
+
+  const [{ data: imagens, error: imagensError }, { data: arquivos, error: arquivosError }] =
+    await Promise.all([
+      supabase.from('imovel_imagens').select('url').eq('imovel_id', id),
+      supabase.from('imovel_arquivos').select('id, url_storage').eq('imovel_id', id),
+    ]);
+
+  if (imagensError) {
+    throw new Error(`Failed to load imovel images: ${imagensError.message}`);
+  }
+
+  if (arquivosError) {
+    throw new Error(`Failed to load imovel files: ${arquivosError.message}`);
+  }
+
+  const arquivoIds = (arquivos ?? [])
+    .map((arquivo) => arquivo.id)
+    .filter((arquivoId): arquivoId is string => Boolean(arquivoId));
+
+  if (arquivoIds.length > 0) {
+    const { error } = await supabase
+      .from('imovel_arquivo_extracoes')
+      .delete()
+      .in('arquivo_id', arquivoIds);
+
+    if (error) {
+      throw new Error(`Failed to remove imovel file extractions: ${error.message}`);
+    }
+  }
+
+  const { data: conversas, error: conversasError } = await supabase
+    .from('chat_conversas')
+    .select('id')
+    .eq('imovel_id', id);
+
+  if (conversasError) {
+    throw new Error(`Failed to load imovel chats: ${conversasError.message}`);
+  }
+
+  const conversaIds = (conversas ?? [])
+    .map((conversa) => conversa.id)
+    .filter((conversaId): conversaId is string => Boolean(conversaId));
+
+  if (conversaIds.length > 0) {
+    const { error: mensagensError } = await supabase
+      .from('chat_mensagens')
+      .delete()
+      .in('conversa_id', conversaIds);
+
+    if (mensagensError) {
+      throw new Error(`Failed to remove imovel chat messages: ${mensagensError.message}`);
+    }
+  }
+
+  const cleanupTasks = [
+    supabase.from('chat_conversas').delete().eq('imovel_id', id),
+    supabase.from('historico_acessos').delete().eq('imovel_id', id),
+    supabase.from('leiloes').delete().eq('imovel_id', id),
+    supabase.from('pagamentos_itens').delete().eq('imovel_id', id),
+    supabase.from('user_access').delete().eq('imovel_id', id),
+    supabase.from('imovel_detalhes').delete().eq('imovel_id', id),
+    supabase.from('imovel_imagens').delete().eq('imovel_id', id),
+    supabase.from('imovel_arquivos').delete().eq('imovel_id', id),
+  ] as const;
+
+  const results = await Promise.all(cleanupTasks);
+  const failedCleanup = results.find((result) => result.error);
+
+  if (failedCleanup?.error) {
+    throw new Error(`Failed to cleanup imovel relations: ${failedCleanup.error.message}`);
+  }
+
+  const storagePaths = [
+    ...(imagens ?? [])
+      .map((imagem) => extractStoragePath(imagem.url))
+      .filter((path): path is string => Boolean(path)),
+    ...(arquivos ?? [])
+      .map((arquivo) => extractStoragePath(arquivo.url_storage ?? null))
+      .filter((path): path is string => Boolean(path)),
+  ];
+
+  if (storagePaths.length > 0) {
+    await supabase.storage.from('imoveis').remove(storagePaths);
+  }
+
+  const { error } = await supabase.from('imoveis').delete().eq('id', id);
+
+  if (error) {
+    throw new Error(`Failed to delete imovel: ${error.message}`);
   }
 }
 

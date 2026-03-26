@@ -105,7 +105,7 @@ export function AdminDashboard({ profile, data }: AdminDashboardProps) {
               <div key={item.label} className="flex flex-1 flex-col items-center gap-3">
                 <div className="flex h-full w-full items-end rounded-[1.5rem] bg-slate-100/80 p-2">
                   <div
-                    className="w-full rounded-[1rem] bg-gradient-to-t from-primary to-[#ffb26b]"
+                    className="w-full rounded-[1rem] bg-gradient-to-t from-primary to-[#93c5fd]"
                     style={{
                       height: `${Math.max(16, (item.total / maxTrend) * 100)}%`,
                     }}

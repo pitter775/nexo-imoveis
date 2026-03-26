@@ -1,6 +1,12 @@
 'use client';
 
-import { useState, type ChangeEvent, type HTMLAttributes } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type HTMLAttributes,
+} from 'react';
 import {
   BadgeDollarSign,
   BedDouble,
@@ -12,6 +18,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { FormSelect } from '@/components/form-select';
+import { PropertyDescription } from '@/components/property-description';
 
 const TIPO_LEILAO_OPTIONS = [
   { value: 'judicial', label: 'Judicial' },
@@ -31,6 +38,7 @@ const TIPO_PROPRIEDADE_OPTIONS = [
 
 const STATUS_OPTIONS = [
   { value: 'ativo', label: 'Ativo' },
+  { value: 'inativo', label: 'Inativo' },
   { value: 'vendido', label: 'Vendido' },
   { value: 'cancelado', label: 'Cancelado' },
   { value: 'encerrado', label: 'Encerrado' },
@@ -74,6 +82,10 @@ type ImovelFormValues = {
   tipo_propriedade?: string | null;
   valor_avaliacao?: number | null;
   valor_minimo?: number | null;
+  data_primeiro_leilao?: string | null;
+  valor_primeiro_leilao?: number | null;
+  data_segundo_leilao?: string | null;
+  valor_segundo_leilao?: number | null;
   quartos?: number | null;
   banheiros?: number | null;
   area_total?: number | null;
@@ -111,10 +123,19 @@ export function AdminImovelForm({
   const [valorAvaliacaoInput, setValorAvaliacaoInput] = useState(
     formatCurrencyInput(initialValues?.valor_avaliacao),
   );
-  const [valorMinimoInput, setValorMinimoInput] = useState(
-    formatCurrencyInput(initialValues?.valor_minimo),
+  const [valorPrimeiroLeilaoInput, setValorPrimeiroLeilaoInput] = useState(
+    formatCurrencyInput(initialValues?.valor_primeiro_leilao ?? initialValues?.valor_minimo),
+  );
+  const [valorSegundoLeilaoInput, setValorSegundoLeilaoInput] = useState(
+    formatCurrencyInput(initialValues?.valor_segundo_leilao),
   );
   const [cepInput, setCepInput] = useState(maskCep(initialValues?.cep ?? ''));
+  const [descricaoInput, setDescricaoInput] = useState(initialValues?.descricao ?? '');
+  const descricaoRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    autoResizeTextarea(descricaoRef.current);
+  }, [descricaoInput]);
 
   return (
     <div className="space-y-8">
@@ -160,8 +181,13 @@ export function AdminImovelForm({
         />
         <input
           type="hidden"
-          name="valor_minimo"
-          value={parseCurrencyInput(valorMinimoInput)}
+          name="valor_primeiro_leilao"
+          value={parseCurrencyInput(valorPrimeiroLeilaoInput)}
+        />
+        <input
+          type="hidden"
+          name="valor_segundo_leilao"
+          value={parseCurrencyInput(valorSegundoLeilaoInput)}
         />
 
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-12">
@@ -198,13 +224,42 @@ export function AdminImovelForm({
             className="md:col-span-1 xl:col-span-3"
           />
           <Field
-            label="Valor minimo"
-            name="valor_minimo_display"
-            value={valorMinimoInput}
-            onChange={(event) => setValorMinimoInput(maskCurrency(event.target.value))}
+            label="Valor do 1o leilao"
+            name="valor_primeiro_leilao_display"
+            value={valorPrimeiroLeilaoInput}
+            onChange={(event) =>
+              setValorPrimeiroLeilaoInput(maskCurrency(event.target.value))
+            }
             inputMode="numeric"
             required
             className="md:col-span-1 xl:col-span-3"
+          />
+          <Field
+            label="Data do 1o leilao"
+            name="data_primeiro_leilao"
+            type="datetime-local"
+            defaultValue={toDatetimeLocal(
+              initialValues?.data_primeiro_leilao ?? initialValues?.data_leilao,
+            )}
+            required
+            className="md:col-span-1 xl:col-span-4"
+          />
+          <Field
+            label="Valor do 2o leilao"
+            name="valor_segundo_leilao_display"
+            value={valorSegundoLeilaoInput}
+            onChange={(event) =>
+              setValorSegundoLeilaoInput(maskCurrency(event.target.value))
+            }
+            inputMode="numeric"
+            className="md:col-span-1 xl:col-span-3"
+          />
+          <Field
+            label="Data do 2o leilao"
+            name="data_segundo_leilao"
+            type="datetime-local"
+            defaultValue={toDatetimeLocal(initialValues?.data_segundo_leilao)}
+            className="md:col-span-1 xl:col-span-4"
           />
           <Field
             label="Total (m2)"
@@ -249,9 +304,9 @@ export function AdminImovelForm({
             defaultValue={initialValues?.status ?? 'ativo'}
             options={STATUS_OPTIONS}
             required
-            className="md:col-span-1 xl:col-span-2"
+            className="md:col-span-1 xl:col-span-3"
           />
-          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 md:col-span-2 xl:col-span-3 xl:self-end">
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 md:col-span-2 xl:col-span-4 xl:self-end">
             <input
               type="checkbox"
               name="destaque"
@@ -259,7 +314,7 @@ export function AdminImovelForm({
               className="size-4 rounded border-slate-300 text-primary focus:ring-primary/20"
             />
             <span className="text-sm font-semibold text-slate-700">
-              Exibir no destaque da home
+              Destaque
             </span>
           </label>
           <Field
@@ -268,14 +323,6 @@ export function AdminImovelForm({
             type="number"
             defaultValue={initialValues?.ordem_destaque ?? ''}
             className="md:col-span-1 xl:col-span-3"
-          />
-          <Field
-            label="Data do leilao"
-            name="data_leilao"
-            type="datetime-local"
-            defaultValue={toDatetimeLocal(initialValues?.data_leilao)}
-            required
-            className="md:col-span-1 xl:col-span-4"
           />
           <Field
             label="Rua"
@@ -326,12 +373,22 @@ export function AdminImovelForm({
             Descricao
           </label>
           <textarea
+            ref={descricaoRef}
             name="descricao"
-            defaultValue={initialValues?.descricao ?? ''}
+            value={descricaoInput}
+            onChange={(event) => setDescricaoInput(event.target.value)}
             rows={6}
             required
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+            className="min-h-[180px] w-full resize-none overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
           />
+          {descricaoInput.trim() ? (
+            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="mb-4 text-xs font-bold uppercase tracking-[0.24em] text-slate-400">
+                Preview da descricao
+              </p>
+              <PropertyDescription value={descricaoInput} />
+            </div>
+          ) : null}
         </div>
 
         <div className="flex justify-end">
@@ -510,4 +567,13 @@ function maskCep(value: string) {
   }
 
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
+function autoResizeTextarea(element: HTMLTextAreaElement | null) {
+  if (!element) {
+    return;
+  }
+
+  element.style.height = 'auto';
+  element.style.height = `${element.scrollHeight}px`;
 }

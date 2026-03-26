@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowDownUp,
@@ -10,13 +10,20 @@ import {
   ArrowDown,
   BadgeDollarSign,
   Building2,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
+  EyeOff,
   MapPin,
   Pencil,
   Plus,
   Search,
+  Trash2,
 } from 'lucide-react';
+import {
+  deleteImovelAction,
+  inactivateImovelAction,
+} from '@/app/admin/imoveis/actions';
 import type { ImovelRecord } from '@/lib/admin/imoveis';
 
 type AdminImoveisTableProps = {
@@ -31,8 +38,11 @@ type AdminImoveisTableProps = {
 type SortKey =
   | 'titulo'
   | 'cidade'
+  | 'created_at'
+  | 'data_primeiro_leilao'
+  | 'data_segundo_leilao'
   | 'tipo_leilao'
-  | 'valor_minimo'
+  | 'valor_primeiro_leilao'
   | 'status';
 
 type SortConfig = {
@@ -43,8 +53,11 @@ type SortConfig = {
 const columns: Array<{ key: SortKey; label: string }> = [
   { key: 'titulo', label: 'Titulo' },
   { key: 'cidade', label: 'Cidade' },
+  { key: 'created_at', label: 'Cadastro' },
+  { key: 'data_primeiro_leilao', label: '1o leilao' },
+  { key: 'data_segundo_leilao', label: '2o leilao' },
   { key: 'tipo_leilao', label: 'Leilao' },
-  { key: 'valor_minimo', label: 'Valor minimo' },
+  { key: 'valor_primeiro_leilao', label: '1o valor' },
   { key: 'status', label: 'Status' },
 ];
 
@@ -174,7 +187,7 @@ export function AdminImoveisTable({
               <thead className="bg-slate-50/80">
                 <tr className="border-b border-slate-100 text-xs font-bold uppercase tracking-wide text-slate-400">
                   {columns.map((column) => (
-                    <th key={column.key} className={column.key === 'titulo' ? 'w-[32%] px-6 py-4' : 'px-6 py-4'}>
+                    <th key={column.key} className={column.key === 'titulo' ? 'w-[26%] px-6 py-4' : 'px-6 py-4'}>
                       <button
                         type="button"
                         onClick={() => handleSort(column.key, sortConfig, setSortConfig)}
@@ -185,7 +198,7 @@ export function AdminImoveisTable({
                       </button>
                     </th>
                   ))}
-                  <th className="w-[120px] px-6 py-4 text-left">Acoes</th>
+                  <th className="w-[220px] px-6 py-4 text-left">Acoes</th>
                 </tr>
               </thead>
 
@@ -226,6 +239,24 @@ export function AdminImoveisTable({
                     </td>
                     <td className="px-6 py-5">
                       <span className="inline-flex items-center gap-2">
+                        <CalendarDays className="size-3.5 text-slate-400" />
+                        {formatDate(imovel.created_at ?? null)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="inline-flex items-center gap-2">
+                        <CalendarDays className="size-3.5 text-slate-400" />
+                        {formatDate(imovel.data_primeiro_leilao ?? imovel.data_leilao ?? null)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="inline-flex items-center gap-2">
+                        <CalendarDays className="size-3.5 text-slate-400" />
+                        {formatDate(imovel.data_segundo_leilao ?? null)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="inline-flex items-center gap-2">
                         <Building2 className="size-3.5 text-slate-400" />
                         {imovel.tipo_leilao ?? '-'}
                       </span>
@@ -233,10 +264,7 @@ export function AdminImoveisTable({
                     <td className="px-6 py-5">
                       <span className="inline-flex items-center gap-2">
                         <BadgeDollarSign className="size-3.5 text-slate-400" />
-                        {(imovel.valor_minimo ?? 0).toLocaleString('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL',
-                        })}
+                        {formatCurrency(imovel.valor_primeiro_leilao ?? imovel.valor_minimo)}
                       </span>
                     </td>
                     <td className="px-6 py-5">
@@ -245,13 +273,33 @@ export function AdminImoveisTable({
                       </span>
                     </td>
                     <td className="px-6 py-5">
-                      <Link
-                        href={`/admin/imoveis/${imovel.id}`}
-                        className="inline-flex items-center gap-2 font-semibold text-primary transition hover:text-primary/80"
-                      >
-                        <Pencil className="size-3.5" />
-                        Editar
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Link
+                          href={`/admin/imoveis/${imovel.id}`}
+                          className="inline-flex items-center gap-2 font-semibold text-primary transition hover:text-primary/80"
+                        >
+                          <Pencil className="size-3.5" />
+                          Editar
+                        </Link>
+                        {imovel.status !== 'inativo' ? (
+                          <InlineActionForm
+                            action={inactivateImovelAction}
+                            imovelId={imovel.id}
+                            label="Inativar"
+                            icon={<EyeOff className="size-3.5" />}
+                            confirmMessage={`Deseja inativar o imovel \"${imovel.titulo}\"?`}
+                            tone="muted"
+                          />
+                        ) : null}
+                        <InlineActionForm
+                          action={deleteImovelAction}
+                          imovelId={imovel.id}
+                          label="Excluir"
+                          icon={<Trash2 className="size-3.5" />}
+                          confirmMessage={`Deseja excluir o imovel \"${imovel.titulo}\"? Esta acao nao pode ser desfeita.`}
+                          tone="danger"
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -261,17 +309,18 @@ export function AdminImoveisTable({
         </div>
 
         <div className="lg:hidden">
-          <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,0.95fr)_minmax(0,1.1fr)_auto] gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+          <div className="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.05fr)_auto] gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
             <span>Titulo</span>
-            <span>Cidade</span>
-            <span>Valor</span>
+            <span>Cadastro</span>
+            <span>1o leilao</span>
+            <span>Status</span>
             <span className="text-right">Acoes</span>
           </div>
 
           {sortedImoveis.map((imovel) => (
             <div
               key={imovel.id}
-              className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,0.95fr)_minmax(0,1.1fr)_auto] gap-3 border-b border-slate-100 px-4 py-3 text-sm text-slate-700"
+              className="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.05fr)_auto] gap-3 border-b border-slate-100 px-4 py-3 text-sm text-slate-700"
             >
               <div className="min-w-0">
                 <div className="flex items-start gap-2.5">
@@ -303,25 +352,29 @@ export function AdminImoveisTable({
               </div>
 
               <div className="min-w-0 self-start pt-0.5">
-                <p className="truncate text-sm text-slate-700">{imovel.cidade ?? '-'}</p>
-                <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                  {imovel.tipo_leilao ?? '-'}
+                <p className="truncate text-sm text-slate-700">
+                  {formatDate(imovel.created_at ?? null)}
+                </p>
+                <p className="mt-1 text-[11px] text-slate-400">{imovel.cidade ?? '-'}</p>
+              </div>
+
+              <div className="min-w-0 self-start pt-0.5">
+                <p className="text-sm text-slate-700">
+                  {formatDate(imovel.data_primeiro_leilao ?? imovel.data_leilao ?? null)}
+                </p>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  {formatCurrency(imovel.valor_primeiro_leilao ?? imovel.valor_minimo)}
                 </p>
               </div>
 
               <div className="min-w-0 self-start pt-0.5">
-                <p className="text-sm font-semibold text-slate-900">
-                  {(imovel.valor_minimo ?? 0).toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  })}
-                </p>
-                <p className="mt-1 text-[11px] capitalize text-slate-500">
-                  {imovel.status ?? '-'}
+                <p className="text-sm text-slate-700">{imovel.status ?? '-'}</p>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  2o: {formatDate(imovel.data_segundo_leilao ?? null)}
                 </p>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex flex-col items-end gap-2">
                 <Link
                   href={`/admin/imoveis/${imovel.id}`}
                   className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-2.5 text-[11px] font-semibold text-primary transition hover:border-primary/30 hover:bg-primary/15"
@@ -329,6 +382,26 @@ export function AdminImoveisTable({
                   <Pencil className="size-3.5" />
                   Editar
                 </Link>
+                {imovel.status !== 'inativo' ? (
+                  <InlineActionForm
+                    action={inactivateImovelAction}
+                    imovelId={imovel.id}
+                    label="Inativar"
+                    icon={<EyeOff className="size-3.5" />}
+                    confirmMessage={`Deseja inativar o imovel \"${imovel.titulo}\"?`}
+                    tone="muted"
+                    compact
+                  />
+                ) : null}
+                <InlineActionForm
+                  action={deleteImovelAction}
+                  imovelId={imovel.id}
+                  label="Excluir"
+                  icon={<Trash2 className="size-3.5" />}
+                  confirmMessage={`Deseja excluir o imovel \"${imovel.titulo}\"? Esta acao nao pode ser desfeita.`}
+                  tone="danger"
+                  compact
+                />
               </div>
             </div>
           ))}
@@ -425,9 +498,99 @@ function handleSort(
 }
 
 function getSortableValue(imovel: ImovelRecord, key: SortKey) {
-  if (key === 'valor_minimo') {
-    return imovel.valor_minimo ?? 0;
+  if (key === 'created_at') {
+    return imovel.created_at ? new Date(imovel.created_at).getTime() : 0;
+  }
+
+  if (key === 'data_primeiro_leilao') {
+    return imovel.data_primeiro_leilao
+      ? new Date(imovel.data_primeiro_leilao).getTime()
+      : imovel.data_leilao
+        ? new Date(imovel.data_leilao).getTime()
+        : 0;
+  }
+
+  if (key === 'data_segundo_leilao') {
+    return imovel.data_segundo_leilao ? new Date(imovel.data_segundo_leilao).getTime() : 0;
+  }
+
+  if (key === 'valor_primeiro_leilao') {
+    return imovel.valor_primeiro_leilao ?? imovel.valor_minimo ?? 0;
   }
 
   return (imovel[key] ?? '').toString().toLowerCase();
+}
+
+function formatDate(value: string | null) {
+  if (!value) {
+    return '-';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  return date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+function formatCurrency(value: number | null | undefined) {
+  if (value == null) {
+    return '-';
+  }
+
+  return value.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+}
+
+function InlineActionForm({
+  action,
+  imovelId,
+  label,
+  icon,
+  confirmMessage,
+  tone,
+  compact = false,
+}: {
+  action: (formData: FormData) => void | Promise<void>;
+  imovelId: string;
+  label: string;
+  icon: ReactNode;
+  confirmMessage: string;
+  tone: 'muted' | 'danger';
+  compact?: boolean;
+}) {
+  const className =
+    tone === 'danger'
+      ? 'border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-300 hover:bg-rose-100'
+      : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100';
+
+  return (
+    <form
+      action={action}
+      onSubmit={(event) => {
+        if (!window.confirm(confirmMessage)) {
+          event.preventDefault();
+        }
+      }}
+    >
+      <input type="hidden" name="id" value={imovelId} />
+      <button
+        type="submit"
+        className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 font-semibold transition ${className} ${
+          compact ? 'h-8 text-[11px]' : 'h-9 text-xs'
+        }`}
+      >
+        {icon}
+        {label}
+      </button>
+    </form>
+  );
 }

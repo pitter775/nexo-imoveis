@@ -49,6 +49,7 @@ import { logoutAction } from '@/app/actions/auth';
 import { BrandLogo } from '@/components/brand-logo';
 import { Property, User as UserType } from '@/lib/types';
 import { SiteFooter } from '@/components/site-footer';
+import { PropertyDescription } from '@/components/property-description';
 
 type InfraChatWindow = Window & {
   InfraChat?: {
@@ -175,7 +176,7 @@ function buildInfraChatContext(propertyId: string, pathname: string) {
     ui: {
       title: 'nexo leiloes',
       theme: 'light',
-      accent: '#ff6a00',
+      accent: '#155eef',
       transparent: true,
     },
     resource: { id: propertyId, tipo: 'imovel' },
@@ -250,7 +251,120 @@ const HOME_MENU_ITEMS: ReadonlyArray<{
   { label: 'Home', id: 'topo', icon: Home },
   { label: 'Sobre Nos', id: 'sobre', icon: Building2 },
   { label: 'Servicos', id: 'servicos', icon: BriefcaseBusiness },
-  { label: 'Planos', id: 'planos', icon: ClipboardList },
+  { label: 'Oportunidades', id: 'planos', icon: ClipboardList },
+  { label: 'FAQ', id: 'faq', icon: BookText },
+] as const;
+
+const ABOUT_PILLARS = [
+  'Democratizamos o acesso aos leiloes de imoveis com suporte claro, humano e estrategico.',
+  'Atuamos como ponte entre clientes e oportunidades de alto valor com leitura juridica, financeira e operacional.',
+  'Nossa prioridade e garantir seguranca, transparencia e previsibilidade para familias e investidores.',
+] as const;
+
+const HISTORY_HIGHLIGHTS = [
+  {
+    eyebrow: 'Nossa historia',
+    title: 'Uma ponte segura para quem quer comprar melhor',
+    text: 'A Nexo Leiloes nasceu para abrir as portas dos leiloes de imoveis a quem busca a casa propria ou deseja investir com seguranca, criterio e acesso a informacoes confiaveis.',
+  },
+  {
+    eyebrow: 'Origem',
+    title: 'Visao construida a partir de oportunidades perdidas',
+    text: 'Servolo Tobias percebeu que familias e investidores deixavam bons negocios para tras por falta de informacao, confianca e leitura tecnica do processo.',
+  },
+  {
+    eyebrow: 'Metodo',
+    title: 'Analise profunda para reduzir risco e ampliar ganho',
+    text: 'Cada oportunidade passa por estudo detalhado do edital, matricula, custos, cenarios e estrategia de arremate para evitar surpresas e elevar a qualidade da decisao.',
+  },
+] as const;
+
+const BRAND_VALUES = [
+  'Transparencia',
+  'Acessibilidade',
+  'Seguranca',
+  'Compromisso',
+  'Oportunidade',
+  'Humanizacao',
+  'Etica',
+] as const;
+
+const FAQ_ITEMS = [
+  {
+    question: 'O que e um leilao de imoveis?',
+    answer:
+      'E uma forma de venda publica em que imoveis sao disponibilizados por decisao judicial ou extrajudicial, geralmente com valores abaixo do mercado.',
+  },
+  {
+    question: 'Posso participar de um leilao mesmo sem experiencia?',
+    answer:
+      'Sim. Nossa plataforma ajuda investidores iniciantes e experientes, oferecendo informacoes claras e assessoria completa em todas as etapas.',
+  },
+  {
+    question: 'Os imoveis tem desconto real?',
+    answer:
+      'Sim. Em muitos casos os imoveis sao vendidos com descontos de 30% a 70% em relacao ao valor de mercado.',
+  },
+  {
+    question: 'Preciso pagar para acessar as informacoes?',
+    answer:
+      'Voce pode visualizar informacoes basicas gratuitamente. Para liberar um relatorio detalhado, existe um pagamento simbolico com dados como matricula, parecer juridico e analise de rentabilidade.',
+  },
+  {
+    question: 'Como funciona o relatorio basico?',
+    answer:
+      'Apos o pagamento, voce recebe automaticamente um PDF com data do leilao, valor de avaliacao e lance minimo, percentual de desconto, matricula resumida, breve parecer juridico e margem de ganho estimada.',
+  },
+  {
+    question: 'O que acontece se eu quiser mais detalhes apos o relatorio basico?',
+    answer:
+      'Voce pode contratar nossa assessoria completa para aprofundar a analise juridica, representacao no leilao e regularizacao do imovel.',
+  },
+  {
+    question: 'Os valores informados incluem todas as taxas?',
+    answer:
+      'Nos relatorios indicamos os principais custos envolvidos, como ITBI, dividas e taxas cartorarias, para que voce tenha uma visao mais real do investimento.',
+  },
+  {
+    question: 'Posso perder dinheiro em um leilao?',
+    answer:
+      'Como em qualquer investimento, existem riscos. Nossa assessoria reduz significativamente esse risco com seguranca juridica, leitura de mercado e estrategia.',
+  },
+  {
+    question: 'A plataforma divulga quem e o leiloeiro?',
+    answer:
+      'Nao. Nosso objetivo e centralizar oportunidades e entregar a analise pronta, sem expor diretamente os leiloeiros.',
+  },
+  {
+    question: 'Como e feito o pagamento da taxa simbolica?',
+    answer:
+      'O pagamento pode ser feito via Pix, cartao de credito ou boleto diretamente na plataforma, de forma segura.',
+  },
+  {
+    question: 'Voces me representam no leilao?',
+    answer:
+      'Sim. Na assessoria completa, nossa equipe acompanha o processo desde os lances ate a finalizacao da arrematacao.',
+  },
+  {
+    question: 'O que acontece se o imovel estiver ocupado?',
+    answer:
+      'No relatorio informamos a situacao do imovel. Se estiver ocupado, nossa assessoria pode estruturar estrategias juridicas para desocupacao ou negociacao.',
+  },
+  {
+    question: 'Eu posso visitar o imovel antes de comprar?',
+    answer:
+      'Na maioria dos casos, nao. Por isso analisamos matricula, fotos oficiais, localizacao e outros dados para oferecer a melhor leitura possivel do ativo.',
+  },
+  {
+    question: 'Voces garantem que vou ter lucro?',
+    answer:
+      'Nao existe garantia absoluta. Nosso trabalho e identificar imoveis com alto potencial de rentabilidade e entregar as informacoes necessarias para uma decisao segura.',
+  },
+  {
+    question: 'Posso parcelar o valor do imovel em leilao?',
+    answer:
+      'Alguns leiloes permitem parcelamento e outros exigem pagamento a vista. Essa condicao sempre e informada no relatorio do imovel.',
+  },
 ] as const;
 
 type PublicMarketplaceProps = {
@@ -372,26 +486,46 @@ export function PublicMarketplace({
       return;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntry = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((first, second) => second.intersectionRatio - first.intersectionRatio)[0];
+    let ticking = false;
 
-        if (visibleEntry?.target?.id) {
-          setActiveSection(visibleEntry.target.id);
+    const updateActiveSection = () => {
+      const referenceLine = window.innerHeight * 0.28;
+      let currentSectionId = sections[0]?.id ?? 'topo';
+
+      for (const section of sections) {
+        const rect = section.getBoundingClientRect();
+
+        if (rect.top - referenceLine <= 0) {
+          currentSectionId = section.id;
+        } else {
+          break;
         }
-      },
-      {
-        rootMargin: '-18% 0px -52% 0px',
-        threshold: [0.2, 0.35, 0.55],
-      },
-    );
+      }
 
-    sections.forEach((section) => observer.observe(section));
+      setActiveSection((current) =>
+        current === currentSectionId ? current : currentSectionId,
+      );
+      ticking = false;
+    };
 
-    return () => observer.disconnect();
-  }, [view]);
+    const requestSectionUpdate = () => {
+      if (ticking) {
+        return;
+      }
+
+      ticking = true;
+      window.requestAnimationFrame(updateActiveSection);
+    };
+
+    requestSectionUpdate();
+    window.addEventListener('scroll', requestSectionUpdate, { passive: true });
+    window.addEventListener('resize', requestSectionUpdate);
+
+    return () => {
+      window.removeEventListener('scroll', requestSectionUpdate);
+      window.removeEventListener('resize', requestSectionUpdate);
+    };
+  }, [view, properties.length]);
 
   useEffect(() => {
     const isPropertyDetailPath = /^\/imoveis\/[^/]+$/.test(pathname);
@@ -845,7 +979,6 @@ export function PublicMarketplace({
                   isAdmin={user?.tipo_usuario === 'admin'}
                   isLoading={isLoadingProperties}
                   onBrowse={handleBrowse}
-                  onNavigate={handleMenuNavigation}
                   onPropertyClick={handlePropertyClick}
                   properties={properties}
                 />
@@ -1015,7 +1148,6 @@ function HomeView({
   isAdmin = false,
   isLoading,
   onBrowse,
-  onNavigate,
   onPropertyClick,
   properties,
 }: {
@@ -1023,7 +1155,6 @@ function HomeView({
   isAdmin?: boolean;
   isLoading: boolean;
   onBrowse: () => void;
-  onNavigate: (sectionId: string) => void;
   onPropertyClick: (p: Property) => void;
   properties: Property[];
 }) {
@@ -1105,66 +1236,68 @@ function HomeView({
               referrerPolicy="no-referrer"
               unoptimized
             />
-            <div className="absolute bottom-6 left-6 right-6 rounded-xl border border-white/20 bg-white/90 p-4 shadow-lg backdrop-blur-md">
-              {featuredProperty ? (
-                <>
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold uppercase text-primary">
-                        Em destaque
-                      </p>
-                      <p className="truncate text-sm font-bold text-slate-900">
-                        {featuredProperty.title}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {featuredProperty.location || 'Localizacao nao informada'}
-                      </p>
+            <div className="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5">
+              <div className="ml-auto max-w-md rounded-[1.15rem] border border-white/25 bg-white/88 p-3 shadow-lg backdrop-blur-md sm:p-3.5">
+                {featuredProperty ? (
+                  <>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+                          Em destaque
+                        </p>
+                        <p className="truncate text-sm font-bold text-slate-900">
+                          {featuredProperty.title}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {featuredProperty.location || 'Localizacao nao informada'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-slate-500">Lance minimo</p>
+                        <p className="text-sm font-bold text-slate-900">
+                          {formatCurrency(featuredProperty.price)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-slate-500">Lance minimo</p>
-                      <p className="text-sm font-bold text-slate-900">
-                        {formatCurrency(featuredProperty.price)}
-                      </p>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        {featuredProperties.map((property, index) => (
+                          <button
+                            key={property.id}
+                            type="button"
+                            aria-label={`Exibir destaque ${index + 1}`}
+                            onClick={() => setFeaturedIndex(index)}
+                            className={`h-2.5 rounded-full transition-all ${
+                              index === featuredIndex
+                                ? 'w-7 bg-primary'
+                                : 'w-2 bg-slate-300 hover:bg-slate-400'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onPropertyClick(featuredProperty)}
+                        className="rounded-full bg-slate-900 px-3.5 py-2 text-[11px] font-bold text-white transition hover:bg-slate-800"
+                      >
+                        Ver imovel
+                      </button>
+                      {isAdmin ? (
+                        <AdminEditPropertyLink propertyId={featuredProperty.id} compact />
+                      ) : null}
                     </div>
+                  </>
+                ) : (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+                      Nenhum imovel encontrado
+                    </p>
+                    <p className="text-sm text-slate-600">
+                      Cadastre imoveis no admin para alimentar esta vitrine.
+                    </p>
                   </div>
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      {featuredProperties.map((property, index) => (
-                        <button
-                          key={property.id}
-                          type="button"
-                          aria-label={`Exibir destaque ${index + 1}`}
-                          onClick={() => setFeaturedIndex(index)}
-                          className={`h-2.5 rounded-full transition-all ${
-                            index === featuredIndex
-                              ? 'w-8 bg-primary'
-                              : 'w-2.5 bg-slate-300 hover:bg-slate-400'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => onPropertyClick(featuredProperty)}
-                      className="rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
-                    >
-                      Ver imovel
-                    </button>
-                    {isAdmin ? (
-                      <AdminEditPropertyLink propertyId={featuredProperty.id} compact />
-                    ) : null}
-                  </div>
-                </>
-              ) : (
-                <div>
-                  <p className="text-xs font-bold uppercase text-primary">
-                    Nenhum imovel encontrado
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    Cadastre imoveis no admin para alimentar esta vitrine.
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1213,52 +1346,171 @@ function HomeView({
 
       <section
         id="sobre"
-        className="scroll-mt-24 rounded-[2.25rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10"
+        className="scroll-mt-24 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-sm"
       >
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-          <div className="space-y-5">
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
-              Sobre a Nexo
-            </p>
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-              Sobre a Nexo
-            </h2>
-            <p className="text-base leading-8 text-slate-600">
-              A Nexo Leiloes conecta investidores e compradores as melhores
-              oportunidades do mercado de leiloes imobiliarios.
-            </p>
-            <p className="text-base leading-8 text-slate-600">
-              Nossa equipe realiza analises detalhadas dos imoveis disponiveis,
-              avaliando riscos, potencial de valorizacao e estrategias de aquisicao.
-            </p>
-            <p className="text-base leading-8 text-slate-600">
-              Nosso objetivo e tornar o processo de compra em leiloes mais simples,
-              seguro e acessivel, seja para quem deseja conquistar a casa propria ou
-              investir com inteligencia.
-            </p>
-            <button
-              type="button"
-              onClick={() => window.open('https://wa.me/5511916751213', '_blank', 'noopener,noreferrer')}
-              className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
-            >
-              Saiba mais
-            </button>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              'Avaliacao tecnica e juridica antes de cada indicacao.',
-              'Oportunidades selecionadas com foco em seguranca e margem.',
-              'Atendimento consultivo para investidor e comprador final.',
-              'Acompanhamento estrategico do edital a posse.',
-            ].map((item) => (
-              <div
-                key={item}
-                className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5"
+        <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr]">
+          <div className="relative p-8 sm:p-10">
+            <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-r from-primary/10 via-secondary/10 to-transparent" />
+            <div className="relative space-y-6">
+              <div className="space-y-3">
+                <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+                  Sobre a Nexo
+                </p>
+                <h2 className="max-w-2xl text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.2rem]">
+                  Tornamos o leilao imobiliario mais acessivel, seguro e confiavel
+                </h2>
+              </div>
+              <p className="max-w-2xl text-base leading-8 text-slate-600">
+                Na Nexo Leiloes, democratizamos o acesso aos leiloes de imoveis,
+                transformando uma oportunidade antes exclusiva em um caminho seguro,
+                transparente e acessivel para todos.
+              </p>
+              <p className="max-w-2xl text-base leading-8 text-slate-600">
+                Atuamos como uma ponte entre voce e as melhores oportunidades do
+                mercado, oferecendo suporte juridico, financeiro e estrategico em
+                cada etapa do processo.
+              </p>
+              <p className="max-w-2xl text-base leading-8 text-slate-600">
+                Nossa missao e garantir que familias e investidores avancem com
+                confianca para conquistar imoveis de alto valor por precos justos,
+                sem surpresas e com total seguranca.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {ABOUT_PILLARS.map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-[1.6rem] border border-slate-200 bg-slate-50/90 p-5"
+                  >
+                    <CheckCircle2 className="mb-3 size-5 text-primary" />
+                    <p className="text-sm leading-7 text-slate-600">{item}</p>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open('https://wa.me/5511916751213', '_blank', 'noopener,noreferrer')
+                }
+                className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
               >
-                <CheckCircle2 className="mb-3 size-5 text-primary" />
-                <p className="text-sm leading-7 text-slate-600">{item}</p>
+                Falar com a equipe
+              </button>
+            </div>
+          </div>
+          <div className="border-t border-slate-200 bg-slate-950 p-8 text-white sm:p-10 lg:border-l lg:border-t-0">
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+                  Fundador
+                </p>
+                <h3 className="mt-3 text-3xl font-bold tracking-tight">
+                  Servolo Tobias
+                </h3>
+                <p className="mt-4 text-base leading-8 text-slate-300">
+                  Ha mais de 20 anos, Servolo cria solucoes que entregam economia
+                  e seguranca para pessoas e empresas, sempre orientado por gerar
+                  valor real.
+                </p>
+                <p className="mt-4 text-base leading-8 text-slate-300">
+                  Sua relacao com leiloes nasceu da curiosidade em estudar editais,
+                  calcular riscos e ajudar amigos a arrematar bons negocios. Dessa
+                  paixao surgiu um metodo proprio, baseado em leitura profunda do
+                  imovel, custos, cenarios e estrategia.
+                </p>
+                <p className="mt-4 text-base leading-8 text-slate-300">
+                  Na Nexo, esse olhar se transforma em assessoria proxima,
+                  transparente e criteriosa, seja para quem busca o primeiro lar,
+                  seja para quem quer acelerar o proximo investimento.
+                </p>
+              </div>
+              <div className="rounded-[1.8rem] border border-white/10 bg-white/5 p-6">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">
+                  De paixao a metodo
+                </p>
+                <p className="mt-3 text-sm leading-7 text-slate-200">
+                  Mais do que assessorar, Servolo construiu uma reputacao de
+                  confianca e compromisso absoluto com o resultado de cada cliente.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-slate-200 bg-white p-8 sm:p-10">
+          <div className="mb-8 max-w-3xl space-y-3">
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+              Nossa trajetoria
+            </p>
+            <h3 className="text-3xl font-bold tracking-tight text-slate-900">
+              Historia, criterio e compromisso com seu resultado
+            </h3>
+          </div>
+          <div className="grid gap-5 lg:grid-cols-3">
+            {HISTORY_HIGHLIGHTS.map((item) => (
+              <div
+                key={item.title}
+                className="rounded-[1.8rem] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6"
+              >
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                  {item.eyebrow}
+                </p>
+                <h4 className="mt-3 text-xl font-bold text-slate-900">{item.title}</h4>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{item.text}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="scroll-mt-24" id="institucional">
+        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-[2.25rem] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-8 text-white shadow-sm sm:p-10">
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+              Missao e visao
+            </p>
+            <div className="mt-6 space-y-6">
+              <div>
+                <h3 className="text-2xl font-bold">Missao</h3>
+                <p className="mt-3 text-sm leading-8 text-slate-300">
+                  Oferecer assessoria completa e transparente em leiloes de
+                  imoveis, conectando pessoas, familias e investidores a
+                  oportunidades reais para conquistar a casa propria ou ampliar o
+                  patrimonio com seguranca e economia.
+                </p>
+              </div>
+              <div className="h-px bg-white/10" />
+              <div>
+                <h3 className="text-2xl font-bold">Visao</h3>
+                <p className="mt-3 text-sm leading-8 text-slate-300">
+                  Ser reconhecida como a principal referencia em assessoria de
+                  leiloes no Brasil, tornando esse mercado mais acessivel, seguro
+                  e confiavel para todos.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[2.25rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+              Valores
+            </p>
+            <h3 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
+              Principios que sustentam cada recomendacao
+            </h3>
+            <p className="mt-4 max-w-2xl text-base leading-8 text-slate-600">
+              Nossa atuacao combina criterio tecnico com proximidade humana para
+              oferecer uma experiencia premium, segura e objetiva do primeiro
+              contato ate a arrematacao.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              {BRAND_VALUES.map((value) => (
+                <span
+                  key={value}
+                  className="inline-flex items-center rounded-full border border-primary/15 bg-primary/5 px-4 py-2 text-sm font-semibold text-slate-700"
+                >
+                  {value}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -1283,7 +1535,7 @@ function HomeView({
           </h3>
           <button
             onClick={onBrowse}
-            className="text-sm font-bold text-primary hover:underline"
+            className="inline-flex items-center rounded-full border border-primary/20 bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
           >
             Ver todos
           </button>
@@ -1426,6 +1678,49 @@ function HomeView({
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section
+        id="faq"
+        className="scroll-mt-24 rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10"
+      >
+        <div className="mb-8 max-w-3xl space-y-3">
+          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
+            FAQ
+          </p>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+            Perguntas frequentes para decidir com mais seguranca
+          </h2>
+          <p className="text-base leading-8 text-slate-600">
+            Reunimos as duvidas mais comuns sobre leiloes de imoveis, relatorios e
+            assessoria para voce avancar com clareza desde o primeiro passo.
+          </p>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {FAQ_ITEMS.map((item, index) => (
+            <details
+              key={item.question}
+              className="group rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-5 transition hover:border-primary/25 hover:bg-white"
+            >
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                    {String(index + 1).padStart(2, '0')}
+                  </p>
+                  <h3 className="mt-2 text-base font-bold text-slate-900">
+                    {item.question}
+                  </h3>
+                </div>
+                <span className="mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition group-open:rotate-180 group-open:text-primary">
+                  <ChevronDown className="size-4" />
+                </span>
+              </summary>
+              <p className="mt-4 border-t border-slate-200 pt-4 text-sm leading-7 text-slate-600">
+                {item.answer}
+              </p>
+            </details>
+          ))}
         </div>
       </section>
 
@@ -2197,7 +2492,7 @@ function PropertyDetailsView({
                   <BookText className="size-5 text-primary" />
                   Descricao
                 </h3>
-                <p className="leading-relaxed text-slate-600">{property.description}</p>
+                <PropertyDescription value={property.description} />
               </div>
             </div>
           ) : null}
@@ -2356,48 +2651,58 @@ function PropertyDetailsView({
       </div>
 
       {similarProperties.length ? (
-        <section className="space-y-6">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
-              Descubra mais
-            </p>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-              Imoveis parecidos com este
-            </h2>
-          </div>
+        <section className="mt-12 border-t border-slate-200 pt-10 sm:mt-16 sm:pt-12">
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="h-px flex-1 bg-slate-200" />
+              <div className="rounded-full border border-primary/15 bg-primary/5 px-4 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
+                Continuar explorando
+              </div>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
 
-          <div
-            {...similarSectionSwipeHandlers}
-            className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"
-            style={{ touchAction: 'pan-y' }}
-          >
-            {visibleSimilarProperties.map((similarProperty) => (
-              <PropertyCard
-                key={similarProperty.id}
-                isAdmin={isAdmin}
-                property={similarProperty}
-                onClick={() => onPropertyClick(similarProperty)}
-              />
-            ))}
-          </div>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+                Descubra mais
+              </p>
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+                Imoveis parecidos com este
+              </h2>
+            </div>
 
-          {similarPropertyPages.length > 1 ? (
-            <div className="flex items-center justify-center gap-2">
-              {similarPropertyPages.map((_, index) => (
-                <button
-                  key={`similar-page-${index}`}
-                  type="button"
-                  onClick={() => setSimilarPage(index)}
-                  aria-label={`Ver grupo ${index + 1} de imoveis parecidos`}
-                  className={`h-2.5 rounded-full transition-all ${
-                    index === similarPage
-                      ? 'w-8 bg-primary'
-                      : 'w-2.5 bg-slate-300 hover:bg-slate-400'
-                  }`}
+            <div
+              {...similarSectionSwipeHandlers}
+              className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"
+              style={{ touchAction: 'pan-y' }}
+            >
+              {visibleSimilarProperties.map((similarProperty) => (
+                <PropertyCard
+                  key={similarProperty.id}
+                  isAdmin={isAdmin}
+                  property={similarProperty}
+                  onClick={() => onPropertyClick(similarProperty)}
                 />
               ))}
             </div>
-          ) : null}
+
+            {similarPropertyPages.length > 1 ? (
+              <div className="flex items-center justify-center gap-2">
+                {similarPropertyPages.map((_, index) => (
+                  <button
+                    key={`similar-page-${index}`}
+                    type="button"
+                    onClick={() => setSimilarPage(index)}
+                    aria-label={`Ver grupo ${index + 1} de imoveis parecidos`}
+                    className={`h-2.5 rounded-full transition-all ${
+                      index === similarPage
+                        ? 'w-8 bg-primary'
+                        : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                    }`}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
         </section>
       ) : null}
       </motion.div>

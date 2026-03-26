@@ -12,6 +12,7 @@ import {
   FileText,
   Globe,
   Home,
+  LoaderCircle,
   LogOut,
   Menu,
   PanelLeft,
@@ -41,9 +42,12 @@ export function AdminShell({ children, profile }: AdminShellProps) {
   const pathname = usePathname();
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null);
+  const isNavigationPending = pendingNavigationHref !== null;
 
   useEffect(() => {
     setIsMobileOpen(false);
+    setPendingNavigationHref(null);
   }, [pathname]);
 
   const sidebarClasses = useMemo(() => {
@@ -84,7 +88,10 @@ export function AdminShell({ children, profile }: AdminShellProps) {
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
                   Nexo
                 </p>
-                <h1 className="text-xl font-bold">Administracao</h1>
+                <h1 className="text-xl font-bold">Leiloes</h1>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                  Imobiliarios
+                </p>
               </div>
             </div>
 
@@ -100,6 +107,7 @@ export function AdminShell({ children, profile }: AdminShellProps) {
           <button
             type="button"
             onClick={() => setIsDesktopCollapsed((current) => !current)}
+            disabled={isNavigationPending}
             className="mt-6 hidden items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white lg:inline-flex"
           >
             {isDesktopCollapsed ? (
@@ -112,6 +120,13 @@ export function AdminShell({ children, profile }: AdminShellProps) {
             </span>
           </button>
 
+          {isMobileOpen && isNavigationPending ? (
+            <div className="mt-4 flex items-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm font-semibold text-white lg:hidden">
+              <LoaderCircle className="size-4 animate-spin text-primary" />
+              Abrindo pagina...
+            </div>
+          ) : null}
+
           <div className="min-h-0 flex-1 pt-8 lg:overflow-hidden">
             <nav className="space-y-2 pr-1 pb-6 lg:h-full lg:overflow-y-auto lg:pb-36">
               {navigationItems.map(({ href, label, icon: Icon }) => {
@@ -119,25 +134,42 @@ export function AdminShell({ children, profile }: AdminShellProps) {
                   href === '/admin'
                     ? pathname === href
                     : pathname === href || pathname.startsWith(`${href}/`);
+                const isPending = pendingNavigationHref === href && !isActive;
 
                 return (
                   <Link
                     key={href}
                     href={href}
                     title={isDesktopCollapsed ? label : undefined}
+                    aria-disabled={isNavigationPending}
+                    onClick={() => {
+                      if (!isActive && !isNavigationPending) {
+                        setPendingNavigationHref(href);
+                      }
+                    }}
                     className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
                       isActive
                         ? 'bg-white text-slate-950 shadow-lg shadow-black/20'
                         : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                    } ${isDesktopCollapsed ? 'lg:justify-center lg:px-0' : ''}`}
+                    } ${isNavigationPending ? 'pointer-events-none opacity-80' : ''} ${
+                      isDesktopCollapsed ? 'lg:justify-center lg:px-0' : ''
+                    }`}
                   >
-                    <Icon
-                      className={`size-4 shrink-0 ${
-                        isActive ? 'text-primary' : 'text-current'
-                      }`}
-                    />
+                    {isPending ? (
+                      <LoaderCircle
+                        className={`size-4 shrink-0 animate-spin ${
+                          isActive ? 'text-primary' : 'text-current'
+                        }`}
+                      />
+                    ) : (
+                      <Icon
+                        className={`size-4 shrink-0 ${
+                          isActive ? 'text-primary' : 'text-current'
+                        }`}
+                      />
+                    )}
                     <span className={isDesktopCollapsed ? 'lg:hidden' : ''}>
-                      {label}
+                      {isPending ? 'Abrindo...' : label}
                     </span>
                   </Link>
                 );

@@ -269,6 +269,10 @@ export type Database = {
           tipo_propriedade: string | null;
           valor_avaliacao: number | null;
           valor_minimo: number | null;
+          data_primeiro_leilao: string | null;
+          valor_primeiro_leilao: number | null;
+          data_segundo_leilao: string | null;
+          valor_segundo_leilao: number | null;
           quartos: number | null;
           banheiros: number | null;
           area_total: number | null;
@@ -294,6 +298,10 @@ export type Database = {
           tipo_propriedade?: string | null;
           valor_avaliacao?: number | null;
           valor_minimo?: number | null;
+          data_primeiro_leilao?: string | null;
+          valor_primeiro_leilao?: number | null;
+          data_segundo_leilao?: string | null;
+          valor_segundo_leilao?: number | null;
           quartos?: number | null;
           banheiros?: number | null;
           area_total?: number | null;
@@ -319,6 +327,10 @@ export type Database = {
           tipo_propriedade?: string | null;
           valor_avaliacao?: number | null;
           valor_minimo?: number | null;
+          data_primeiro_leilao?: string | null;
+          valor_primeiro_leilao?: number | null;
+          data_segundo_leilao?: string | null;
+          valor_segundo_leilao?: number | null;
           quartos?: number | null;
           banheiros?: number | null;
           area_total?: number | null;

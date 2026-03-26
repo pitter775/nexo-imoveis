@@ -1,8 +1,9 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
-import { BookText, FileText, Home, ImageIcon, MapPin } from 'lucide-react';
+import { BookText, ExternalLink, FileText, Home, ImageIcon, MapPin } from 'lucide-react';
 
 type TabKey = 'dados' | 'dossie' | 'arquivos' | 'imagens';
 
@@ -22,6 +23,7 @@ type AdminImovelTabsProps = {
   arquivosTab: ReactNode;
   imagensTab: ReactNode;
   summary: ImovelHeaderSummary;
+  publicHref: string;
 };
 
 const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
@@ -37,6 +39,7 @@ export function AdminImovelTabs({
   arquivosTab,
   imagensTab,
   summary,
+  publicHref,
 }: AdminImovelTabsProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('dados');
 
@@ -56,18 +59,30 @@ export function AdminImovelTabs({
       <div className="overflow-hidden p-1 sm:p-0">
         <div className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr] lg:items-start">
           <div className="space-y-5">
-            <div>
-              <p className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
-                <Home className="size-4" />
-                Modulo de imoveis
-              </p>
-              <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-                Editar imovel
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                Atualize os dados publicos, o conteudo do dossie, os documentos e a
-                galeria do imovel.
-              </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
+                  <Home className="size-4" />
+                  Modulo de imoveis
+                </p>
+                <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                  Editar imovel
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                  Atualize os dados publicos, o conteudo do dossie, os documentos e a
+                  galeria do imovel.
+                </p>
+              </div>
+
+              <Link
+                href={publicHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary/30 hover:text-primary"
+              >
+                <ExternalLink className="size-4" />
+                Ver imovel
+              </Link>
             </div>
 
             <div className="-mx-1 overflow-x-auto px-1 sm:mx-0 sm:px-0">

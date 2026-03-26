@@ -20,7 +20,8 @@ const footerItems = [
   { label: 'Home', id: 'topo', icon: Compass },
   { label: 'Sobre Nos', id: 'sobre', icon: Building2 },
   { label: 'Servicos', id: 'servicos', icon: MessageCircle },
-  { label: 'Planos', id: 'planos', icon: PlayCircle },
+  { label: 'Oportunidades', id: 'planos', icon: PlayCircle },
+  { label: 'FAQ', id: 'faq', icon: MessageCircle },
 ];
 
 export function SiteFooter({ onNavigate }: SiteFooterProps) {

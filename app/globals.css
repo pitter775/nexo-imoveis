@@ -2,9 +2,9 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --color-primary: #ff6a00;
-  --color-secondary: #ff8c1a;
-  --color-accent: #ffa64d;
+  --color-primary: #155eef;
+  --color-secondary: #3b82f6;
+  --color-accent: #60a5fa;
 }
 
 @layer base {
