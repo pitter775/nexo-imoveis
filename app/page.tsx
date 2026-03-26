@@ -1514,7 +1514,10 @@ function HomeView({
       >
         <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr]">
           <div className="relative p-8 sm:p-10">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-primary/15 via-secondary/10 to-white/0 sm:h-64" />
+                        <>
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-primary/18 via-secondary/10 via-45% to-white/0 sm:h-80" />
+              <div className="pointer-events-none absolute left-[-8%] top-[-10%] h-48 w-48 rounded-full bg-primary/10 blur-3xl sm:h-60 sm:w-60" />
+            </>
             <div className="relative space-y-6">
               <div className="space-y-3">
                 <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
@@ -2892,6 +2895,7 @@ function formatDate(value: string | null | undefined) {
     year: 'numeric',
   }).format(date);
 }
+
 
 
 
