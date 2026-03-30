@@ -92,7 +92,14 @@ export async function bulkDeleteImoveisAction(
     };
   }
 
-  await deleteAllImoveis();
+  try {
+    await deleteAllImoveis();
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Nao foi possivel remover os imoveis.',
+    };
+  }
+
   revalidatePath('/admin/imoveis');
   redirect('/admin/imoveis');
 }
