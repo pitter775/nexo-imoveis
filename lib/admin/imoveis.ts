@@ -242,12 +242,39 @@ export async function updateImovelStatus(id: string, status: string) {
 }
 
 export async function deleteImovel(id: string) {
+  await deleteImoveis([id]);
+}
+
+export async function deleteAllImoveis() {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.from('imoveis').select('id');
+
+  if (error) {
+    throw new Error(`Failed to load imoveis for bulk delete: ${error.message}`);
+  }
+
+  const imovelIds = (data ?? [])
+    .map((imovel) => imovel.id)
+    .filter((imovelId): imovelId is string => Boolean(imovelId));
+
+  if (imovelIds.length === 0) {
+    return;
+  }
+
+  await deleteImoveis(imovelIds);
+}
+
+async function deleteImoveis(ids: string[]) {
+  if (ids.length === 0) {
+    return;
+  }
+
   const supabase = createAdminClient();
 
   const [{ data: imagens, error: imagensError }, { data: arquivos, error: arquivosError }] =
     await Promise.all([
-      supabase.from('imovel_imagens').select('url').eq('imovel_id', id),
-      supabase.from('imovel_arquivos').select('id, url_storage').eq('imovel_id', id),
+      supabase.from('imovel_imagens').select('url').in('imovel_id', ids),
+      supabase.from('imovel_arquivos').select('id, url_storage').in('imovel_id', ids),
     ]);
 
   if (imagensError) {
@@ -276,7 +303,7 @@ export async function deleteImovel(id: string) {
   const { data: conversas, error: conversasError } = await supabase
     .from('chat_conversas')
     .select('id')
-    .eq('imovel_id', id);
+    .in('imovel_id', ids);
 
   if (conversasError) {
     throw new Error(`Failed to load imovel chats: ${conversasError.message}`);
@@ -298,14 +325,14 @@ export async function deleteImovel(id: string) {
   }
 
   const cleanupTasks = [
-    supabase.from('chat_conversas').delete().eq('imovel_id', id),
-    supabase.from('historico_acessos').delete().eq('imovel_id', id),
-    supabase.from('leiloes').delete().eq('imovel_id', id),
-    supabase.from('pagamentos_itens').delete().eq('imovel_id', id),
-    supabase.from('user_access').delete().eq('imovel_id', id),
-    supabase.from('imovel_detalhes').delete().eq('imovel_id', id),
-    supabase.from('imovel_imagens').delete().eq('imovel_id', id),
-    supabase.from('imovel_arquivos').delete().eq('imovel_id', id),
+    supabase.from('chat_conversas').delete().in('imovel_id', ids),
+    supabase.from('historico_acessos').delete().in('imovel_id', ids),
+    supabase.from('leiloes').delete().in('imovel_id', ids),
+    supabase.from('pagamentos_itens').delete().in('imovel_id', ids),
+    supabase.from('user_access').delete().in('imovel_id', ids),
+    supabase.from('imovel_detalhes').delete().in('imovel_id', ids),
+    supabase.from('imovel_imagens').delete().in('imovel_id', ids),
+    supabase.from('imovel_arquivos').delete().in('imovel_id', ids),
   ] as const;
 
   const results = await Promise.all(cleanupTasks);
@@ -325,10 +352,12 @@ export async function deleteImovel(id: string) {
   ];
 
   if (storagePaths.length > 0) {
-    await supabase.storage.from('imoveis').remove(storagePaths);
+    for (const chunk of chunkArray(storagePaths, 100)) {
+      await supabase.storage.from('imoveis').remove(chunk);
+    }
   }
 
-  const { error } = await supabase.from('imoveis').delete().eq('id', id);
+  const { error } = await supabase.from('imoveis').delete().in('id', ids);
 
   if (error) {
     throw new Error(`Failed to delete imovel: ${error.message}`);
@@ -542,4 +571,14 @@ function extractStoragePath(url: string | null) {
   }
 
   return url.slice(markerIndex + marker.length);
+}
+
+function chunkArray<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
 }

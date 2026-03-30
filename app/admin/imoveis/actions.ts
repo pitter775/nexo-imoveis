@@ -4,12 +4,17 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import {
   createImovel,
+  deleteAllImoveis,
   deleteImovel,
   updateImovel,
   updateImovelStatus,
   upsertImovelDetalhes,
 } from '@/lib/admin/imoveis';
 import { requireAdmin } from '@/lib/auth';
+
+export type BulkDeleteImoveisState = {
+  error?: string;
+};
 
 export async function createImovelAction(formData: FormData) {
   await requireAdmin();
@@ -69,6 +74,25 @@ export async function deleteImovelAction(formData: FormData) {
   }
 
   await deleteImovel(id);
+  revalidatePath('/admin/imoveis');
+  redirect('/admin/imoveis');
+}
+
+export async function bulkDeleteImoveisAction(
+  _: BulkDeleteImoveisState,
+  formData: FormData,
+): Promise<BulkDeleteImoveisState> {
+  await requireAdmin();
+
+  const confirmation = String(formData.get('confirmation') ?? '').trim();
+
+  if (confirmation !== 'eu qro remover todos os imovies') {
+    return {
+      error: 'Digite exatamente "eu qro remover todos os imovies" para confirmar.',
+    };
+  }
+
+  await deleteAllImoveis();
   revalidatePath('/admin/imoveis');
   redirect('/admin/imoveis');
 }
