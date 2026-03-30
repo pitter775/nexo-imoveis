@@ -247,22 +247,93 @@ export async function deleteImovel(id: string) {
 
 export async function deleteAllImoveis() {
   const supabase = createAdminClient();
-  const { data, error } = await supabase.from('imoveis').select('id');
+  const [
+    { data: imagens, error: imagensError },
+    { data: arquivos, error: arquivosError },
+    { data: conversas, error: conversasError },
+    { count: totalImoveis, error: countError },
+  ] = await Promise.all([
+    supabase.from('imovel_imagens').select('url'),
+    supabase.from('imovel_arquivos').select('id, url_storage'),
+    supabase.from('chat_conversas').select('id').not('imovel_id', 'is', null),
+    supabase.from('imoveis').select('id', { count: 'exact', head: true }),
+  ]);
 
-  if (error) {
-    throw new Error(`Failed to load imoveis for bulk delete: ${error.message}`);
+  if (imagensError) {
+    throw new Error(`Failed to load imovel images for bulk delete: ${imagensError.message}`);
   }
 
-  const imovelIds = (data ?? [])
-    .map((imovel) => imovel.id)
-    .filter((imovelId): imovelId is string => Boolean(imovelId));
+  if (arquivosError) {
+    throw new Error(`Failed to load imovel files for bulk delete: ${arquivosError.message}`);
+  }
 
-  if (imovelIds.length === 0) {
+  if (conversasError) {
+    throw new Error(`Failed to load imovel chats for bulk delete: ${conversasError.message}`);
+  }
+
+  if (countError) {
+    throw new Error(`Failed to count imoveis for bulk delete: ${countError.message}`);
+  }
+
+  if ((totalImoveis ?? 0) === 0) {
     return;
   }
 
-  for (const imovelId of imovelIds) {
-    await deleteImovelById(imovelId);
+  const conversaIds = (conversas ?? [])
+    .map((conversa) => conversa.id)
+    .filter((conversaId): conversaId is string => Boolean(conversaId));
+
+  if (conversaIds.length > 0) {
+    for (const chunk of chunkArray(conversaIds, 100)) {
+      const { error } = await supabase
+        .from('chat_mensagens')
+        .delete()
+        .in('conversa_id', chunk);
+
+      if (error) {
+        throw new Error(`Failed to remove imovel chat messages: ${error.message}`);
+      }
+    }
+  }
+
+  const cleanupTasks = [
+    supabase.from('chat_conversas').delete().not('imovel_id', 'is', null),
+    supabase.from('historico_acessos').delete().not('imovel_id', 'is', null),
+    supabase.from('leiloes').delete().not('imovel_id', 'is', null),
+    supabase.from('pagamentos_itens').delete().not('imovel_id', 'is', null),
+    supabase.from('user_access').delete().not('imovel_id', 'is', null),
+    supabase.from('imovel_detalhes').delete().not('imovel_id', 'is', null),
+    supabase.from('imovel_arquivo_extracoes').delete().not('imovel_id', 'is', null),
+    supabase.from('imovel_imagens').delete().not('imovel_id', 'is', null),
+    supabase.from('imovel_arquivos').delete().not('imovel_id', 'is', null),
+  ] as const;
+
+  const cleanupResults = await Promise.all(cleanupTasks);
+  const failedCleanup = cleanupResults.find((result) => result.error);
+
+  if (failedCleanup?.error) {
+    throw new Error(`Failed to cleanup imovel relations: ${failedCleanup.error.message}`);
+  }
+
+  const storagePaths = [
+    ...(imagens ?? [])
+      .map((imagem) => extractStoragePath(imagem.url))
+      .filter((path): path is string => Boolean(path)),
+    ...(arquivos ?? [])
+      .map((arquivo) => extractStoragePath(arquivo.url_storage ?? null))
+      .filter((path): path is string => Boolean(path)),
+  ];
+
+  if (storagePaths.length > 0) {
+    for (const chunk of chunkArray(storagePaths, 100)) {
+      await supabase.storage.from('imoveis').remove(chunk);
+    }
+  }
+
+  const { error } = await supabase.from('imoveis').delete().not('id', 'is', null);
+
+  if (error) {
+    throw new Error(`Failed to delete imoveis: ${error.message}`);
   }
 }
 
@@ -567,4 +638,14 @@ function extractStoragePath(url: string | null) {
   }
 
   return url.slice(markerIndex + marker.length);
+}
+
+function chunkArray<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
 }
