@@ -203,7 +203,6 @@ export function AdminImovelForm({
             name="tipo_propriedade"
             defaultValue={initialValues?.tipo_propriedade ?? ''}
             options={TIPO_PROPRIEDADE_OPTIONS}
-            required
             className="md:col-span-1 xl:col-span-3"
           />
           <SelectField
@@ -211,7 +210,6 @@ export function AdminImovelForm({
             name="tipo_leilao"
             defaultValue={initialValues?.tipo_leilao ?? ''}
             options={TIPO_LEILAO_OPTIONS}
-            required
             className="md:col-span-1 xl:col-span-3"
           />
           <Field
@@ -220,7 +218,6 @@ export function AdminImovelForm({
             value={valorAvaliacaoInput}
             onChange={(event) => setValorAvaliacaoInput(maskCurrency(event.target.value))}
             inputMode="numeric"
-            required
             className="md:col-span-1 xl:col-span-3"
           />
           <Field
@@ -231,7 +228,6 @@ export function AdminImovelForm({
               setValorPrimeiroLeilaoInput(maskCurrency(event.target.value))
             }
             inputMode="numeric"
-            required
             className="md:col-span-1 xl:col-span-3"
           />
           <Field
@@ -241,7 +237,6 @@ export function AdminImovelForm({
             defaultValue={toDatetimeLocal(
               initialValues?.data_primeiro_leilao ?? initialValues?.data_leilao,
             )}
-            required
             className="md:col-span-1 xl:col-span-4"
           />
           <Field
@@ -303,7 +298,6 @@ export function AdminImovelForm({
             name="status"
             defaultValue={initialValues?.status ?? 'ativo'}
             options={STATUS_OPTIONS}
-            required
             className="md:col-span-1 xl:col-span-3"
           />
           <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 md:col-span-2 xl:col-span-4 xl:self-end">
@@ -346,7 +340,6 @@ export function AdminImovelForm({
             label="Cidade"
             name="cidade"
             defaultValue={initialValues?.cidade ?? ''}
-            required
             className="md:col-span-1 xl:col-span-5"
           />
           <SelectField
@@ -354,7 +347,6 @@ export function AdminImovelForm({
             name="estado"
             defaultValue={initialValues?.estado ?? ''}
             options={ESTADO_OPTIONS}
-            required
             className="md:col-span-1 xl:col-span-3"
           />
           <Field
@@ -378,7 +370,6 @@ export function AdminImovelForm({
             value={descricaoInput}
             onChange={(event) => setDescricaoInput(event.target.value)}
             rows={6}
-            required
             className="min-h-[180px] w-full resize-none overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
           />
           {descricaoInput.trim() ? (
