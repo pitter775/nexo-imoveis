@@ -2,6 +2,7 @@ import 'server-only';
 
 import OpenAI from 'openai';
 import type { Responses } from 'openai/resources/responses/responses';
+import { logAdminEvents } from '@/lib/admin/logger';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Database, Json } from '@/lib/supabase/types';
 
@@ -89,18 +90,73 @@ type ExtractionFieldStatuses = {
   detalhes: Record<string, FieldVisualStatus>;
 };
 
+type ProcessingLogEntry = {
+  at: string;
+  level: 'info' | 'warn' | 'error';
+  stage: string;
+  message: string;
+};
+
 export async function processPropertyDocument(
   input: ProcessPropertyDocumentInput,
 ) {
+  const processingLog: ProcessingLogEntry[] = [];
+  let persistedLogCount = 0;
+  const appendLog = (
+    stage: string,
+    message: string,
+    level: ProcessingLogEntry['level'] = 'info',
+  ) => {
+    processingLog.push({
+      at: new Date().toISOString(),
+      level,
+      stage,
+      message,
+    });
+  };
+  const syncAdminLogs = async () => {
+    const nextEntries = processingLog.slice(persistedLogCount);
+
+    if (nextEntries.length === 0) {
+      return;
+    }
+
+    await logAdminEvents(
+      nextEntries.map((entry) => ({
+        origem: 'processamento_arquivo',
+        nivel: entry.level,
+        etapa: entry.stage,
+        contexto: input.documentType ?? 'arquivo',
+        imovel_id: input.propertyId,
+        arquivo_id: input.arquivoId,
+        mensagem: entry.message,
+        detalhes: {
+          at: entry.at,
+          file_name: input.fileName,
+        },
+      })),
+    );
+
+    persistedLogCount = processingLog.length;
+  };
+
+  appendLog('upload', `Inicio do processamento do arquivo ${input.fileName}.`);
+  await syncAdminLogs();
+
   await upsertExtraction({
     arquivoId: input.arquivoId,
     propertyId: input.propertyId,
     status: 'processando',
     errorMessage: null,
+    extractedFields: {
+      processing_log: processingLog,
+    },
   });
 
   try {
     if (!looksLikePdf(input.fileName, input.fileType)) {
+      appendLog('validacao', 'Arquivo ignorado porque nao foi identificado como PDF.', 'warn');
+      await syncAdminLogs();
       await upsertExtraction({
         arquivoId: input.arquivoId,
         propertyId: input.propertyId,
@@ -110,6 +166,7 @@ export async function processPropertyDocument(
           motivo: 'arquivo_nao_pdf',
           nome_arquivo: input.fileName,
           tipo_documento: input.documentType ?? null,
+          processing_log: processingLog,
         },
       });
 
@@ -117,27 +174,53 @@ export async function processPropertyDocument(
     }
 
     if (!process.env.OPENAI_API_KEY) {
+      appendLog('configuracao', 'OPENAI_API_KEY nao configurada para processar o PDF.', 'error');
+      await syncAdminLogs();
       throw new Error('OPENAI_API_KEY nao configurada para leitura inteligente de PDF.');
     }
 
+    appendLog('extracao', 'Iniciando extracao estruturada principal do documento.');
+    await syncAdminLogs();
     const structured = await extractStructuredDataFromPdf({
       fileUrl: input.fileUrl,
       fileName: input.fileName,
       documentType: input.documentType ?? null,
     });
+    appendLog(
+      'extracao',
+      `Extracao estruturada principal concluida. Texto base disponivel: ${structured.texto_base ? 'sim' : 'nao'}.`,
+    );
+    await syncAdminLogs();
 
+    appendLog('normalizacao', 'Iniciando extracao e normalizacao dos dados de leilao.');
+    await syncAdminLogs();
     const dadosLeilao = await extractAndNormalizeAuctionData({
       fileUrl: input.fileUrl,
       fileName: input.fileName,
       documentType: input.documentType ?? null,
       structured,
+      log: appendLog,
     });
+    await syncAdminLogs();
+    appendLog(
+      'normalizacao',
+      `Dados de leilao normalizados. Revisao pendente: ${dadosLeilao.pendingReview ? 'sim' : 'nao'}.`,
+      dadosLeilao.pendingReview ? 'warn' : 'info',
+    );
+    await syncAdminLogs();
 
+    appendLog('persistencia', 'Iniciando absorcao dos dados extraidos no cadastro do imovel.');
+    await syncAdminLogs();
     const appliedChanges = await applyStructuredUpdates(
       input.propertyId,
       structured,
       dadosLeilao.data,
     );
+    appendLog(
+      'persistencia',
+      `Absorcao concluida. Imovel: ${Object.keys(appliedChanges.fieldStatuses.imovel).length} campos sinalizados. Dossie: ${Object.keys(appliedChanges.fieldStatuses.detalhes).length} campos sinalizados.`,
+    );
+    await syncAdminLogs();
 
     const fieldsPayload = {
       tipo_documento: input.documentType ?? null,
@@ -149,10 +232,14 @@ export async function processPropertyDocument(
       motivos_revisao: dadosLeilao.reviewReasons,
       field_statuses: appliedChanges.fieldStatuses,
       preview_preenchimento: appliedChanges.previewValues,
+      processing_log: processingLog,
       ...(structured.campos_detectados ?? {}),
       ...(structured.imovel ? { imovel: structured.imovel } : {}),
       ...(structured.detalhes ? { detalhes: structured.detalhes } : {}),
     };
+
+    appendLog('finalizacao', 'Processamento do arquivo concluido com sucesso.');
+    await syncAdminLogs();
 
     await upsertExtraction({
       arquivoId: input.arquivoId,
@@ -180,11 +267,17 @@ export async function processPropertyDocument(
         ? error.message
         : 'Falha inesperada ao processar o PDF.';
 
+    appendLog('erro', message, 'error');
+    await syncAdminLogs();
+
     await upsertExtraction({
       arquivoId: input.arquivoId,
       propertyId: input.propertyId,
       status: 'erro',
       errorMessage: message,
+      extractedFields: {
+        processing_log: processingLog,
+      },
     });
 
     return {
@@ -600,12 +693,15 @@ async function extractAndNormalizeAuctionData({
   fileName,
   documentType,
   structured,
+  log,
 }: {
   fileUrl: string;
   fileName: string;
   documentType: string | null;
   structured: StructuredExtraction;
+  log?: (stage: string, message: string, level?: ProcessingLogEntry['level']) => void;
 }) {
+  log?.('normalizacao', 'Montando candidatos a partir da extracao estruturada.');
   const fromStructured = normalizeAuctionData({
     valor_avaliacao: structured.imovel?.valor_avaliacao ?? null,
     valor_primeiro_leilao:
@@ -623,15 +719,19 @@ async function extractAndNormalizeAuctionData({
   let fromStrictJson = createEmptyAuctionData();
 
   try {
+    log?.('normalizacao', 'Solicitando extracao strict JSON dos dados de leilao.');
     fromStrictJson = await extractAuctionDataFromPdfStrict({
       fileUrl,
       fileName,
       documentType,
     });
+    log?.('normalizacao', 'Extracao strict JSON concluida com sucesso.');
   } catch {
+    log?.('normalizacao', 'Extracao strict JSON falhou. Seguindo com fallback.', 'warn');
     fromStrictJson = createEmptyAuctionData();
   }
 
+  log?.('normalizacao', 'Aplicando fallback por regex sobre o texto extraido.');
   const fromRegex = normalizeAuctionDataFromText(
     [structured.texto_base, structured.resumo_documento]
       .filter(Boolean)
@@ -644,6 +744,16 @@ async function extractAndNormalizeAuctionData({
     fromStructured,
   );
   const validation = validateAuctionData(data);
+
+  if (validation.pendingReview) {
+    log?.(
+      'validacao',
+      `Dados marcados para revisao: ${validation.reasons.join(', ')}.`,
+      'warn',
+    );
+  } else {
+    log?.('validacao', 'Dados de leilao passaram pelas validacoes configuradas.');
+  }
 
   return {
     data,

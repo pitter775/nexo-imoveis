@@ -11,6 +11,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_logs: {
+        Row: {
+          id: string;
+          origem: string;
+          nivel: string;
+          etapa: string | null;
+          contexto: string | null;
+          imovel_id: string | null;
+          arquivo_id: string | null;
+          mensagem: string;
+          detalhes: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          origem: string;
+          nivel?: string;
+          etapa?: string | null;
+          contexto?: string | null;
+          imovel_id?: string | null;
+          arquivo_id?: string | null;
+          mensagem: string;
+          detalhes?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          origem?: string;
+          nivel?: string;
+          etapa?: string | null;
+          contexto?: string | null;
+          imovel_id?: string | null;
+          arquivo_id?: string | null;
+          mensagem?: string;
+          detalhes?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       chat_conversas: {
         Row: {
           id: string;
