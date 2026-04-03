@@ -1,6 +1,7 @@
 import 'server-only';
 
 import OpenAI from 'openai';
+import type { Responses } from 'openai/resources/responses/responses';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Database, Json } from '@/lib/supabase/types';
 
@@ -205,6 +206,9 @@ async function extractStructuredDataFromPdf({
   const client = createOpenAIClient();
   const response = await client.responses.create({
     model: EXTRACTION_MODEL,
+    text: {
+      format: buildStructuredExtractionFormat(),
+    },
     input: [
       {
         role: 'system',
@@ -317,7 +321,9 @@ async function extractStructuredDataFromPdf({
   const parsed = parseJsonObject(response.output_text);
 
   if (!parsed) {
-    throw new Error('A OpenAI nao retornou um JSON valido para o PDF.');
+    throw new Error(
+      `A OpenAI nao retornou um JSON valido para o PDF. Resposta bruta: ${truncateText(response.output_text)}`,
+    );
   }
 
   return {
@@ -478,6 +484,23 @@ function parseJsonObject(value: string | null | undefined) {
 
   try {
     return JSON.parse(normalized) as StructuredExtraction;
+  } catch {
+    return tryParseJsonSubstring(normalized);
+  }
+}
+
+function tryParseJsonSubstring(value: string) {
+  const firstBrace = value.indexOf('{');
+  const lastBrace = value.lastIndexOf('}');
+
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+    return null;
+  }
+
+  const candidate = value.slice(firstBrace, lastBrace + 1);
+
+  try {
+    return JSON.parse(candidate) as StructuredExtraction;
   } catch {
     return null;
   }
@@ -641,6 +664,9 @@ async function extractAuctionDataFromPdfStrict({
   const client = createOpenAIClient();
   const response = await client.responses.create({
     model: EXTRACTION_MODEL,
+    text: {
+      format: buildAuctionDataFormat(),
+    },
     input: [
       {
         role: 'system',
@@ -690,7 +716,9 @@ async function extractAuctionDataFromPdfStrict({
   const parsed = parseJsonObject(response.output_text);
 
   if (!parsed) {
-    throw new Error('A OpenAI nao retornou JSON valido para os dados de leilao.');
+    throw new Error(
+      `A OpenAI nao retornou JSON valido para os dados de leilao. Resposta bruta: ${truncateText(response.output_text)}`,
+    );
   }
 
   return normalizeAuctionData(parsed as Partial<DadosLeilao>);
@@ -932,4 +960,163 @@ function extractDateByContext(text: string, contexts: string[]) {
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function truncateText(value: string | null | undefined, maxLength = 1200) {
+  const normalized = (value ?? '').replace(/\s+/g, ' ').trim();
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength)}...`;
+}
+
+function buildStructuredExtractionFormat(): Responses.ResponseFormatTextJSONSchemaConfig {
+  return {
+    type: 'json_schema',
+    strict: true,
+    name: 'property_document_extraction',
+    description: 'Extracao estruturada de dados de imoveis e dossie a partir de PDF.',
+    schema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        texto_base: { type: ['string', 'null'] },
+        resumo_documento: { type: ['string', 'null'] },
+        estrategia_extracao: { type: ['string', 'null'] },
+        imovel: {
+          type: ['object', 'null'],
+          additionalProperties: false,
+          properties: {
+            descricao: { type: ['string', 'null'] },
+            tipo_leilao: { type: ['string', 'null'] },
+            valor_avaliacao: { type: ['number', 'null'] },
+            valor_minimo: { type: ['number', 'null'] },
+            valor_primeiro_leilao: { type: ['number', 'null'] },
+            valor_segundo_leilao: { type: ['number', 'null'] },
+            cidade: { type: ['string', 'null'] },
+            estado: { type: ['string', 'null'] },
+            data_leilao: { type: ['string', 'null'] },
+            data_primeiro_leilao: { type: ['string', 'null'] },
+            data_segundo_leilao: { type: ['string', 'null'] },
+            status: { type: ['string', 'null'] },
+            rua: { type: ['string', 'null'] },
+            numero: { type: ['string', 'null'] },
+            complemento: { type: ['string', 'null'] },
+            cep: { type: ['string', 'null'] },
+            tipo_propriedade: { type: ['string', 'null'] },
+            quartos: { type: ['number', 'null'] },
+            banheiros: { type: ['number', 'null'] },
+            area_total: { type: ['number', 'null'] },
+            area_construida: { type: ['number', 'null'] },
+            ano_construcao: { type: ['number', 'null'] },
+          },
+          required: [
+            'descricao',
+            'tipo_leilao',
+            'valor_avaliacao',
+            'valor_minimo',
+            'valor_primeiro_leilao',
+            'valor_segundo_leilao',
+            'cidade',
+            'estado',
+            'data_leilao',
+            'data_primeiro_leilao',
+            'data_segundo_leilao',
+            'status',
+            'rua',
+            'numero',
+            'complemento',
+            'cep',
+            'tipo_propriedade',
+            'quartos',
+            'banheiros',
+            'area_total',
+            'area_construida',
+            'ano_construcao',
+          ],
+        },
+        detalhes: {
+          type: ['object', 'null'],
+          additionalProperties: false,
+          properties: {
+            resumo_executivo: { type: ['string', 'null'] },
+            ocupacao: { type: ['string', 'null'] },
+            matricula: { type: ['string', 'null'] },
+            cartorio: { type: ['string', 'null'] },
+            numero_processo: { type: ['string', 'null'] },
+            valor_mercado: { type: ['number', 'null'] },
+            lance_recomendado: { type: ['number', 'null'] },
+            lucro_estimado: { type: ['number', 'null'] },
+            roi_estimado: { type: ['number', 'null'] },
+            divida_iptu: { type: ['number', 'null'] },
+            divida_condominio: { type: ['number', 'null'] },
+            analise: { type: ['string', 'null'] },
+            riscos: { type: ['string', 'null'] },
+            observacoes_juridicas: { type: ['string', 'null'] },
+            estrategia: { type: ['string', 'null'] },
+          },
+          required: [
+            'resumo_executivo',
+            'ocupacao',
+            'matricula',
+            'cartorio',
+            'numero_processo',
+            'valor_mercado',
+            'lance_recomendado',
+            'lucro_estimado',
+            'roi_estimado',
+            'divida_iptu',
+            'divida_condominio',
+            'analise',
+            'riscos',
+            'observacoes_juridicas',
+            'estrategia',
+          ],
+        },
+        campos_detectados: {
+          type: ['object', 'null'],
+          additionalProperties: {
+            type: ['string', 'number', 'boolean', 'null'],
+          },
+        },
+      },
+      required: [
+        'texto_base',
+        'resumo_documento',
+        'estrategia_extracao',
+        'imovel',
+        'detalhes',
+        'campos_detectados',
+      ],
+    },
+  };
+}
+
+function buildAuctionDataFormat(): Responses.ResponseFormatTextJSONSchemaConfig {
+  return {
+    type: 'json_schema',
+    strict: true,
+    name: 'auction_data_extraction',
+    description: 'Extracao estrita dos dados principais de leilao a partir de edital PDF.',
+    schema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        valor_avaliacao: { type: ['number', 'null'] },
+        valor_primeiro_leilao: { type: ['number', 'null'] },
+        valor_segundo_leilao: { type: ['number', 'null'] },
+        data_primeiro_leilao: { type: ['string', 'null'] },
+        data_segundo_leilao: { type: ['string', 'null'] },
+      },
+      required: [
+        'valor_avaliacao',
+        'valor_primeiro_leilao',
+        'valor_segundo_leilao',
+        'data_primeiro_leilao',
+        'data_segundo_leilao',
+      ],
+    },
+  };
 }
