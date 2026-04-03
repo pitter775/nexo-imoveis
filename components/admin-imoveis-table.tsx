@@ -248,17 +248,15 @@ export function AdminImoveisTable({
                               <Pencil className="size-3" />
                               Editar
                             </Link>
-                            {imovel.status !== 'inativo' ? (
-                              <InlineActionForm
-                                action={inactivateImovelAction}
-                                imovelId={imovel.id}
-                                label="Inativar"
-                                icon={<EyeOff className="size-3" />}
-                                confirmMessage={`Deseja inativar o imovel \"${imovel.titulo}\"?`}
-                                tone="muted"
-                                compact
-                              />
-                            ) : null}
+                            <InlineActionForm
+                              action={inactivateImovelAction}
+                              imovelId={imovel.id}
+                              label="Inativar"
+                              icon={<EyeOff className="size-3" />}
+                              confirmMessage={`Deseja inativar o imovel \"${imovel.titulo}\"?`}
+                              tone={imovel.status === 'inativo' ? 'inactive' : 'active'}
+                              compact
+                            />
                             <button
                               type="button"
                               onClick={() => setImovelToDelete(imovel)}
@@ -360,17 +358,15 @@ export function AdminImoveisTable({
                         <Pencil className="size-3" />
                         Editar
                       </Link>
-                      {imovel.status !== 'inativo' ? (
-                        <InlineActionForm
-                          action={inactivateImovelAction}
-                          imovelId={imovel.id}
-                          label="Inativar"
-                          icon={<EyeOff className="size-3" />}
-                          confirmMessage={`Deseja inativar o imovel \"${imovel.titulo}\"?`}
-                          tone="muted"
-                          compact
-                        />
-                      ) : null}
+                      <InlineActionForm
+                        action={inactivateImovelAction}
+                        imovelId={imovel.id}
+                        label="Inativar"
+                        icon={<EyeOff className="size-3" />}
+                        confirmMessage={`Deseja inativar o imovel \"${imovel.titulo}\"?`}
+                        tone={imovel.status === 'inativo' ? 'inactive' : 'active'}
+                        compact
+                      />
                       <button
                         type="button"
                         onClick={() => setImovelToDelete(imovel)}
@@ -581,13 +577,15 @@ function InlineActionForm({
   label: string;
   icon: ReactNode;
   confirmMessage: string;
-  tone: 'muted' | 'danger';
+  tone: 'active' | 'inactive' | 'danger';
   compact?: boolean;
 }) {
   const className =
     tone === 'danger'
       ? 'border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-300 hover:bg-rose-100'
-      : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100';
+      : tone === 'active'
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100'
+        : 'border-slate-200 bg-slate-100 text-slate-500 hover:border-slate-300 hover:bg-slate-200';
 
   return (
     <form
