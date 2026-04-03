@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, LoaderCircle, Trash2, Upload } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileText, LoaderCircle, Trash2, Upload } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { supabase } from '@/lib/supabase';
 
@@ -15,6 +15,12 @@ export type ImovelArquivo = {
   visivel_publico: boolean | null;
   visivel_pagantes: boolean | null;
   created_at: string | null;
+  extracao?: {
+    status: string;
+    resumo: string | null;
+    erro: string | null;
+    campos_extraidos: Record<string, unknown>;
+  } | null;
 };
 
 type AdminImovelFilesProps = {
@@ -174,27 +180,61 @@ export function AdminImovelFiles({
               status?: string;
               error?: string;
               summary?: string | null;
-              extractedFields?: {
-                detalhes?: Record<string, unknown>;
-              } | null;
+              extractedFields?: Record<string, unknown> | null;
             } | null;
           };
 
-          uploadedFiles.push(data.arquivo);
+          const arquivoProcessado: ImovelArquivo = {
+            ...data.arquivo,
+            extracao: data.processamento
+              ? {
+                  status: data.processamento.status ?? 'pendente',
+                  resumo: data.processamento.summary ?? null,
+                  erro: data.processamento.error ?? null,
+                  campos_extraidos: data.processamento.extractedFields ?? {},
+                }
+              : null,
+          };
+
+          uploadedFiles.push(arquivoProcessado);
 
           if (data.processamento?.status === 'concluido') {
+            const resumoExtracao = buildExtractionUiSummary(arquivoProcessado.extracao);
             processingMessages.push(
-              `${file.name}: PDF lido e dados aproveitados no banco.`,
+              resumoExtracao.feedbackMessage ??
+                `${file.name}: PDF lido e dados aproveitados no banco.`,
             );
 
-            if (data.processamento.extractedFields?.detalhes) {
+            const dados = extractDadosPreview(data.processamento.extractedFields);
+            const detalhes = extractDetalhesPreview(data.processamento.extractedFields);
+            const fieldStatuses = extractFieldStatuses(data.processamento.extractedFields);
+
+            if (dados.values || Object.keys(dados.statuses).length > 0) {
+              window.sessionStorage.setItem(
+                `admin-imovel-dados-preview:${imovelId}`,
+                JSON.stringify(dados),
+              );
+              window.dispatchEvent(
+                new CustomEvent('imovel-dados-updated', {
+                  detail: dados,
+                }),
+              );
+            }
+
+            if (detalhes) {
               window.sessionStorage.setItem(
                 `admin-imovel-dossie-preview:${imovelId}`,
-                JSON.stringify(data.processamento.extractedFields.detalhes),
+                JSON.stringify({
+                  values: detalhes,
+                  statuses: fieldStatuses.detalhes,
+                }),
               );
               window.dispatchEvent(
                 new CustomEvent('imovel-dossie-updated', {
-                  detail: data.processamento.extractedFields.detalhes,
+                  detail: {
+                    values: detalhes,
+                    statuses: fieldStatuses.detalhes,
+                  },
                 }),
               );
             }
@@ -452,6 +492,7 @@ export function AdminImovelFiles({
                     {file.visivel_publico ? 'Publico' : 'Nao publico'} ·{' '}
                     {file.visivel_pagantes ? 'Pagantes' : 'Nao pagantes'}
                   </p>
+                  <ExtractionSummary extraction={file.extracao ?? null} />
                 </div>
               </div>
 
@@ -499,4 +540,230 @@ export function AdminImovelFiles({
       </div>
     </section>
   );
+}
+
+function ExtractionSummary({
+  extraction,
+}: {
+  extraction: ImovelArquivo['extracao'] | null;
+}) {
+  if (!extraction) {
+    return null;
+  }
+
+  const summary = buildExtractionUiSummary(extraction);
+
+  if (!summary.badgeLabel) {
+    return null;
+  }
+
+  const isWarning = summary.variant !== 'success';
+
+  return (
+    <div
+      className={`mt-2 rounded-xl border px-3 py-2 text-xs ${
+        isWarning
+          ? 'border-amber-200 bg-amber-50 text-amber-800'
+          : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+      }`}
+    >
+      <p className="inline-flex items-center gap-1.5 font-semibold">
+        {isWarning ? (
+          <AlertTriangle className="size-3.5" />
+        ) : (
+          <CheckCircle2 className="size-3.5" />
+        )}
+        {summary.badgeLabel}
+      </p>
+      {summary.description ? (
+        <p className="mt-1 leading-5">{summary.description}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function buildExtractionUiSummary(extraction: ImovelArquivo['extracao']) {
+  if (!extraction) {
+    return {
+      variant: 'neutral' as const,
+      badgeLabel: null,
+      description: null,
+      feedbackMessage: null,
+    };
+  }
+
+  if (extraction.status === 'erro') {
+    return {
+      variant: 'warning' as const,
+      badgeLabel: 'Leitura automatica falhou',
+      description:
+        extraction.erro ?? 'O arquivo foi salvo, mas precisa de preenchimento manual.',
+      feedbackMessage: null,
+    };
+  }
+
+  if (extraction.status === 'ignorado') {
+    return {
+      variant: 'warning' as const,
+      badgeLabel: 'Arquivo salvo sem leitura automatica',
+      description: 'Esse arquivo nao foi processado automaticamente.',
+      feedbackMessage: null,
+    };
+  }
+
+  const camposExtraidos =
+    extraction.campos_extraidos &&
+    typeof extraction.campos_extraidos === 'object' &&
+    !Array.isArray(extraction.campos_extraidos)
+      ? extraction.campos_extraidos
+      : {};
+
+  const dadosLeilao = extractAuctionData(camposExtraidos);
+  const missingFields = getMissingAuctionFields(dadosLeilao);
+  const pendingReview = camposExtraidos.pendente_revisao === true;
+  const reviewReasons = Array.isArray(camposExtraidos.motivos_revisao)
+    ? camposExtraidos.motivos_revisao.filter((item): item is string => typeof item === 'string')
+    : [];
+
+  if (pendingReview || missingFields.length > 0) {
+    const parts: string[] = [];
+
+    if (missingFields.length > 0) {
+      parts.push(`Faltou preencher: ${missingFields.join(', ')}.`);
+    }
+
+    if (pendingReview) {
+      parts.push(
+        reviewReasons.length > 0
+          ? `Revisar consistencia: ${reviewReasons.map(formatReviewReason).join(', ')}.`
+          : 'Revisar consistencia dos dados extraidos.',
+      );
+    }
+
+    return {
+      variant: 'warning' as const,
+      badgeLabel: 'Preenchimento parcial',
+      description: parts.join(' '),
+      feedbackMessage: `${extraction.resumo ?? 'PDF processado.'} ${parts.join(' ')}`.trim(),
+    };
+  }
+
+  return {
+    variant: 'success' as const,
+    badgeLabel: 'Edital processado',
+    description: 'Os principais campos de leilao foram identificados automaticamente.',
+    feedbackMessage: null,
+  };
+}
+
+function extractAuctionData(camposExtraidos: Record<string, unknown>) {
+  const source =
+    camposExtraidos.dados_leilao &&
+    typeof camposExtraidos.dados_leilao === 'object' &&
+    !Array.isArray(camposExtraidos.dados_leilao)
+      ? (camposExtraidos.dados_leilao as Record<string, unknown>)
+      : camposExtraidos;
+
+  return {
+    valor_avaliacao: source.valor_avaliacao ?? null,
+    valor_primeiro_leilao: source.valor_primeiro_leilao ?? null,
+    valor_segundo_leilao: source.valor_segundo_leilao ?? null,
+    data_primeiro_leilao: source.data_primeiro_leilao ?? null,
+    data_segundo_leilao: source.data_segundo_leilao ?? null,
+  };
+}
+
+function extractFieldStatuses(extractedFields: Record<string, unknown> | null | undefined) {
+  const raw =
+    extractedFields?.field_statuses &&
+    typeof extractedFields.field_statuses === 'object' &&
+    !Array.isArray(extractedFields.field_statuses)
+      ? (extractedFields.field_statuses as Record<string, unknown>)
+      : {};
+
+  return {
+    imovel:
+      raw.imovel && typeof raw.imovel === 'object' && !Array.isArray(raw.imovel)
+        ? (raw.imovel as Record<string, string>)
+        : {},
+    detalhes:
+      raw.detalhes && typeof raw.detalhes === 'object' && !Array.isArray(raw.detalhes)
+        ? (raw.detalhes as Record<string, string>)
+        : {},
+  };
+}
+
+function getMissingAuctionFields(data: Record<string, unknown>) {
+  const fieldMap = [
+    { key: 'valor_avaliacao', label: 'valor de avaliacao' },
+    { key: 'valor_primeiro_leilao', label: 'valor do 1o leilao' },
+    { key: 'valor_segundo_leilao', label: 'valor do 2o leilao' },
+    { key: 'data_primeiro_leilao', label: 'data do 1o leilao' },
+    { key: 'data_segundo_leilao', label: 'data do 2o leilao' },
+  ] as const;
+
+  return fieldMap
+    .filter(({ key }) => {
+      const value = data[key];
+      return value == null || (typeof value === 'string' && !value.trim());
+    })
+    .map(({ label }) => label);
+}
+
+function formatReviewReason(reason: string) {
+  switch (reason) {
+    case 'valor_avaliacao_menor_que_valor_primeiro_leilao':
+      return 'avaliacao menor que 1o leilao';
+    case 'valor_primeiro_leilao_menor_que_valor_segundo_leilao':
+      return '1o leilao menor que 2o leilao';
+    case 'ordem_datas_invalida':
+      return 'ordem das datas invalida';
+    default:
+      return reason.replace(/_/g, ' ');
+  }
+}
+
+function extractDetalhesPreview(extractedFields: Record<string, unknown> | null | undefined) {
+  const preview =
+    extractedFields?.preview_preenchimento &&
+    typeof extractedFields.preview_preenchimento === 'object' &&
+    !Array.isArray(extractedFields.preview_preenchimento)
+      ? (extractedFields.preview_preenchimento as Record<string, unknown>)
+      : {};
+
+  if (
+    preview.detalhes &&
+    typeof preview.detalhes === 'object' &&
+    !Array.isArray(preview.detalhes)
+  ) {
+    return preview.detalhes as Record<string, unknown>;
+  }
+
+  if (
+    extractedFields?.detalhes &&
+    typeof extractedFields.detalhes === 'object' &&
+    !Array.isArray(extractedFields.detalhes)
+  ) {
+    return extractedFields.detalhes as Record<string, unknown>;
+  }
+
+  return null;
+}
+
+function extractDadosPreview(extractedFields: Record<string, unknown> | null | undefined) {
+  const preview =
+    extractedFields?.preview_preenchimento &&
+    typeof extractedFields.preview_preenchimento === 'object' &&
+    !Array.isArray(extractedFields.preview_preenchimento)
+      ? (extractedFields.preview_preenchimento as Record<string, unknown>)
+      : {};
+  const fieldStatuses = extractFieldStatuses(extractedFields);
+
+  return {
+    values:
+      preview.imovel && typeof preview.imovel === 'object' && !Array.isArray(preview.imovel)
+        ? (preview.imovel as Record<string, unknown>)
+        : null,
+    statuses: fieldStatuses.imovel,
+  };
 }

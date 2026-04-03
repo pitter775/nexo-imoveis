@@ -34,9 +34,13 @@ type StructuredExtraction = {
     tipo_leilao: string | null;
     valor_avaliacao: number | null;
     valor_minimo: number | null;
+    valor_primeiro_leilao: number | null;
+    valor_segundo_leilao: number | null;
     cidade: string | null;
     estado: string | null;
     data_leilao: string | null;
+    data_primeiro_leilao: string | null;
+    data_segundo_leilao: string | null;
     status: string | null;
     rua: string | null;
     numero: string | null;
@@ -67,6 +71,21 @@ type StructuredExtraction = {
     estrategia: string | null;
   }>;
   campos_detectados?: Record<string, string | number | boolean | null>;
+};
+
+type DadosLeilao = {
+  valor_avaliacao: number | null;
+  valor_primeiro_leilao: number | null;
+  valor_segundo_leilao: number | null;
+  data_primeiro_leilao: string | null;
+  data_segundo_leilao: string | null;
+};
+
+type FieldVisualStatus = 'filled' | 'updated' | 'missing';
+
+type ExtractionFieldStatuses = {
+  imovel: Record<string, FieldVisualStatus>;
+  detalhes: Record<string, FieldVisualStatus>;
 };
 
 export async function processPropertyDocument(
@@ -106,13 +125,29 @@ export async function processPropertyDocument(
       documentType: input.documentType ?? null,
     });
 
-    await applyStructuredUpdates(input.propertyId, structured);
+    const dadosLeilao = await extractAndNormalizeAuctionData({
+      fileUrl: input.fileUrl,
+      fileName: input.fileName,
+      documentType: input.documentType ?? null,
+      structured,
+    });
+
+    const appliedChanges = await applyStructuredUpdates(
+      input.propertyId,
+      structured,
+      dadosLeilao.data,
+    );
 
     const fieldsPayload = {
       tipo_documento: input.documentType ?? null,
       nome_arquivo: input.fileName,
       estrategia_extracao:
         structured.estrategia_extracao ?? 'openai_pdf_input_file',
+      dados_leilao: dadosLeilao.data,
+      pendente_revisao: dadosLeilao.pendingReview,
+      motivos_revisao: dadosLeilao.reviewReasons,
+      field_statuses: appliedChanges.fieldStatuses,
+      preview_preenchimento: appliedChanges.previewValues,
       ...(structured.campos_detectados ?? {}),
       ...(structured.imovel ? { imovel: structured.imovel } : {}),
       ...(structured.detalhes ? { detalhes: structured.detalhes } : {}),
@@ -209,9 +244,13 @@ async function extractStructuredDataFromPdf({
                     tipo_leilao: 'string|null',
                     valor_avaliacao: 'number|null',
                     valor_minimo: 'number|null',
+                    valor_primeiro_leilao: 'number|null',
+                    valor_segundo_leilao: 'number|null',
                     cidade: 'string|null',
                     estado: 'string|null',
                     data_leilao: 'string|null',
+                    data_primeiro_leilao: 'YYYY-MM-DD|null',
+                    data_segundo_leilao: 'YYYY-MM-DD|null',
                     status: 'string|null',
                     rua: 'string|null',
                     numero: 'string|null',
@@ -291,6 +330,7 @@ async function extractStructuredDataFromPdf({
 async function applyStructuredUpdates(
   propertyId: string,
   extraction: StructuredExtraction,
+  dadosLeilao: DadosLeilao,
 ) {
   const supabase = createAdminClient();
   const [{ data: imovelAtual, error: imovelAtualError }, { data: detalhesAtuais, error: detalhesAtuaisError }] =
@@ -311,14 +351,30 @@ async function applyStructuredUpdates(
     throw new Error(`Falha ao carregar o dossie atual do imovel: ${detalhesAtuaisError.message}`);
   }
 
-  const imovelUpdate = mergeOnlyEmptyFields(
+  const imovelPlan = buildAuthoritativeFieldPlan(
     (imovelAtual ?? {}) as Record<string, unknown>,
-    compactObject(extraction.imovel ?? {}),
+    {
+      ...(extraction.imovel ?? {}),
+      valor_avaliacao: dadosLeilao.valor_avaliacao,
+      valor_minimo: dadosLeilao.valor_primeiro_leilao,
+      valor_primeiro_leilao: dadosLeilao.valor_primeiro_leilao,
+      valor_segundo_leilao: dadosLeilao.valor_segundo_leilao,
+      data_leilao: dadosLeilao.data_primeiro_leilao,
+      data_primeiro_leilao: dadosLeilao.data_primeiro_leilao,
+      data_segundo_leilao: dadosLeilao.data_segundo_leilao,
+    },
+    [
+      'valor_avaliacao',
+      'valor_primeiro_leilao',
+      'valor_segundo_leilao',
+      'data_primeiro_leilao',
+      'data_segundo_leilao',
+    ],
   );
-  if (Object.keys(imovelUpdate).length > 0) {
+  if (Object.keys(imovelPlan.update).length > 0) {
     const { error } = await supabase
       .from('imoveis')
-      .update(imovelUpdate)
+      .update(imovelPlan.update)
       .eq('id', propertyId);
 
     if (error) {
@@ -326,15 +382,15 @@ async function applyStructuredUpdates(
     }
   }
 
-  const detalhesUpdate = mergeOnlyEmptyFields(
+  const detalhesPlan = buildAuthoritativeFieldPlan(
     (detalhesAtuais ?? {}) as Record<string, unknown>,
-    compactObject(extraction.detalhes ?? {}),
+    extraction.detalhes ?? {},
   );
-  if (Object.keys(detalhesUpdate).length > 0) {
+  if (Object.keys(detalhesPlan.update).length > 0) {
     const { error } = await supabase.from('imovel_detalhes').upsert(
       {
         imovel_id: propertyId,
-        ...detalhesUpdate,
+        ...detalhesPlan.update,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'imovel_id' },
@@ -344,6 +400,17 @@ async function applyStructuredUpdates(
       throw new Error(`Falha ao atualizar o dossie do imovel: ${error.message}`);
     }
   }
+
+  return {
+    fieldStatuses: {
+      imovel: imovelPlan.statuses,
+      detalhes: detalhesPlan.statuses,
+    } satisfies ExtractionFieldStatuses,
+    previewValues: {
+      imovel: imovelPlan.preview,
+      detalhes: detalhesPlan.preview,
+    },
+  };
 }
 
 async function upsertExtraction({
@@ -419,7 +486,7 @@ function parseJsonObject(value: string | null | undefined) {
 function getDocumentSpecificInstructions(documentType: string | null) {
   switch ((documentType ?? '').toLowerCase()) {
     case 'edital':
-      return 'Se for edital, priorize regras do leilao, datas, valor minimo, valor de avaliacao, ocupacao, processo, debitos, riscos e estrategia.';
+      return 'Se for edital, priorize regras do leilao, valor de avaliacao, valor do primeiro leilao, valor do segundo leilao, data do primeiro leilao, data do segundo leilao, ocupacao, processo, debitos, riscos e estrategia.';
     case 'matricula':
       return 'Se for matricula, priorize matricula, cartorio, endereco, area total, area construida, proprietarios, averbacoes e observacoes juridicas.';
     case 'certidao':
@@ -439,21 +506,6 @@ function compactObject<T extends Record<string, unknown>>(value: T) {
   ) as Partial<T>;
 }
 
-function mergeOnlyEmptyFields<TIncoming extends Record<string, unknown>>(
-  existing: Record<string, unknown>,
-  incoming: TIncoming,
-) {
-  return Object.fromEntries(
-    Object.entries(incoming).filter(([key, value]) => {
-      if (value === undefined || value === null || value === '') {
-        return false;
-      }
-
-      return isEmptyValue(existing[key]);
-    }),
-  ) as Partial<TIncoming>;
-}
-
 function isEmptyValue(value: unknown) {
   if (value === undefined || value === null) {
     return true;
@@ -464,4 +516,420 @@ function isEmptyValue(value: unknown) {
   }
 
   return false;
+}
+
+function buildAuthoritativeFieldPlan<TIncoming extends Record<string, unknown>>(
+  existing: Record<string, unknown>,
+  incoming: TIncoming,
+  requiredKeys: string[] = [],
+) {
+  const update: Record<string, unknown> = {};
+  const preview: Record<string, unknown> = {};
+  const statuses: Record<string, FieldVisualStatus> = {};
+  const keys = new Set([...Object.keys(incoming), ...requiredKeys]);
+
+  for (const key of keys) {
+    const nextValue = incoming[key];
+    const currentValue = existing[key];
+
+    if (nextValue === undefined || nextValue === null || nextValue === '') {
+      if (requiredKeys.includes(key)) {
+        statuses[key] = 'missing';
+      }
+      continue;
+    }
+
+    preview[key] = nextValue;
+
+    if (isEmptyValue(currentValue)) {
+      update[key] = nextValue;
+      statuses[key] = 'filled';
+      continue;
+    }
+
+    if (!areEquivalentFieldValues(currentValue, nextValue)) {
+      update[key] = nextValue;
+      statuses[key] = 'updated';
+    }
+  }
+
+  return {
+    update,
+    preview,
+    statuses,
+  };
+}
+
+function areEquivalentFieldValues(currentValue: unknown, nextValue: unknown) {
+  if (typeof currentValue === 'number' && typeof nextValue === 'number') {
+    return currentValue === nextValue;
+  }
+
+  if (typeof currentValue === 'string' && typeof nextValue === 'string') {
+    return currentValue.trim() === nextValue.trim();
+  }
+
+  return currentValue === nextValue;
+}
+
+async function extractAndNormalizeAuctionData({
+  fileUrl,
+  fileName,
+  documentType,
+  structured,
+}: {
+  fileUrl: string;
+  fileName: string;
+  documentType: string | null;
+  structured: StructuredExtraction;
+}) {
+  const fromStructured = normalizeAuctionData({
+    valor_avaliacao: structured.imovel?.valor_avaliacao ?? null,
+    valor_primeiro_leilao:
+      structured.imovel?.valor_primeiro_leilao ??
+      structured.imovel?.valor_minimo ??
+      null,
+    valor_segundo_leilao: structured.imovel?.valor_segundo_leilao ?? null,
+    data_primeiro_leilao:
+      structured.imovel?.data_primeiro_leilao ??
+      structured.imovel?.data_leilao ??
+      null,
+    data_segundo_leilao: structured.imovel?.data_segundo_leilao ?? null,
+  });
+
+  let fromStrictJson = createEmptyAuctionData();
+
+  try {
+    fromStrictJson = await extractAuctionDataFromPdfStrict({
+      fileUrl,
+      fileName,
+      documentType,
+    });
+  } catch {
+    fromStrictJson = createEmptyAuctionData();
+  }
+
+  const fromRegex = normalizeAuctionDataFromText(
+    [structured.texto_base, structured.resumo_documento]
+      .filter(Boolean)
+      .join('\n'),
+  );
+
+  const data = mergeAuctionData(
+    fromStrictJson,
+    fromRegex,
+    fromStructured,
+  );
+  const validation = validateAuctionData(data);
+
+  return {
+    data,
+    pendingReview: validation.pendingReview,
+    reviewReasons: validation.reasons,
+  };
+}
+
+async function extractAuctionDataFromPdfStrict({
+  fileUrl,
+  fileName,
+  documentType,
+}: {
+  fileUrl: string;
+  fileName: string;
+  documentType: string | null;
+}): Promise<DadosLeilao> {
+  const client = createOpenAIClient();
+  const response = await client.responses.create({
+    model: EXTRACTION_MODEL,
+    input: [
+      {
+        role: 'system',
+        content: [
+          'Voce extrai exclusivamente dados de leilao de um edital PDF.',
+          'Nao invente valores.',
+          'Cada campo deve ser tratado de forma independente.',
+          'Nao descarte o resultado se algum campo estiver ausente.',
+          'Nao confie na ordem do texto. Use contexto explicito como avaliacao, 1 leilao, 1a praca, 2 leilao e 2a praca.',
+          'Retorne somente JSON valido, sem markdown e sem texto extra.',
+          'Datas devem sair no formato YYYY-MM-DD quando houver confianca suficiente.',
+          'Valores monetarios devem sair como numero decimal sem simbolos.',
+        ].join(' '),
+      },
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'input_text',
+            text: [
+              `Arquivo: ${fileName}`,
+              `Tipo de documento informado: ${documentType ?? 'nao informado'}`,
+              '',
+              'Retorne exatamente este JSON:',
+              JSON.stringify(
+                {
+                  valor_avaliacao: 'number|null',
+                  valor_primeiro_leilao: 'number|null',
+                  valor_segundo_leilao: 'number|null',
+                  data_primeiro_leilao: 'YYYY-MM-DD|null',
+                  data_segundo_leilao: 'YYYY-MM-DD|null',
+                },
+                null,
+                2,
+              ),
+            ].join('\n'),
+          },
+          {
+            type: 'input_file',
+            file_url: fileUrl,
+          },
+        ],
+      },
+    ],
+  });
+
+  const parsed = parseJsonObject(response.output_text);
+
+  if (!parsed) {
+    throw new Error('A OpenAI nao retornou JSON valido para os dados de leilao.');
+  }
+
+  return normalizeAuctionData(parsed as Partial<DadosLeilao>);
+}
+
+function createEmptyAuctionData(): DadosLeilao {
+  return {
+    valor_avaliacao: null,
+    valor_primeiro_leilao: null,
+    valor_segundo_leilao: null,
+    data_primeiro_leilao: null,
+    data_segundo_leilao: null,
+  };
+}
+
+function normalizeAuctionData(value: Partial<DadosLeilao> | null | undefined): DadosLeilao {
+  return {
+    valor_avaliacao: normalizeMoneyValue(value?.valor_avaliacao ?? null),
+    valor_primeiro_leilao: normalizeMoneyValue(value?.valor_primeiro_leilao ?? null),
+    valor_segundo_leilao: normalizeMoneyValue(value?.valor_segundo_leilao ?? null),
+    data_primeiro_leilao: normalizeDateValue(value?.data_primeiro_leilao ?? null),
+    data_segundo_leilao: normalizeDateValue(value?.data_segundo_leilao ?? null),
+  };
+}
+
+function mergeAuctionData(...sources: Partial<DadosLeilao>[]): DadosLeilao {
+  return {
+    valor_avaliacao: pickFirstDefinedNumber(sources.map((source) => source.valor_avaliacao)),
+    valor_primeiro_leilao: pickFirstDefinedNumber(
+      sources.map((source) => source.valor_primeiro_leilao),
+    ),
+    valor_segundo_leilao: pickFirstDefinedNumber(
+      sources.map((source) => source.valor_segundo_leilao),
+    ),
+    data_primeiro_leilao: pickFirstDefinedString(
+      sources.map((source) => source.data_primeiro_leilao),
+    ),
+    data_segundo_leilao: pickFirstDefinedString(
+      sources.map((source) => source.data_segundo_leilao),
+    ),
+  };
+}
+
+function normalizeAuctionDataFromText(text: string) {
+  if (!text.trim()) {
+    return createEmptyAuctionData();
+  }
+
+  const normalizedText = normalizeSearchText(text);
+
+  return normalizeAuctionData({
+    valor_avaliacao: extractMoneyByContext(normalizedText, [
+      'avaliacao',
+      'valor de avaliacao',
+      'avaliado em',
+    ]),
+    valor_primeiro_leilao: extractMoneyByContext(normalizedText, [
+      '1 leilao',
+      '1o leilao',
+      '1 leilao',
+      '1a praca',
+      'primeiro leilao',
+      'primeira praca',
+    ]),
+    valor_segundo_leilao: extractMoneyByContext(normalizedText, [
+      '2 leilao',
+      '2o leilao',
+      '2 leilao',
+      '2a praca',
+      'segundo leilao',
+      'segunda praca',
+    ]),
+    data_primeiro_leilao: extractDateByContext(normalizedText, [
+      '1 leilao',
+      '1o leilao',
+      '1a praca',
+      'primeiro leilao',
+      'primeira praca',
+    ]),
+    data_segundo_leilao: extractDateByContext(normalizedText, [
+      '2 leilao',
+      '2o leilao',
+      '2a praca',
+      'segundo leilao',
+      'segunda praca',
+    ]),
+  });
+}
+
+function validateAuctionData(data: DadosLeilao) {
+  const reasons: string[] = [];
+
+  // Mantem o salvamento parcial, mas sinaliza incoerencias para revisao.
+  if (
+    data.valor_avaliacao != null &&
+    data.valor_primeiro_leilao != null &&
+    data.valor_avaliacao < data.valor_primeiro_leilao
+  ) {
+    reasons.push('valor_avaliacao_menor_que_valor_primeiro_leilao');
+  }
+
+  if (
+    data.valor_primeiro_leilao != null &&
+    data.valor_segundo_leilao != null &&
+    data.valor_primeiro_leilao < data.valor_segundo_leilao
+  ) {
+    reasons.push('valor_primeiro_leilao_menor_que_valor_segundo_leilao');
+  }
+
+  if (data.data_primeiro_leilao && data.data_segundo_leilao) {
+    const first = Date.parse(data.data_primeiro_leilao);
+    const second = Date.parse(data.data_segundo_leilao);
+
+    if (Number.isFinite(first) && Number.isFinite(second) && first >= second) {
+      reasons.push('ordem_datas_invalida');
+    }
+  }
+
+  return {
+    pendingReview: reasons.length > 0,
+    reasons,
+  };
+}
+
+function normalizeMoneyValue(value: unknown) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const normalized = trimmed
+    .replace(/[Rr]\$/g, '')
+    .replace(/\s+/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
+    .replace(/[^\d.-]/g, '');
+
+  if (!normalized) {
+    return null;
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeDateValue(value: unknown) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  const match = trimmed.match(/\b(\d{2})\/(\d{2})\/(\d{4})\b/);
+  if (!match) {
+    return null;
+  }
+
+  return `${match[3]}-${match[2]}-${match[1]}`;
+}
+
+function pickFirstDefinedNumber(values: Array<number | null | undefined>) {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function pickFirstDefinedString(values: Array<string | null | undefined>) {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function normalizeSearchText(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\u00ba/g, 'o')
+    .replace(/\u00aa/g, 'a')
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+function extractMoneyByContext(text: string, contexts: string[]) {
+  for (const context of contexts) {
+    const escapedContext = escapeRegExp(context);
+    const regex = new RegExp(
+      `${escapedContext}[\\s\\S]{0,80}?(r\\$\\s?[\\d.]+,\\d{2}|[\\d.]+,\\d{2})`,
+      'i',
+    );
+    const match = text.match(regex);
+
+    if (match?.[1]) {
+      return normalizeMoneyValue(match[1]);
+    }
+  }
+
+  return null;
+}
+
+function extractDateByContext(text: string, contexts: string[]) {
+  for (const context of contexts) {
+    const escapedContext = escapeRegExp(context);
+    const regex = new RegExp(
+      `${escapedContext}[\\s\\S]{0,80}?(\\d{2}/\\d{2}/\\d{4})`,
+      'i',
+    );
+    const match = text.match(regex);
+
+    if (match?.[1]) {
+      return normalizeDateValue(match[1]);
+    }
+  }
+
+  return null;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

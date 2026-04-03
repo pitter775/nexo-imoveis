@@ -22,6 +22,8 @@ type ImovelDetalhesFormValues = {
   estrategia?: string | null;
 };
 
+type FieldVisualStatus = 'filled' | 'updated' | 'missing';
+
 type AdminImovelDetalhesFormProps = {
   imovelId: string;
   action: (formData: FormData) => void | Promise<void>;
@@ -37,6 +39,8 @@ export function AdminImovelDetalhesForm({
   const [values, setValues] = useState<ImovelDetalhesFormValues>(
     initialValues ?? {},
   );
+  const [fieldStatuses, setFieldStatuses] = useState<Record<string, FieldVisualStatus>>({});
+  const statusSummary = summarizeFieldStatuses(fieldStatuses);
 
   useEffect(() => {
     setValues(initialValues ?? {});
@@ -49,15 +53,21 @@ export function AdminImovelDetalhesForm({
     }
 
     try {
-      const parsed = JSON.parse(stored) as Partial<ImovelDetalhesFormValues>;
+      const parsed = JSON.parse(stored) as {
+        values?: Partial<ImovelDetalhesFormValues>;
+        statuses?: Record<string, FieldVisualStatus>;
+      };
+      const nextValues = parsed.values ?? {};
+
       setValues((current) => ({
         ...current,
         ...Object.fromEntries(
-          Object.entries(parsed).filter(
+          Object.entries(nextValues).filter(
             ([, value]) => value !== undefined && value !== null && value !== '',
           ),
         ),
       }));
+      setFieldStatuses(parsed.statuses ?? {});
     } catch {
       window.sessionStorage.removeItem(storageKey);
     }
@@ -65,20 +75,29 @@ export function AdminImovelDetalhesForm({
 
   useEffect(() => {
     const handleAutoFill = (event: Event) => {
-      const customEvent = event as CustomEvent<Partial<ImovelDetalhesFormValues>>;
-      const nextValues = customEvent.detail ?? {};
+      const customEvent = event as CustomEvent<{
+        values?: Partial<ImovelDetalhesFormValues>;
+        statuses?: Record<string, FieldVisualStatus>;
+      }>;
+      const nextValues = customEvent.detail?.values ?? {};
       const filteredValues = Object.fromEntries(
         Object.entries(nextValues).filter(
           ([, value]) => value !== undefined && value !== null && value !== '',
         ),
       );
 
-      window.sessionStorage.setItem(storageKey, JSON.stringify(filteredValues));
+      const payload = {
+        values: filteredValues,
+        statuses: customEvent.detail?.statuses ?? {},
+      };
+
+      window.sessionStorage.setItem(storageKey, JSON.stringify(payload));
 
       setValues((current) => ({
         ...current,
         ...filteredValues,
       }));
+      setFieldStatuses(customEvent.detail?.statuses ?? {});
     };
 
     window.addEventListener('imovel-dossie-updated', handleAutoFill);
@@ -100,6 +119,30 @@ export function AdminImovelDetalhesForm({
         <p className="mt-2 text-sm text-slate-500">
           Edite aqui o material pago liberado apos a compra do imovel.
         </p>
+        <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">
+            Verde: preenchido pelo arquivo
+          </span>
+          <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700">
+            Laranja: alterado pelo arquivo
+          </span>
+          <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-700">
+            Azul: ainda falta preencher
+          </span>
+        </div>
+        {statusSummary.total > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">
+              {statusSummary.filled} preenchidos
+            </span>
+            <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700">
+              {statusSummary.updated} alterados
+            </span>
+            <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-700">
+              {statusSummary.missing} faltando
+            </span>
+          </div>
+        ) : null}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-12">
@@ -108,6 +151,7 @@ export function AdminImovelDetalhesForm({
           name="resumo_executivo"
           value={values.resumo_executivo ?? ''}
           onChange={(value) => setValues((current) => ({ ...current, resumo_executivo: value }))}
+          status={fieldStatuses.resumo_executivo}
           className="md:col-span-2 xl:col-span-12"
         />
         <Field
@@ -115,6 +159,7 @@ export function AdminImovelDetalhesForm({
           name="ocupacao"
           value={values.ocupacao ?? ''}
           onChange={(value) => setValues((current) => ({ ...current, ocupacao: value }))}
+          status={fieldStatuses.ocupacao}
           className="md:col-span-1 xl:col-span-4"
         />
         <Field
@@ -122,6 +167,7 @@ export function AdminImovelDetalhesForm({
           name="matricula"
           value={values.matricula ?? ''}
           onChange={(value) => setValues((current) => ({ ...current, matricula: value }))}
+          status={fieldStatuses.matricula}
           className="md:col-span-1 xl:col-span-4"
         />
         <Field
@@ -129,6 +175,7 @@ export function AdminImovelDetalhesForm({
           name="cartorio"
           value={values.cartorio ?? ''}
           onChange={(value) => setValues((current) => ({ ...current, cartorio: value }))}
+          status={fieldStatuses.cartorio}
           className="md:col-span-2 xl:col-span-4"
         />
         <Field
@@ -136,6 +183,7 @@ export function AdminImovelDetalhesForm({
           name="numero_processo"
           value={values.numero_processo ?? ''}
           onChange={(value) => setValues((current) => ({ ...current, numero_processo: value }))}
+          status={fieldStatuses.numero_processo}
           className="md:col-span-2 xl:col-span-6"
         />
         <Field
@@ -145,6 +193,7 @@ export function AdminImovelDetalhesForm({
           step="0.01"
           value={formatNumericValue(values.valor_mercado)}
           onChange={(value) => setValues((current) => ({ ...current, valor_mercado: parseNumericValue(value) }))}
+          status={fieldStatuses.valor_mercado}
           className="md:col-span-1 xl:col-span-3"
         />
         <Field
@@ -154,6 +203,7 @@ export function AdminImovelDetalhesForm({
           step="0.01"
           value={formatNumericValue(values.lance_recomendado)}
           onChange={(value) => setValues((current) => ({ ...current, lance_recomendado: parseNumericValue(value) }))}
+          status={fieldStatuses.lance_recomendado}
           className="md:col-span-1 xl:col-span-3"
         />
         <Field
@@ -163,6 +213,7 @@ export function AdminImovelDetalhesForm({
           step="0.01"
           value={formatNumericValue(values.lucro_estimado)}
           onChange={(value) => setValues((current) => ({ ...current, lucro_estimado: parseNumericValue(value) }))}
+          status={fieldStatuses.lucro_estimado}
           className="md:col-span-1 xl:col-span-3"
         />
         <Field
@@ -172,6 +223,7 @@ export function AdminImovelDetalhesForm({
           step="0.01"
           value={formatNumericValue(values.roi_estimado)}
           onChange={(value) => setValues((current) => ({ ...current, roi_estimado: parseNumericValue(value) }))}
+          status={fieldStatuses.roi_estimado}
           className="md:col-span-1 xl:col-span-3"
         />
         <Field
@@ -181,6 +233,7 @@ export function AdminImovelDetalhesForm({
           step="0.01"
           value={formatNumericValue(values.divida_iptu)}
           onChange={(value) => setValues((current) => ({ ...current, divida_iptu: parseNumericValue(value) }))}
+          status={fieldStatuses.divida_iptu}
           className="md:col-span-1 xl:col-span-3"
         />
         <Field
@@ -190,6 +243,7 @@ export function AdminImovelDetalhesForm({
           step="0.01"
           value={formatNumericValue(values.divida_condominio)}
           onChange={(value) => setValues((current) => ({ ...current, divida_condominio: parseNumericValue(value) }))}
+          status={fieldStatuses.divida_condominio}
           className="md:col-span-1 xl:col-span-3"
         />
         <TextareaField
@@ -197,6 +251,7 @@ export function AdminImovelDetalhesForm({
           name="analise"
           value={values.analise ?? ''}
           onChange={(value) => setValues((current) => ({ ...current, analise: value }))}
+          status={fieldStatuses.analise}
           className="md:col-span-2 xl:col-span-12"
         />
         <TextareaField
@@ -204,6 +259,7 @@ export function AdminImovelDetalhesForm({
           name="riscos"
           value={values.riscos ?? ''}
           onChange={(value) => setValues((current) => ({ ...current, riscos: value }))}
+          status={fieldStatuses.riscos}
           className="md:col-span-2 xl:col-span-6"
         />
         <TextareaField
@@ -211,6 +267,7 @@ export function AdminImovelDetalhesForm({
           name="observacoes_juridicas"
           value={values.observacoes_juridicas ?? ''}
           onChange={(value) => setValues((current) => ({ ...current, observacoes_juridicas: value }))}
+          status={fieldStatuses.observacoes_juridicas}
           className="md:col-span-2 xl:col-span-6"
         />
         <TextareaField
@@ -218,6 +275,7 @@ export function AdminImovelDetalhesForm({
           name="estrategia"
           value={values.estrategia ?? ''}
           onChange={(value) => setValues((current) => ({ ...current, estrategia: value }))}
+          status={fieldStatuses.estrategia}
           className="md:col-span-2 xl:col-span-12"
         />
       </div>
@@ -238,6 +296,7 @@ function Field({
   onChange,
   type = 'text',
   step,
+  status,
   className = '',
 }: {
   label: string;
@@ -246,6 +305,7 @@ function Field({
   onChange: (value: string) => void;
   type?: string;
   step?: string;
+  status?: FieldVisualStatus;
   className?: string;
 }) {
   return (
@@ -257,7 +317,9 @@ function Field({
         step={step}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+        className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:bg-white focus:ring-4 ${getFieldStatusClassName(
+          status,
+        )}`}
       />
     </label>
   );
@@ -268,12 +330,14 @@ function TextareaField({
   name,
   value,
   onChange,
+  status,
   className = '',
 }: {
   label: string;
   name: string;
   value: string;
   onChange: (value: string) => void;
+  status?: FieldVisualStatus;
   className?: string;
 }) {
   return (
@@ -284,7 +348,9 @@ function TextareaField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         rows={5}
-        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+        className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:bg-white focus:ring-4 ${getFieldStatusClassName(
+          status,
+        )}`}
       />
     </label>
   );
@@ -301,4 +367,28 @@ function parseNumericValue(value: string) {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getFieldStatusClassName(status?: FieldVisualStatus) {
+  switch (status) {
+    case 'filled':
+      return 'border-emerald-300 bg-emerald-50/40 focus:border-emerald-400 focus:ring-emerald-100';
+    case 'updated':
+      return 'border-amber-300 bg-amber-50/40 focus:border-amber-400 focus:ring-amber-100';
+    case 'missing':
+      return 'border-sky-300 bg-sky-50/40 focus:border-sky-400 focus:ring-sky-100';
+    default:
+      return 'border-slate-200 focus:border-primary focus:ring-primary/10';
+  }
+}
+
+function summarizeFieldStatuses(statuses: Record<string, FieldVisualStatus>) {
+  const values = Object.values(statuses);
+
+  return {
+    filled: values.filter((value) => value === 'filled').length,
+    updated: values.filter((value) => value === 'updated').length,
+    missing: values.filter((value) => value === 'missing').length,
+    total: values.length,
+  };
 }

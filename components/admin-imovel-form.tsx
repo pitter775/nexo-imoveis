@@ -103,6 +103,8 @@ type ImovelFormValues = {
   ordem_destaque?: number | null;
 };
 
+type FieldVisualStatus = 'filled' | 'updated' | 'missing';
+
 type AdminImovelFormProps = {
   title: string;
   description: string;
@@ -120,6 +122,9 @@ export function AdminImovelForm({
   initialValues,
   showIntro = true,
 }: AdminImovelFormProps) {
+  const storageKey = initialValues?.id
+    ? `admin-imovel-dados-preview:${initialValues.id}`
+    : null;
   const [valorAvaliacaoInput, setValorAvaliacaoInput] = useState(
     formatCurrencyInput(initialValues?.valor_avaliacao),
   );
@@ -131,11 +136,112 @@ export function AdminImovelForm({
   );
   const [cepInput, setCepInput] = useState(maskCep(initialValues?.cep ?? ''));
   const [descricaoInput, setDescricaoInput] = useState(initialValues?.descricao ?? '');
+  const [fieldStatuses, setFieldStatuses] = useState<Record<string, FieldVisualStatus>>({});
   const descricaoRef = useRef<HTMLTextAreaElement | null>(null);
+  const statusSummary = summarizeFieldStatuses(fieldStatuses);
 
   useEffect(() => {
     autoResizeTextarea(descricaoRef.current);
   }, [descricaoInput]);
+
+  useEffect(() => {
+    if (!storageKey) {
+      return;
+    }
+
+    const stored = window.sessionStorage.getItem(storageKey);
+    if (!stored) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(stored) as {
+        values?: Partial<ImovelFormValues> | null;
+        statuses?: Record<string, FieldVisualStatus>;
+      };
+
+      if (parsed.values?.valor_avaliacao != null) {
+        setValorAvaliacaoInput(formatCurrencyInput(Number(parsed.values.valor_avaliacao)));
+      }
+
+      if (parsed.values?.valor_primeiro_leilao != null) {
+        setValorPrimeiroLeilaoInput(
+          formatCurrencyInput(Number(parsed.values.valor_primeiro_leilao)),
+        );
+      }
+
+      if (parsed.values?.valor_segundo_leilao != null) {
+        setValorSegundoLeilaoInput(
+          formatCurrencyInput(Number(parsed.values.valor_segundo_leilao)),
+        );
+      }
+
+      if (typeof parsed.values?.cep === 'string') {
+        setCepInput(maskCep(parsed.values.cep));
+      }
+
+      if (typeof parsed.values?.descricao === 'string') {
+        setDescricaoInput(parsed.values.descricao);
+      }
+
+      setFieldStatuses(parsed.statuses ?? {});
+    } catch {
+      window.sessionStorage.removeItem(storageKey);
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!storageKey) {
+      return;
+    }
+
+    const handleAutoFill = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        values?: Partial<ImovelFormValues> | null;
+        statuses?: Record<string, FieldVisualStatus>;
+      }>;
+
+      const nextValues = customEvent.detail?.values ?? null;
+      const statuses = customEvent.detail?.statuses ?? {};
+
+      window.sessionStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          values: nextValues,
+          statuses,
+        }),
+      );
+
+      if (nextValues?.valor_avaliacao != null) {
+        setValorAvaliacaoInput(formatCurrencyInput(Number(nextValues.valor_avaliacao)));
+      }
+
+      if (nextValues?.valor_primeiro_leilao != null) {
+        setValorPrimeiroLeilaoInput(
+          formatCurrencyInput(Number(nextValues.valor_primeiro_leilao)),
+        );
+      }
+
+      if (nextValues?.valor_segundo_leilao != null) {
+        setValorSegundoLeilaoInput(
+          formatCurrencyInput(Number(nextValues.valor_segundo_leilao)),
+        );
+      }
+
+      if (typeof nextValues?.cep === 'string') {
+        setCepInput(maskCep(nextValues.cep));
+      }
+
+      if (typeof nextValues?.descricao === 'string') {
+        setDescricaoInput(nextValues.descricao);
+      }
+
+      setFieldStatuses(statuses);
+    };
+
+    window.addEventListener('imovel-dados-updated', handleAutoFill);
+    return () => window.removeEventListener('imovel-dados-updated', handleAutoFill);
+  }, [storageKey]);
 
   return (
     <div className="space-y-8">
@@ -170,6 +276,30 @@ export function AdminImovelForm({
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
               Edite as informacoes principais exibidas na plataforma e usadas na vitrine.
             </p>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">
+                Verde: preenchido pelo arquivo
+              </span>
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700">
+                Laranja: alterado pelo arquivo
+              </span>
+              <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-700">
+                Azul: ainda falta preencher
+              </span>
+            </div>
+            {statusSummary.total > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">
+                  {statusSummary.filled} preenchidos
+                </span>
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700">
+                  {statusSummary.updated} alterados
+                </span>
+                <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-700">
+                  {statusSummary.missing} faltando
+                </span>
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -196,6 +326,7 @@ export function AdminImovelForm({
             name="titulo"
             defaultValue={initialValues?.titulo ?? ''}
             required
+            status={fieldStatuses.titulo}
             className="md:col-span-2 xl:col-span-6"
           />
           <SelectField
@@ -203,6 +334,7 @@ export function AdminImovelForm({
             name="tipo_propriedade"
             defaultValue={initialValues?.tipo_propriedade ?? ''}
             options={TIPO_PROPRIEDADE_OPTIONS}
+            status={fieldStatuses.tipo_propriedade}
             className="md:col-span-1 xl:col-span-3"
           />
           <SelectField
@@ -210,6 +342,7 @@ export function AdminImovelForm({
             name="tipo_leilao"
             defaultValue={initialValues?.tipo_leilao ?? ''}
             options={TIPO_LEILAO_OPTIONS}
+            status={fieldStatuses.tipo_leilao}
             className="md:col-span-1 xl:col-span-3"
           />
           <Field
@@ -218,6 +351,7 @@ export function AdminImovelForm({
             value={valorAvaliacaoInput}
             onChange={(event) => setValorAvaliacaoInput(maskCurrency(event.target.value))}
             inputMode="numeric"
+            status={fieldStatuses.valor_avaliacao}
             className="md:col-span-1 xl:col-span-3"
           />
           <Field
@@ -228,6 +362,7 @@ export function AdminImovelForm({
               setValorPrimeiroLeilaoInput(maskCurrency(event.target.value))
             }
             inputMode="numeric"
+            status={fieldStatuses.valor_primeiro_leilao || fieldStatuses.valor_minimo}
             className="md:col-span-1 xl:col-span-3"
           />
           <Field
@@ -237,6 +372,7 @@ export function AdminImovelForm({
             defaultValue={toDatetimeLocal(
               initialValues?.data_primeiro_leilao ?? initialValues?.data_leilao,
             )}
+            status={fieldStatuses.data_primeiro_leilao || fieldStatuses.data_leilao}
             className="md:col-span-1 xl:col-span-4"
           />
           <Field
@@ -247,6 +383,7 @@ export function AdminImovelForm({
               setValorSegundoLeilaoInput(maskCurrency(event.target.value))
             }
             inputMode="numeric"
+            status={fieldStatuses.valor_segundo_leilao}
             className="md:col-span-1 xl:col-span-3"
           />
           <Field
@@ -254,6 +391,7 @@ export function AdminImovelForm({
             name="data_segundo_leilao"
             type="datetime-local"
             defaultValue={toDatetimeLocal(initialValues?.data_segundo_leilao)}
+            status={fieldStatuses.data_segundo_leilao}
             className="md:col-span-1 xl:col-span-4"
           />
           <Field
@@ -262,6 +400,7 @@ export function AdminImovelForm({
             type="number"
             step="0.01"
             defaultValue={initialValues?.area_total ?? ''}
+            status={fieldStatuses.area_total}
             className="md:col-span-1 xl:col-span-2"
           />
           <Field
@@ -270,6 +409,7 @@ export function AdminImovelForm({
             type="number"
             step="0.01"
             defaultValue={initialValues?.area_construida ?? ''}
+            status={fieldStatuses.area_construida}
             className="md:col-span-1 xl:col-span-2"
           />
           <Field
@@ -277,6 +417,7 @@ export function AdminImovelForm({
             name="quartos"
             type="number"
             defaultValue={initialValues?.quartos ?? ''}
+            status={fieldStatuses.quartos}
             className="md:col-span-1 xl:col-span-2"
           />
           <Field
@@ -284,6 +425,7 @@ export function AdminImovelForm({
             name="banheiros"
             type="number"
             defaultValue={initialValues?.banheiros ?? ''}
+            status={fieldStatuses.banheiros}
             className="md:col-span-1 xl:col-span-2"
           />
           <Field
@@ -291,6 +433,7 @@ export function AdminImovelForm({
             name="ano_construcao"
             type="number"
             defaultValue={initialValues?.ano_construcao ?? ''}
+            status={fieldStatuses.ano_construcao}
             className="md:col-span-1 xl:col-span-3"
           />
           <SelectField
@@ -298,6 +441,7 @@ export function AdminImovelForm({
             name="status"
             defaultValue={initialValues?.status ?? 'ativo'}
             options={STATUS_OPTIONS}
+            status={fieldStatuses.status}
             className="md:col-span-1 xl:col-span-3"
           />
           <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 md:col-span-2 xl:col-span-4 xl:self-end">
@@ -322,24 +466,28 @@ export function AdminImovelForm({
             label="Rua"
             name="rua"
             defaultValue={initialValues?.rua ?? ''}
+            status={fieldStatuses.rua}
             className="md:col-span-2 xl:col-span-7"
           />
           <Field
             label="Numero"
             name="numero"
             defaultValue={initialValues?.numero ?? ''}
+            status={fieldStatuses.numero}
             className="md:col-span-1 xl:col-span-2"
           />
           <Field
             label="Complemento"
             name="complemento"
             defaultValue={initialValues?.complemento ?? ''}
+            status={fieldStatuses.complemento}
             className="md:col-span-1 xl:col-span-3"
           />
           <Field
             label="Cidade"
             name="cidade"
             defaultValue={initialValues?.cidade ?? ''}
+            status={fieldStatuses.cidade}
             className="md:col-span-1 xl:col-span-5"
           />
           <SelectField
@@ -347,6 +495,7 @@ export function AdminImovelForm({
             name="estado"
             defaultValue={initialValues?.estado ?? ''}
             options={ESTADO_OPTIONS}
+            status={fieldStatuses.estado}
             className="md:col-span-1 xl:col-span-3"
           />
           <Field
@@ -355,6 +504,7 @@ export function AdminImovelForm({
             value={cepInput}
             onChange={(event) => setCepInput(maskCep(event.target.value))}
             inputMode="numeric"
+            status={fieldStatuses.cep}
             className="md:col-span-1 xl:col-span-4"
           />
         </div>
@@ -370,7 +520,9 @@ export function AdminImovelForm({
             value={descricaoInput}
             onChange={(event) => setDescricaoInput(event.target.value)}
             rows={6}
-            className="min-h-[180px] w-full resize-none overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+            className={`min-h-[180px] w-full resize-none overflow-hidden rounded-2xl border bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition focus:bg-white focus:ring-4 ${getFieldStatusClassName(
+              fieldStatuses.descricao,
+            )}`}
           />
           {descricaoInput.trim() ? (
             <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
@@ -402,6 +554,7 @@ function Field({
   type = 'text',
   step,
   inputMode,
+  status,
   className = '',
 }: {
   label: string;
@@ -413,6 +566,7 @@ function Field({
   type?: string;
   step?: string;
   inputMode?: HTMLAttributes<HTMLInputElement>['inputMode'];
+  status?: FieldVisualStatus;
   className?: string;
 }) {
   return (
@@ -430,7 +584,9 @@ function Field({
         defaultValue={value == null ? defaultValue : undefined}
         value={value}
         onChange={onChange}
-        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+        className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:bg-white focus:ring-4 ${getFieldStatusClassName(
+          status,
+        )}`}
       />
     </label>
   );
@@ -479,6 +635,7 @@ function SelectField({
   defaultValue,
   options,
   required,
+  status,
   className = '',
 }: {
   label: string;
@@ -486,6 +643,7 @@ function SelectField({
   defaultValue: string;
   options: Array<{ value: string; label: string }>;
   required?: boolean;
+  status?: FieldVisualStatus;
   className?: string;
 }) {
   return (
@@ -496,6 +654,7 @@ function SelectField({
       options={options}
       required={required}
       className={className}
+      controlClassName={getFieldStatusClassName(status)}
     />
   );
 }
@@ -567,4 +726,28 @@ function autoResizeTextarea(element: HTMLTextAreaElement | null) {
 
   element.style.height = 'auto';
   element.style.height = `${element.scrollHeight}px`;
+}
+
+function getFieldStatusClassName(status?: FieldVisualStatus) {
+  switch (status) {
+    case 'filled':
+      return 'border-emerald-300 bg-emerald-50/40 focus:border-emerald-400 focus:ring-emerald-100';
+    case 'updated':
+      return 'border-amber-300 bg-amber-50/40 focus:border-amber-400 focus:ring-amber-100';
+    case 'missing':
+      return 'border-sky-300 bg-sky-50/40 focus:border-sky-400 focus:ring-sky-100';
+    default:
+      return 'border-slate-200 focus:border-primary focus:ring-primary/10';
+  }
+}
+
+function summarizeFieldStatuses(statuses: Record<string, FieldVisualStatus>) {
+  const values = Object.values(statuses);
+
+  return {
+    filled: values.filter((value) => value === 'filled').length,
+    updated: values.filter((value) => value === 'updated').length,
+    missing: values.filter((value) => value === 'missing').length,
+    total: values.length,
+  };
 }

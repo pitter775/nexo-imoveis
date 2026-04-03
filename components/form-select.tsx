@@ -15,6 +15,7 @@ type FormSelectProps = {
   options: SelectOption[];
   required?: boolean;
   className?: string;
+  controlClassName?: string;
 };
 
 export function FormSelect({
@@ -24,6 +25,7 @@ export function FormSelect({
   options,
   required,
   className = '',
+  controlClassName = '',
 }: FormSelectProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -33,6 +35,10 @@ export function FormSelect({
     () => options.find((option) => option.value === value) ?? null,
     [options, value],
   );
+
+  useEffect(() => {
+    setValue(defaultValue);
+  }, [defaultValue]);
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -73,7 +79,7 @@ export function FormSelect({
             isOpen
               ? 'border-primary bg-white ring-4 ring-primary/10'
               : 'border-slate-200 bg-[linear-gradient(180deg,_#f8fafc_0%,_#f1f5f9_100%)] hover:border-slate-300'
-          } ${selectedOption ? 'text-slate-900' : 'text-slate-400'}`}
+          } ${selectedOption ? 'text-slate-900' : 'text-slate-400'} ${controlClassName}`}
         >
           <span>{selectedOption?.label ?? 'Selecione'}</span>
           <span

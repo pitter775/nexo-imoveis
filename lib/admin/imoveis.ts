@@ -71,6 +71,12 @@ export type ImovelArquivoRecord = {
   visivel_publico: boolean | null;
   visivel_pagantes: boolean | null;
   created_at: string | null;
+  extracao?: {
+    status: string;
+    resumo: string | null;
+    erro: string | null;
+    campos_extraidos: Record<string, unknown>;
+  } | null;
 };
 
 type ListImoveisPageInput = {
@@ -497,7 +503,52 @@ export async function listImovelArquivos(imovelId: string) {
     throw new Error(`Failed to list imovel files: ${error.message}`);
   }
 
-  return (data ?? []) as ImovelArquivoRecord[];
+  const arquivos = (data ?? []) as ImovelArquivoRecord[];
+
+  if (arquivos.length === 0) {
+    return arquivos;
+  }
+
+  const { data: extracoes, error: extractionError } = await supabase
+    .from('imovel_arquivo_extracoes')
+    .select('arquivo_id, status, resumo, erro, campos_extraidos')
+    .in(
+      'arquivo_id',
+      arquivos.map((arquivo) => arquivo.id),
+    );
+
+  if (extractionError) {
+    throw new Error(`Failed to list imovel file extractions: ${extractionError.message}`);
+  }
+
+  const extractionByArquivoId = new Map<
+    string,
+    {
+      status: string;
+      resumo: string | null;
+      erro: string | null;
+      campos_extraidos: Record<string, unknown>;
+    }
+  >();
+
+  for (const extracao of extracoes ?? []) {
+    extractionByArquivoId.set(extracao.arquivo_id, {
+      status: extracao.status,
+      resumo: extracao.resumo,
+      erro: extracao.erro,
+      campos_extraidos:
+        extracao.campos_extraidos &&
+        typeof extracao.campos_extraidos === 'object' &&
+        !Array.isArray(extracao.campos_extraidos)
+          ? (extracao.campos_extraidos as Record<string, unknown>)
+          : {},
+    });
+  }
+
+  return arquivos.map((arquivo) => ({
+    ...arquivo,
+    extracao: extractionByArquivoId.get(arquivo.id) ?? null,
+  }));
 }
 
 export async function addImovelArquivo(

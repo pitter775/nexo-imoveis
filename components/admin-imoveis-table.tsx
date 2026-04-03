@@ -211,7 +211,6 @@ export function AdminImoveisTable({
                       </button>
                     </th>
                   ))}
-                  <th className="w-[220px] px-6 py-4 text-left">Acoes</th>
                 </tr>
               </thead>
 
@@ -241,6 +240,35 @@ export function AdminImoveisTable({
                           <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
                             {imovel.descricao}
                           </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <Link
+                              href={`/admin/imoveis/${imovel.id}`}
+                              className="inline-flex h-7 items-center gap-1 rounded-md border border-primary/15 bg-primary/5 px-2 text-[10px] font-semibold text-primary transition hover:border-primary/25 hover:bg-primary/10"
+                            >
+                              <Pencil className="size-3" />
+                              Editar
+                            </Link>
+                            {imovel.status !== 'inativo' ? (
+                              <InlineActionForm
+                                action={inactivateImovelAction}
+                                imovelId={imovel.id}
+                                label="Inativar"
+                                icon={<EyeOff className="size-3" />}
+                                confirmMessage={`Deseja inativar o imovel \"${imovel.titulo}\"?`}
+                                tone="muted"
+                                compact
+                              />
+                            ) : null}
+                            <InlineActionForm
+                              action={deleteImovelAction}
+                              imovelId={imovel.id}
+                              label="Excluir"
+                              icon={<Trash2 className="size-3" />}
+                              confirmMessage={`Deseja excluir o imovel \"${imovel.titulo}\"? Esta acao nao pode ser desfeita.`}
+                              tone="danger"
+                              compact
+                            />
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -285,35 +313,6 @@ export function AdminImoveisTable({
                         {imovel.status ?? '-'}
                       </span>
                     </td>
-                    <td className="px-6 py-5">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <Link
-                          href={`/admin/imoveis/${imovel.id}`}
-                          className="inline-flex items-center gap-2 font-semibold text-primary transition hover:text-primary/80"
-                        >
-                          <Pencil className="size-3.5" />
-                          Editar
-                        </Link>
-                        {imovel.status !== 'inativo' ? (
-                          <InlineActionForm
-                            action={inactivateImovelAction}
-                            imovelId={imovel.id}
-                            label="Inativar"
-                            icon={<EyeOff className="size-3.5" />}
-                            confirmMessage={`Deseja inativar o imovel \"${imovel.titulo}\"?`}
-                            tone="muted"
-                          />
-                        ) : null}
-                        <InlineActionForm
-                          action={deleteImovelAction}
-                          imovelId={imovel.id}
-                          label="Excluir"
-                          icon={<Trash2 className="size-3.5" />}
-                          confirmMessage={`Deseja excluir o imovel \"${imovel.titulo}\"? Esta acao nao pode ser desfeita.`}
-                          tone="danger"
-                        />
-                      </div>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -327,7 +326,7 @@ export function AdminImoveisTable({
             <span>Cadastro</span>
             <span>1o leilao</span>
             <span>Status</span>
-            <span className="text-right">Acoes</span>
+            <span className="text-right">Tipo</span>
           </div>
 
           {sortedImoveis.map((imovel) => (
@@ -360,6 +359,35 @@ export function AdminImoveisTable({
                     <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">
                       {imovel.descricao}
                     </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <Link
+                        href={`/admin/imoveis/${imovel.id}`}
+                        className="inline-flex h-7 items-center gap-1 rounded-md border border-primary/15 bg-primary/5 px-2 text-[10px] font-semibold text-primary transition hover:border-primary/25 hover:bg-primary/10"
+                      >
+                        <Pencil className="size-3" />
+                        Editar
+                      </Link>
+                      {imovel.status !== 'inativo' ? (
+                        <InlineActionForm
+                          action={inactivateImovelAction}
+                          imovelId={imovel.id}
+                          label="Inativar"
+                          icon={<EyeOff className="size-3" />}
+                          confirmMessage={`Deseja inativar o imovel \"${imovel.titulo}\"?`}
+                          tone="muted"
+                          compact
+                        />
+                      ) : null}
+                      <InlineActionForm
+                        action={deleteImovelAction}
+                        imovelId={imovel.id}
+                        label="Excluir"
+                        icon={<Trash2 className="size-3" />}
+                        confirmMessage={`Deseja excluir o imovel \"${imovel.titulo}\"? Esta acao nao pode ser desfeita.`}
+                        tone="danger"
+                        compact
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -387,34 +415,8 @@ export function AdminImoveisTable({
                 </p>
               </div>
 
-              <div className="flex flex-col items-end gap-2">
-                <Link
-                  href={`/admin/imoveis/${imovel.id}`}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-2.5 text-[11px] font-semibold text-primary transition hover:border-primary/30 hover:bg-primary/15"
-                >
-                  <Pencil className="size-3.5" />
-                  Editar
-                </Link>
-                {imovel.status !== 'inativo' ? (
-                  <InlineActionForm
-                    action={inactivateImovelAction}
-                    imovelId={imovel.id}
-                    label="Inativar"
-                    icon={<EyeOff className="size-3.5" />}
-                    confirmMessage={`Deseja inativar o imovel \"${imovel.titulo}\"?`}
-                    tone="muted"
-                    compact
-                  />
-                ) : null}
-                <InlineActionForm
-                  action={deleteImovelAction}
-                  imovelId={imovel.id}
-                  label="Excluir"
-                  icon={<Trash2 className="size-3.5" />}
-                  confirmMessage={`Deseja excluir o imovel \"${imovel.titulo}\"? Esta acao nao pode ser desfeita.`}
-                  tone="danger"
-                  compact
-                />
+              <div className="flex items-start justify-end pt-0.5 text-right text-[11px] text-slate-500">
+                {imovel.tipo_leilao ?? '-'}
               </div>
             </div>
           ))}
