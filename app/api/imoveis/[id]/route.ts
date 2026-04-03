@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
     const { data: imovel, error: imovelError } = await supabase
       .from('imoveis')
       .select(
-        'id, titulo, descricao, cidade, estado, valor_avaliacao, valor_minimo, data_leilao, status, rua, numero, complemento, cep, tipo_propriedade, quartos, banheiros, area_total, area_construida, ano_construcao',
+        'id, titulo, descricao, cidade, estado, tipo_leilao, valor_avaliacao, valor_minimo, data_primeiro_leilao, valor_primeiro_leilao, data_segundo_leilao, valor_segundo_leilao, data_leilao, status, rua, numero, complemento, cep, tipo_propriedade, quartos, banheiros, area_total, area_construida, ano_construcao',
       )
       .eq('id', id)
       .maybeSingle();
@@ -92,15 +92,30 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       throw detalhesError ?? imagensError ?? arquivosError ?? leilaoError;
     }
 
+    const publicAuctionPrice =
+      imovel.valor_segundo_leilao ??
+      imovel.valor_primeiro_leilao ??
+      imovel.valor_minimo;
+    const publicAuctionDate =
+      imovel.data_segundo_leilao ??
+      imovel.data_primeiro_leilao ??
+      imovel.data_leilao;
+
     return NextResponse.json({
       id: imovel.id,
       titulo: imovel.titulo,
       descricao: imovel.descricao,
       cidade: imovel.cidade,
       estado: imovel.estado,
+      tipo_leilao: imovel.tipo_leilao,
       valor_avaliacao: toNumber(imovel.valor_avaliacao),
       valor_minimo: toNumber(imovel.valor_minimo),
-      data_leilao: imovel.data_leilao,
+      valor_primeiro_leilao: toNumber(imovel.valor_primeiro_leilao),
+      valor_segundo_leilao: toNumber(imovel.valor_segundo_leilao),
+      valor_publico: toNumber(publicAuctionPrice),
+      data_primeiro_leilao: imovel.data_primeiro_leilao,
+      data_segundo_leilao: imovel.data_segundo_leilao,
+      data_leilao: publicAuctionDate,
       status: imovel.status,
       endereco: {
         rua: imovel.rua,

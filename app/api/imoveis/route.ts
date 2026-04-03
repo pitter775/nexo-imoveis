@@ -14,7 +14,7 @@ export async function GET() {
       supabase
         .from('imoveis')
         .select(
-          'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status, destaque, ordem_destaque, created_at',
+          'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, data_primeiro_leilao, valor_primeiro_leilao, data_segundo_leilao, valor_segundo_leilao, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status, destaque, ordem_destaque, created_at',
         )
         .order('created_at', { ascending: false }),
       supabase
@@ -87,6 +87,17 @@ export async function GET() {
     const imageUrl =
       gallery[0] ??
       `https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1000`;
+    const publicAuctionPrice = Number(
+      imovel.valor_segundo_leilao ??
+        imovel.valor_primeiro_leilao ??
+        imovel.valor_minimo ??
+        imovel.valor_avaliacao ??
+        0,
+    );
+    const publicAuctionDate =
+      imovel.data_segundo_leilao ??
+      imovel.data_primeiro_leilao ??
+      imovel.data_leilao;
 
     return {
       id: imovel.id,
@@ -94,7 +105,7 @@ export async function GET() {
       description: imovel.descricao ?? 'Sem descricao cadastrada.',
       destaque: Boolean(imovel.destaque),
       ordem_destaque: imovel.ordem_destaque,
-      price: Number(imovel.valor_minimo ?? imovel.valor_avaliacao ?? 0),
+      price: publicAuctionPrice,
       valuation_price:
         imovel.valor_avaliacao == null ? null : Number(imovel.valor_avaliacao),
       location: [imovel.cidade, imovel.estado].filter(Boolean).join(' - '),
@@ -105,7 +116,7 @@ export async function GET() {
         .join(', '),
       type: imovel.tipo_propriedade ?? 'Imovel',
       auction_type: imovel.tipo_leilao ?? 'Nao informado',
-      auction_date: imovel.data_leilao,
+      auction_date: publicAuctionDate,
       status: imovel.status ?? 'ativo',
       sqft: imovel.area_total == null ? null : Number(imovel.area_total),
       built_area:

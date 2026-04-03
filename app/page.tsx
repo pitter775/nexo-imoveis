@@ -2197,12 +2197,14 @@ function PropertyDetailsView({
   const [hasUnlockedPremium, setHasUnlockedPremium] = useState(false);
   const [activePremiumTab, setActivePremiumTab] = useState<'geral' | 'dossie' | 'analise' | 'arquivos'>('geral');
   const [similarPage, setSimilarPage] = useState(0);
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     setActiveImage(property.image_url);
     setHasUnlockedPremium(false);
     setActivePremiumTab('geral');
     setSimilarPage(0);
+    setShareFeedback(null);
   }, [property.id, property.image_url]);
 
   const gallery = property.images?.length ? property.images : [property.image_url];
@@ -2258,6 +2260,41 @@ function PropertyDetailsView({
     setHasUnlockedPremium(true);
     setActivePremiumTab('dossie');
     onUnlockInformation();
+  };
+
+  const handleShareProperty = async () => {
+    const shareUrl =
+      typeof window === 'undefined'
+        ? `/imoveis/${property.id}`
+        : new URL(`/imoveis/${property.id}`, window.location.origin).toString();
+    const shareData = {
+      title: `${property.title} | Nexo Leiloes`,
+      text: `Confira este imovel em leilao${property.location ? ` em ${property.location}` : ''}.`,
+      url: shareUrl,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        setShareFeedback('Link compartilhado.');
+        return;
+      }
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareFeedback('Link copiado.');
+        return;
+      }
+
+      setShareFeedback('Nao foi possivel compartilhar neste navegador.');
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+
+      console.error('Falha ao compartilhar imovel', error);
+      setShareFeedback('Nao foi possivel compartilhar agora.');
+    }
   };
 
   useEffect(() => {
@@ -2346,7 +2383,7 @@ function PropertyDetailsView({
             <div className="space-y-4">
               <SummaryRow
                 icon={<CircleDollarSign className="size-4 text-primary" />}
-                label="Valor minimo"
+                label="Valor do leilao"
                 value={formatCurrency(property.price)}
                 valueClassName="text-primary"
               />
@@ -2398,13 +2435,22 @@ function PropertyDetailsView({
                 <AdminEditPropertyLink propertyId={property.id} className="w-full justify-center" />
               ) : null}
               <div className="flex gap-2">
-                <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 py-3 text-sm font-medium hover:bg-slate-50">
+                <button
+                  type="button"
+                  onClick={handleShareProperty}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 py-3 text-sm font-medium hover:bg-slate-50"
+                >
                   <Share2 className="size-4" /> Compartilhar
                 </button>
                 <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 py-3 text-sm font-medium hover:bg-slate-50">
                   <Heart className="size-4" /> Salvar
                 </button>
               </div>
+              {shareFeedback ? (
+                <p aria-live="polite" className="text-xs text-slate-500">
+                  {shareFeedback}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
