@@ -285,9 +285,34 @@ export async function deleteAllImoveis() {
     return;
   }
 
+  const arquivoIds = (arquivos ?? [])
+    .map((arquivo) => arquivo.id)
+    .filter((arquivoId): arquivoId is string => Boolean(arquivoId));
+
+  const storagePaths = [
+    ...(imagens ?? [])
+      .map((imagem) => extractStoragePath(imagem.url))
+      .filter((path): path is string => Boolean(path)),
+    ...(arquivos ?? [])
+      .map((arquivo) => extractStoragePath(arquivo.url_storage ?? null))
+      .filter((path): path is string => Boolean(path)),
+  ];
+
+  await removeStoragePathsOrThrow(supabase, storagePaths);
+
   const conversaIds = (conversas ?? [])
     .map((conversa) => conversa.id)
     .filter((conversaId): conversaId is string => Boolean(conversaId));
+
+  if (arquivoIds.length > 0) {
+    for (const chunk of chunkArray(arquivoIds, 100)) {
+      const { error } = await supabase.from('admin_logs').delete().in('arquivo_id', chunk);
+
+      if (error) {
+        throw new Error(`Failed to remove imovel admin logs by file: ${error.message}`);
+      }
+    }
+  }
 
   if (conversaIds.length > 0) {
     for (const chunk of chunkArray(conversaIds, 100)) {
@@ -308,6 +333,7 @@ export async function deleteAllImoveis() {
     supabase.from('leiloes').delete().not('imovel_id', 'is', null),
     supabase.from('pagamentos_itens').delete().not('imovel_id', 'is', null),
     supabase.from('user_access').delete().not('imovel_id', 'is', null),
+    supabase.from('admin_logs').delete().not('imovel_id', 'is', null),
     supabase.from('imovel_detalhes').delete().not('imovel_id', 'is', null),
     supabase.from('imovel_arquivo_extracoes').delete().not('imovel_id', 'is', null),
     supabase.from('imovel_imagens').delete().not('imovel_id', 'is', null),
@@ -319,21 +345,6 @@ export async function deleteAllImoveis() {
 
   if (failedCleanup?.error) {
     throw new Error(`Failed to cleanup imovel relations: ${failedCleanup.error.message}`);
-  }
-
-  const storagePaths = [
-    ...(imagens ?? [])
-      .map((imagem) => extractStoragePath(imagem.url))
-      .filter((path): path is string => Boolean(path)),
-    ...(arquivos ?? [])
-      .map((arquivo) => extractStoragePath(arquivo.url_storage ?? null))
-      .filter((path): path is string => Boolean(path)),
-  ];
-
-  if (storagePaths.length > 0) {
-    for (const chunk of chunkArray(storagePaths, 100)) {
-      await supabase.storage.from('imoveis').remove(chunk);
-    }
   }
 
   const { error } = await supabase.from('imoveis').delete().not('id', 'is', null);
@@ -360,9 +371,31 @@ async function deleteImovelById(id: string) {
     throw new Error(`Failed to load imovel files: ${arquivosError.message}`);
   }
 
+  const storagePaths = [
+    ...(imagens ?? [])
+      .map((imagem) => extractStoragePath(imagem.url))
+      .filter((path): path is string => Boolean(path)),
+    ...(arquivos ?? [])
+      .map((arquivo) => extractStoragePath(arquivo.url_storage ?? null))
+      .filter((path): path is string => Boolean(path)),
+  ];
+
+  await removeStoragePathsOrThrow(supabase, storagePaths);
+
   const arquivoIds = (arquivos ?? [])
     .map((arquivo) => arquivo.id)
     .filter((arquivoId): arquivoId is string => Boolean(arquivoId));
+
+  if (arquivoIds.length > 0) {
+    const { error } = await supabase
+      .from('admin_logs')
+      .delete()
+      .in('arquivo_id', arquivoIds);
+
+    if (error) {
+      throw new Error(`Failed to remove imovel admin logs by file: ${error.message}`);
+    }
+  }
 
   if (arquivoIds.length > 0) {
     const { error } = await supabase
@@ -405,6 +438,7 @@ async function deleteImovelById(id: string) {
     supabase.from('leiloes').delete().eq('imovel_id', id),
     supabase.from('pagamentos_itens').delete().eq('imovel_id', id),
     supabase.from('user_access').delete().eq('imovel_id', id),
+    supabase.from('admin_logs').delete().eq('imovel_id', id),
     supabase.from('imovel_detalhes').delete().eq('imovel_id', id),
     supabase.from('imovel_imagens').delete().eq('imovel_id', id),
     supabase.from('imovel_arquivos').delete().eq('imovel_id', id),
@@ -415,19 +449,6 @@ async function deleteImovelById(id: string) {
 
   if (failedCleanup?.error) {
     throw new Error(`Failed to cleanup imovel relations: ${failedCleanup.error.message}`);
-  }
-
-  const storagePaths = [
-    ...(imagens ?? [])
-      .map((imagem) => extractStoragePath(imagem.url))
-      .filter((path): path is string => Boolean(path)),
-    ...(arquivos ?? [])
-      .map((arquivo) => extractStoragePath(arquivo.url_storage ?? null))
-      .filter((path): path is string => Boolean(path)),
-  ];
-
-  if (storagePaths.length > 0) {
-    await supabase.storage.from('imoveis').remove(storagePaths);
   }
 
   const { error } = await supabase.from('imoveis').delete().eq('id', id);
@@ -689,6 +710,84 @@ function extractStoragePath(url: string | null) {
   }
 
   return url.slice(markerIndex + marker.length);
+}
+
+async function removeStoragePathsOrThrow(
+  supabase: ReturnType<typeof createAdminClient>,
+  paths: string[],
+) {
+  const uniquePaths = Array.from(new Set(paths.filter(Boolean)));
+
+  if (uniquePaths.length === 0) {
+    return;
+  }
+
+  for (const chunk of chunkArray(uniquePaths, 100)) {
+    const { error } = await supabase.storage.from('imoveis').remove(chunk);
+
+    if (error) {
+      throw new Error(`Failed to remove imovel storage files: ${error.message}`);
+    }
+
+    await assertStoragePathsRemoved(supabase, chunk);
+  }
+}
+
+// Confirma a remocao para nao apagar o banco enquanto o blob ainda existe.
+async function assertStoragePathsRemoved(
+  supabase: ReturnType<typeof createAdminClient>,
+  paths: string[],
+) {
+  const pathsByFolder = new Map<string, Set<string>>();
+
+  for (const path of paths) {
+    const { folder, fileName } = splitStoragePath(path);
+
+    if (!fileName) {
+      continue;
+    }
+
+    if (!pathsByFolder.has(folder)) {
+      pathsByFolder.set(folder, new Set());
+    }
+
+    pathsByFolder.get(folder)?.add(fileName);
+  }
+
+  for (const [folder, fileNames] of pathsByFolder.entries()) {
+    const { data, error } = await supabase.storage.from('imoveis').list(folder, {
+      limit: 1000,
+    });
+
+    if (error) {
+      throw new Error(`Failed to validate imovel storage cleanup: ${error.message}`);
+    }
+
+    const remainingNames = new Set((data ?? []).map((item) => item.name));
+    const leftovers = Array.from(fileNames).filter((fileName) => remainingNames.has(fileName));
+
+    if (leftovers.length > 0) {
+      throw new Error(
+        `Failed to validate imovel storage cleanup. Remaining files: ${leftovers.join(', ')}`,
+      );
+    }
+  }
+}
+
+function splitStoragePath(path: string) {
+  const lastSlashIndex = path.lastIndexOf('/');
+
+  if (lastSlashIndex === -1) {
+    return {
+      folder: '',
+      fileName: path,
+    };
+  }
+
+  return {
+    folder: path.slice(0, lastSlashIndex),
+    fileName: path.slice(lastSlashIndex + 1),
+  };
 }
 
 function chunkArray<T>(items: T[], size: number) {

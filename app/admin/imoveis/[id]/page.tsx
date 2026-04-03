@@ -55,6 +55,8 @@ export default async function EditImovelPage({ params }: EditImovelPageProps) {
             action={updateImovelAction}
             initialValues={imovel}
             showIntro={false}
+            backHref="/admin/imoveis"
+            backLabel="Voltar para gestao de imoveis"
           />
         }
         dossieTab={

@@ -483,7 +483,24 @@ async function applyStructuredUpdates(
 
   const detalhesPlan = buildAuthoritativeFieldPlan(
     (detalhesAtuais ?? {}) as Record<string, unknown>,
-    extraction.detalhes ?? {},
+    enrichDetalhesFromDocument(extraction.detalhes ?? {}, extraction.texto_base ?? null),
+    [
+      'resumo_executivo',
+      'ocupacao',
+      'matricula',
+      'cartorio',
+      'numero_processo',
+      'valor_mercado',
+      'lance_recomendado',
+      'lucro_estimado',
+      'roi_estimado',
+      'divida_iptu',
+      'divida_condominio',
+      'analise',
+      'riscos',
+      'observacoes_juridicas',
+      'estrategia',
+    ],
   );
   if (Object.keys(detalhesPlan.update).length > 0) {
     const { error } = await supabase.from('imovel_detalhes').upsert(
@@ -676,6 +693,27 @@ function buildAuthoritativeFieldPlan<TIncoming extends Record<string, unknown>>(
   };
 }
 
+function enrichDetalhesFromDocument(
+  detalhes: Partial<StructuredExtraction['detalhes'] extends infer T ? NonNullable<T> : never>,
+  textoBase: string | null,
+) {
+  const sourceText = textoBase ?? '';
+  const iptuDetail = extractDebtSentence(sourceText, 'iptu');
+  const condominioDetail = extractDebtSentence(sourceText, 'condominio');
+
+  return {
+    ...detalhes,
+    riscos: appendUniqueText(
+      detalhes.riscos ?? null,
+      [iptuDetail, condominioDetail].filter(Boolean).join(' '),
+    ),
+    observacoes_juridicas: appendUniqueText(
+      detalhes.observacoes_juridicas ?? null,
+      [iptuDetail, condominioDetail].filter(Boolean).join(' '),
+    ),
+  };
+}
+
 function areEquivalentFieldValues(currentValue: unknown, nextValue: unknown) {
   if (typeof currentValue === 'number' && typeof nextValue === 'number') {
     return currentValue === nextValue;
@@ -686,6 +724,41 @@ function areEquivalentFieldValues(currentValue: unknown, nextValue: unknown) {
   }
 
   return currentValue === nextValue;
+}
+
+function appendUniqueText(currentValue: string | null, addition: string) {
+  const normalizedAddition = addition.trim();
+
+  if (!normalizedAddition) {
+    return currentValue ?? null;
+  }
+
+  if (!currentValue?.trim()) {
+    return normalizedAddition;
+  }
+
+  const normalizedCurrent = currentValue.trim();
+
+  if (normalizedCurrent.toLowerCase().includes(normalizedAddition.toLowerCase())) {
+    return normalizedCurrent;
+  }
+
+  return `${normalizedCurrent}\n\n${normalizedAddition}`;
+}
+
+function extractDebtSentence(text: string, kind: 'iptu' | 'condominio') {
+  if (!text.trim()) {
+    return '';
+  }
+
+  const normalizedText = text.replace(/\s+/g, ' ').trim();
+  const pattern =
+    kind === 'iptu'
+      ? /(d[eé]bitos?\s+de\s+iptu[\s\S]{0,180}?(\.|;))/i
+      : /(d[eé]bitos?\s+de\s+condom[ií]nio[\s\S]{0,180}?(\.|;))/i;
+
+  const match = normalizedText.match(pattern);
+  return match?.[1]?.trim() ?? '';
 }
 
 async function extractAndNormalizeAuctionData({

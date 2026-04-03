@@ -39,12 +39,23 @@ export function AdminImovelDetalhesForm({
   const [values, setValues] = useState<ImovelDetalhesFormValues>(
     initialValues ?? {},
   );
-  const [fieldStatuses, setFieldStatuses] = useState<Record<string, FieldVisualStatus>>({});
+  const [fieldStatuses, setFieldStatuses] = useState<Record<string, FieldVisualStatus>>(
+    buildDetalhesMissingStatuses(initialValues ?? {}),
+  );
   const statusSummary = summarizeFieldStatuses(fieldStatuses);
 
   useEffect(() => {
     setValues(initialValues ?? {});
+    setFieldStatuses((current) =>
+      mergeFieldStatuses(current, buildDetalhesMissingStatuses(initialValues ?? {})),
+    );
   }, [initialValues]);
+
+  useEffect(() => {
+    setFieldStatuses((current) =>
+      mergeFieldStatuses(current, buildDetalhesMissingStatuses(values)),
+    );
+  }, [values]);
 
   useEffect(() => {
     const stored = window.sessionStorage.getItem(storageKey);
@@ -67,11 +78,19 @@ export function AdminImovelDetalhesForm({
           ),
         ),
       }));
-      setFieldStatuses(parsed.statuses ?? {});
+      setFieldStatuses(
+        mergeFieldStatuses(
+          parsed.statuses ?? {},
+          buildDetalhesMissingStatuses({
+            ...initialValues,
+            ...nextValues,
+          }),
+        ),
+      );
     } catch {
       window.sessionStorage.removeItem(storageKey);
     }
-  }, [storageKey]);
+  }, [storageKey, initialValues]);
 
   useEffect(() => {
     const handleAutoFill = (event: Event) => {
@@ -97,7 +116,15 @@ export function AdminImovelDetalhesForm({
         ...current,
         ...filteredValues,
       }));
-      setFieldStatuses(customEvent.detail?.statuses ?? {});
+      setFieldStatuses(
+        mergeFieldStatuses(
+          customEvent.detail?.statuses ?? {},
+          buildDetalhesMissingStatuses({
+            ...values,
+            ...filteredValues,
+          }),
+        ),
+      );
     };
 
     window.addEventListener('imovel-dossie-updated', handleAutoFill);
@@ -189,30 +216,27 @@ export function AdminImovelDetalhesForm({
         <Field
           label="Valor de mercado"
           name="valor_mercado"
-          type="number"
-          step="0.01"
-          value={formatNumericValue(values.valor_mercado)}
-          onChange={(value) => setValues((current) => ({ ...current, valor_mercado: parseNumericValue(value) }))}
+          value={formatCurrencyInput(values.valor_mercado)}
+          onChange={(value) => setValues((current) => ({ ...current, valor_mercado: parseCurrencyInput(value) }))}
+          inputMode="numeric"
           status={fieldStatuses.valor_mercado}
           className="md:col-span-1 xl:col-span-3"
         />
         <Field
           label="Lance recomendado"
           name="lance_recomendado"
-          type="number"
-          step="0.01"
-          value={formatNumericValue(values.lance_recomendado)}
-          onChange={(value) => setValues((current) => ({ ...current, lance_recomendado: parseNumericValue(value) }))}
+          value={formatCurrencyInput(values.lance_recomendado)}
+          onChange={(value) => setValues((current) => ({ ...current, lance_recomendado: parseCurrencyInput(value) }))}
+          inputMode="numeric"
           status={fieldStatuses.lance_recomendado}
           className="md:col-span-1 xl:col-span-3"
         />
         <Field
           label="Lucro estimado"
           name="lucro_estimado"
-          type="number"
-          step="0.01"
-          value={formatNumericValue(values.lucro_estimado)}
-          onChange={(value) => setValues((current) => ({ ...current, lucro_estimado: parseNumericValue(value) }))}
+          value={formatCurrencyInput(values.lucro_estimado)}
+          onChange={(value) => setValues((current) => ({ ...current, lucro_estimado: parseCurrencyInput(value) }))}
+          inputMode="numeric"
           status={fieldStatuses.lucro_estimado}
           className="md:col-span-1 xl:col-span-3"
         />
@@ -229,20 +253,18 @@ export function AdminImovelDetalhesForm({
         <Field
           label="Divida de IPTU"
           name="divida_iptu"
-          type="number"
-          step="0.01"
-          value={formatNumericValue(values.divida_iptu)}
-          onChange={(value) => setValues((current) => ({ ...current, divida_iptu: parseNumericValue(value) }))}
+          value={formatCurrencyInput(values.divida_iptu)}
+          onChange={(value) => setValues((current) => ({ ...current, divida_iptu: parseCurrencyInput(value) }))}
+          inputMode="numeric"
           status={fieldStatuses.divida_iptu}
           className="md:col-span-1 xl:col-span-3"
         />
         <Field
           label="Divida de condominio"
           name="divida_condominio"
-          type="number"
-          step="0.01"
-          value={formatNumericValue(values.divida_condominio)}
-          onChange={(value) => setValues((current) => ({ ...current, divida_condominio: parseNumericValue(value) }))}
+          value={formatCurrencyInput(values.divida_condominio)}
+          onChange={(value) => setValues((current) => ({ ...current, divida_condominio: parseCurrencyInput(value) }))}
+          inputMode="numeric"
           status={fieldStatuses.divida_condominio}
           className="md:col-span-1 xl:col-span-3"
         />
@@ -289,6 +311,68 @@ export function AdminImovelDetalhesForm({
   );
 }
 
+function buildDetalhesMissingStatuses(values: ImovelDetalhesFormValues) {
+  const statuses: Record<string, FieldVisualStatus> = {};
+  const checks: Array<[string, unknown]> = [
+    ['resumo_executivo', values.resumo_executivo],
+    ['ocupacao', values.ocupacao],
+    ['matricula', values.matricula],
+    ['cartorio', values.cartorio],
+    ['numero_processo', values.numero_processo],
+    ['valor_mercado', values.valor_mercado],
+    ['lance_recomendado', values.lance_recomendado],
+    ['lucro_estimado', values.lucro_estimado],
+    ['roi_estimado', values.roi_estimado],
+    ['divida_iptu', values.divida_iptu],
+    ['divida_condominio', values.divida_condominio],
+    ['analise', values.analise],
+    ['riscos', values.riscos],
+    ['observacoes_juridicas', values.observacoes_juridicas],
+    ['estrategia', values.estrategia],
+  ];
+
+  for (const [field, value] of checks) {
+    if (isBlankValue(value)) {
+      statuses[field] = 'missing';
+    }
+  }
+
+  return statuses;
+}
+
+function mergeFieldStatuses(
+  base: Record<string, FieldVisualStatus>,
+  missing: Record<string, FieldVisualStatus>,
+) {
+  const next = { ...base };
+
+  for (const key of Object.keys(next)) {
+    if (next[key] === 'missing' && !missing[key]) {
+      delete next[key];
+    }
+  }
+
+  for (const [key, status] of Object.entries(missing)) {
+    if (base[key] !== 'filled' && base[key] !== 'updated') {
+      next[key] = status;
+    }
+  }
+
+  return next;
+}
+
+function isBlankValue(value: unknown) {
+  if (value == null) {
+    return true;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim() === '';
+  }
+
+  return false;
+}
+
 function Field({
   label,
   name,
@@ -296,6 +380,7 @@ function Field({
   onChange,
   type = 'text',
   step,
+  inputMode,
   status,
   className = '',
 }: {
@@ -305,6 +390,7 @@ function Field({
   onChange: (value: string) => void;
   type?: string;
   step?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
   status?: FieldVisualStatus;
   className?: string;
 }) {
@@ -315,6 +401,7 @@ function Field({
         name={name}
         type={type}
         step={step}
+        inputMode={inputMode}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:bg-white focus:ring-4 ${getFieldStatusClassName(
@@ -367,6 +454,27 @@ function parseNumericValue(value: string) {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatCurrencyInput(value: number | null | undefined) {
+  if (value == null) {
+    return '';
+  }
+
+  return Number(value).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function parseCurrencyInput(value: string) {
+  const digits = value.replace(/\D/g, '');
+
+  if (!digits) {
+    return null;
+  }
+
+  return Number(digits) / 100;
 }
 
 function getFieldStatusClassName(status?: FieldVisualStatus) {

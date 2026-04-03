@@ -16,6 +16,10 @@ export type BulkDeleteImoveisState = {
   error?: string;
 };
 
+export type DeleteImovelState = {
+  error?: string;
+};
+
 export async function createImovelAction(formData: FormData) {
   await requireAdmin();
 
@@ -74,6 +78,39 @@ export async function deleteImovelAction(formData: FormData) {
   }
 
   await deleteImovel(id);
+  revalidatePath('/admin/imoveis');
+  redirect('/admin/imoveis');
+}
+
+export async function deleteImovelWithConfirmationAction(
+  _: DeleteImovelState,
+  formData: FormData,
+): Promise<DeleteImovelState> {
+  await requireAdmin();
+
+  const id = String(formData.get('id') ?? '');
+  const confirmation = String(formData.get('confirmation') ?? '').trim().toLowerCase();
+
+  if (!id) {
+    return {
+      error: 'Imovel id is required.',
+    };
+  }
+
+  if (confirmation !== 'remova esse imovel') {
+    return {
+      error: 'Digite exatamente "remova esse imovel" para confirmar.',
+    };
+  }
+
+  try {
+    await deleteImovel(id);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Nao foi possivel remover o imovel.',
+    };
+  }
+
   revalidatePath('/admin/imoveis');
   redirect('/admin/imoveis');
 }
@@ -177,7 +214,12 @@ function parseOptionalNumber(value: FormDataEntryValue | null) {
     return null;
   }
 
-  const parsedValue = Number(rawValue);
+  const normalizedValue = rawValue
+    .replace(/\s+/g, '')
+    .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+    .replace(',', '.');
+
+  const parsedValue = Number(normalizedValue);
   return Number.isNaN(parsedValue) ? null : parsedValue;
 }
 

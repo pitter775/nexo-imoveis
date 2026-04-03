@@ -1,6 +1,21 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+CREATE TABLE public.admin_logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  origem text NOT NULL,
+  nivel text NOT NULL DEFAULT 'info'::text,
+  etapa text,
+  contexto text,
+  imovel_id uuid,
+  arquivo_id uuid,
+  mensagem text NOT NULL,
+  detalhes jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT admin_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT admin_logs_imovel_id_fkey FOREIGN KEY (imovel_id) REFERENCES public.imoveis(id),
+  CONSTRAINT admin_logs_arquivo_id_fkey FOREIGN KEY (arquivo_id) REFERENCES public.imovel_arquivos(id)
+);
 CREATE TABLE public.chat_conversas (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid,

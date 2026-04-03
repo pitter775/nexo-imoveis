@@ -23,9 +23,10 @@ import {
 } from 'lucide-react';
 import {
   bulkDeleteImoveisAction,
-  deleteImovelAction,
+  deleteImovelWithConfirmationAction,
   inactivateImovelAction,
   type BulkDeleteImoveisState,
+  type DeleteImovelState,
 } from '@/app/admin/imoveis/actions';
 import type { ImovelRecord } from '@/lib/admin/imoveis';
 
@@ -79,6 +80,7 @@ export function AdminImoveisTable({
     direction: 'asc',
   });
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [imovelToDelete, setImovelToDelete] = useState<ImovelRecord | null>(null);
 
   useEffect(() => {
     setQueryInput(query);
@@ -257,15 +259,14 @@ export function AdminImoveisTable({
                                 compact
                               />
                             ) : null}
-                            <InlineActionForm
-                              action={deleteImovelAction}
-                              imovelId={imovel.id}
-                              label="Excluir"
-                              icon={<Trash2 className="size-3" />}
-                              confirmMessage={`Deseja excluir o imovel \"${imovel.titulo}\"? Esta acao nao pode ser desfeita.`}
-                              tone="danger"
-                              compact
-                            />
+                            <button
+                              type="button"
+                              onClick={() => setImovelToDelete(imovel)}
+                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 text-[11px] font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100"
+                            >
+                              <Trash2 className="size-3" />
+                              Excluir
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -370,15 +371,14 @@ export function AdminImoveisTable({
                           compact
                         />
                       ) : null}
-                      <InlineActionForm
-                        action={deleteImovelAction}
-                        imovelId={imovel.id}
-                        label="Excluir"
-                        icon={<Trash2 className="size-3" />}
-                        confirmMessage={`Deseja excluir o imovel \"${imovel.titulo}\"? Esta acao nao pode ser desfeita.`}
-                        tone="danger"
-                        compact
-                      />
+                      <button
+                        type="button"
+                        onClick={() => setImovelToDelete(imovel)}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 text-[11px] font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100"
+                      >
+                        <Trash2 className="size-3" />
+                        Excluir
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -459,6 +459,11 @@ export function AdminImoveisTable({
         isOpen={isBulkDeleteModalOpen}
         total={total}
         onClose={() => setIsBulkDeleteModalOpen(false)}
+      />
+      <DeleteImovelModal
+        key={imovelToDelete?.id ?? 'delete-imovel-closed'}
+        imovel={imovelToDelete}
+        onClose={() => setImovelToDelete(null)}
       />
     </div>
   );
@@ -608,6 +613,138 @@ function InlineActionForm({
 }
 
 const bulkDeleteInitialState: BulkDeleteImoveisState = {};
+const deleteImovelInitialState: DeleteImovelState = {};
+
+function DeleteImovelModal({
+  imovel,
+  onClose,
+}: {
+  imovel: ImovelRecord | null;
+  onClose: () => void;
+}) {
+  const [confirmationInput, setConfirmationInput] = useState('');
+  const [clientError, setClientError] = useState('');
+  const [state, formAction, isPending] = useActionState(
+    deleteImovelWithConfirmationAction,
+    deleteImovelInitialState,
+  );
+  const expectedConfirmation = 'remova esse imovel';
+  const isOpen = Boolean(imovel);
+  const displayValue =
+    imovel?.valor_primeiro_leilao ?? imovel?.valor_minimo ?? imovel?.valor_avaliacao ?? null;
+
+  useEffect(() => {
+    if (!isOpen) {
+      setConfirmationInput('');
+      setClientError('');
+      return;
+    }
+
+    setClientError('');
+  }, [isOpen]);
+
+  if (!imovel) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6">
+      <div className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-950/20 sm:p-7">
+        <div className="flex items-start gap-4">
+          <div className="inline-flex size-12 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-700">
+            <CircleAlert className="size-6" />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold uppercase tracking-[0.24em] text-rose-600">
+              Exclusao total
+            </p>
+            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">
+              Remover este imovel
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-500">
+              Essa acao apaga o imovel e todo o seu rastro, incluindo imagens,
+              arquivos, extracoes, chats, acessos, leiloes e logs vinculados.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
+          <p>
+            <span className="font-semibold text-slate-900">Titulo:</span> {imovel.titulo}
+          </p>
+          <p className="mt-2">
+            <span className="font-semibold text-slate-900">Valor do imovel:</span>{' '}
+            {formatCurrency(displayValue)}
+          </p>
+        </div>
+
+        <form
+          action={formAction}
+          className="mt-6 space-y-4"
+          onSubmit={(event) => {
+            if (confirmationInput.trim().toLowerCase() === expectedConfirmation) {
+              setClientError('');
+              return;
+            }
+
+            event.preventDefault();
+            setClientError('Digite a frase exatamente como exibida para liberar a exclusao.');
+          }}
+        >
+          <input type="hidden" name="id" value={imovel.id} />
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            Digite a frase para confirmar: <strong>{expectedConfirmation}</strong>
+          </div>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-semibold text-slate-700">Frase de confirmacao</span>
+            <input
+              name="confirmation"
+              value={confirmationInput}
+              onChange={(event) => setConfirmationInput(event.target.value)}
+              placeholder={expectedConfirmation}
+              autoFocus
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-100"
+            />
+          </label>
+
+          {clientError ? (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {clientError}
+            </div>
+          ) : null}
+
+          {state.error ? (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {state.error}
+            </div>
+          ) : null}
+
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isPending}
+              className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={confirmationInput.trim().toLowerCase() !== expectedConfirmation || isPending}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300"
+            >
+              <Trash2 className="size-4" />
+              {isPending ? 'Excluindo...' : 'Excluir imovel'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 function BulkDeleteImoveisModal({
   isOpen,

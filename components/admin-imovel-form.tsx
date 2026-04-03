@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   useEffect,
   useRef,
@@ -112,6 +113,9 @@ type AdminImovelFormProps = {
   action: (formData: FormData) => void | Promise<void>;
   initialValues?: ImovelFormValues;
   showIntro?: boolean;
+  minimalTitleOnly?: boolean;
+  backHref?: string;
+  backLabel?: string;
 };
 
 export function AdminImovelForm({
@@ -121,6 +125,9 @@ export function AdminImovelForm({
   action,
   initialValues,
   showIntro = true,
+  minimalTitleOnly = false,
+  backHref,
+  backLabel = 'Voltar para gestao de imoveis',
 }: AdminImovelFormProps) {
   const storageKey = initialValues?.id
     ? `admin-imovel-dados-preview:${initialValues.id}`
@@ -136,13 +143,45 @@ export function AdminImovelForm({
   );
   const [cepInput, setCepInput] = useState(maskCep(initialValues?.cep ?? ''));
   const [descricaoInput, setDescricaoInput] = useState(initialValues?.descricao ?? '');
-  const [fieldStatuses, setFieldStatuses] = useState<Record<string, FieldVisualStatus>>({});
+  const [fieldStatuses, setFieldStatuses] = useState<Record<string, FieldVisualStatus>>(
+    buildImovelMissingStatuses(initialValues, {
+      valor_avaliacao: formatCurrencyInput(initialValues?.valor_avaliacao),
+      valor_primeiro_leilao: formatCurrencyInput(
+        initialValues?.valor_primeiro_leilao ?? initialValues?.valor_minimo,
+      ),
+      valor_segundo_leilao: formatCurrencyInput(initialValues?.valor_segundo_leilao),
+      cep: maskCep(initialValues?.cep ?? ''),
+      descricao: initialValues?.descricao ?? '',
+    }),
+  );
   const descricaoRef = useRef<HTMLTextAreaElement | null>(null);
   const statusSummary = summarizeFieldStatuses(fieldStatuses);
 
   useEffect(() => {
     autoResizeTextarea(descricaoRef.current);
   }, [descricaoInput]);
+
+  useEffect(() => {
+    setFieldStatuses((current) =>
+      mergeFieldStatuses(
+        current,
+        buildImovelMissingStatuses(initialValues, {
+          valor_avaliacao: valorAvaliacaoInput,
+          valor_primeiro_leilao: valorPrimeiroLeilaoInput,
+          valor_segundo_leilao: valorSegundoLeilaoInput,
+          cep: cepInput,
+          descricao: descricaoInput,
+        }),
+      ),
+    );
+  }, [
+    initialValues,
+    valorAvaliacaoInput,
+    valorPrimeiroLeilaoInput,
+    valorSegundoLeilaoInput,
+    cepInput,
+    descricaoInput,
+  ]);
 
   useEffect(() => {
     if (!storageKey) {
@@ -184,11 +223,51 @@ export function AdminImovelForm({
         setDescricaoInput(parsed.values.descricao);
       }
 
-      setFieldStatuses(parsed.statuses ?? {});
+      setFieldStatuses(
+        mergeFieldStatuses(
+          parsed.statuses ?? {},
+          buildImovelMissingStatuses(
+            {
+              ...initialValues,
+              ...parsed.values,
+            },
+            {
+              valor_avaliacao:
+                parsed.values?.valor_avaliacao != null
+                  ? formatCurrencyInput(Number(parsed.values.valor_avaliacao))
+                  : valorAvaliacaoInput,
+              valor_primeiro_leilao:
+                parsed.values?.valor_primeiro_leilao != null
+                  ? formatCurrencyInput(Number(parsed.values.valor_primeiro_leilao))
+                  : valorPrimeiroLeilaoInput,
+              valor_segundo_leilao:
+                parsed.values?.valor_segundo_leilao != null
+                  ? formatCurrencyInput(Number(parsed.values.valor_segundo_leilao))
+                  : valorSegundoLeilaoInput,
+              cep:
+                typeof parsed.values?.cep === 'string'
+                  ? maskCep(parsed.values.cep)
+                  : cepInput,
+              descricao:
+                typeof parsed.values?.descricao === 'string'
+                  ? parsed.values.descricao
+                  : descricaoInput,
+            },
+          ),
+        ),
+      );
     } catch {
       window.sessionStorage.removeItem(storageKey);
     }
-  }, [storageKey]);
+  }, [
+    storageKey,
+    initialValues,
+    valorAvaliacaoInput,
+    valorPrimeiroLeilaoInput,
+    valorSegundoLeilaoInput,
+    cepInput,
+    descricaoInput,
+  ]);
 
   useEffect(() => {
     if (!storageKey) {
@@ -236,7 +315,37 @@ export function AdminImovelForm({
         setDescricaoInput(nextValues.descricao);
       }
 
-      setFieldStatuses(statuses);
+      setFieldStatuses(
+        mergeFieldStatuses(
+          statuses,
+          buildImovelMissingStatuses(
+            {
+              ...initialValues,
+              ...nextValues,
+            },
+            {
+              valor_avaliacao:
+                nextValues?.valor_avaliacao != null
+                  ? formatCurrencyInput(Number(nextValues.valor_avaliacao))
+                  : valorAvaliacaoInput,
+              valor_primeiro_leilao:
+                nextValues?.valor_primeiro_leilao != null
+                  ? formatCurrencyInput(Number(nextValues.valor_primeiro_leilao))
+                  : valorPrimeiroLeilaoInput,
+              valor_segundo_leilao:
+                nextValues?.valor_segundo_leilao != null
+                  ? formatCurrencyInput(Number(nextValues.valor_segundo_leilao))
+                  : valorSegundoLeilaoInput,
+              cep:
+                typeof nextValues?.cep === 'string' ? maskCep(nextValues.cep) : cepInput,
+              descricao:
+                typeof nextValues?.descricao === 'string'
+                  ? nextValues.descricao
+                  : descricaoInput,
+            },
+          ),
+        ),
+      );
     };
 
     window.addEventListener('imovel-dados-updated', handleAutoFill);
@@ -247,6 +356,14 @@ export function AdminImovelForm({
     <div className="space-y-8">
       {showIntro ? (
         <div className="px-1 sm:px-0">
+          {backHref ? (
+            <Link
+              href={backHref}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-primary/20 hover:text-primary"
+            >
+              Voltar
+            </Link>
+          ) : null}
           <p className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
             <Building2 className="size-4" />
             Modulo de imoveis
@@ -264,8 +381,34 @@ export function AdminImovelForm({
         action={action}
         className="space-y-8 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:p-8"
       >
+        {minimalTitleOnly ? (
+          <>
+            <Field
+              label="Titulo"
+              name="titulo"
+              defaultValue={initialValues?.titulo ?? ''}
+              required
+              className="max-w-3xl"
+            />
+
+            <div className="flex justify-end">
+              <button className="rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90">
+                {submitLabel}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
         {!showIntro ? (
           <div>
+            {backHref ? (
+              <Link
+                href={backHref}
+                className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-primary/20 hover:text-primary"
+              >
+                {backLabel}
+              </Link>
+            ) : null}
             <p className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.3em] text-primary/80">
               <Home className="size-4" />
               Dados publicos
@@ -539,9 +682,87 @@ export function AdminImovelForm({
             {submitLabel}
           </button>
         </div>
+          </>
+        )}
       </form>
     </div>
   );
+}
+
+function buildImovelMissingStatuses(
+  values: ImovelFormValues | undefined,
+  derived: {
+    valor_avaliacao: string;
+    valor_primeiro_leilao: string;
+    valor_segundo_leilao: string;
+    cep: string;
+    descricao: string;
+  },
+) {
+  const statuses: Record<string, FieldVisualStatus> = {};
+  const checks: Array<[string, unknown]> = [
+    ['titulo', values?.titulo],
+    ['tipo_propriedade', values?.tipo_propriedade],
+    ['tipo_leilao', values?.tipo_leilao],
+    ['valor_avaliacao', derived.valor_avaliacao],
+    ['valor_primeiro_leilao', derived.valor_primeiro_leilao],
+    ['data_primeiro_leilao', values?.data_primeiro_leilao ?? values?.data_leilao],
+    ['valor_segundo_leilao', derived.valor_segundo_leilao],
+    ['data_segundo_leilao', values?.data_segundo_leilao],
+    ['area_total', values?.area_total],
+    ['area_construida', values?.area_construida],
+    ['quartos', values?.quartos],
+    ['banheiros', values?.banheiros],
+    ['ano_construcao', values?.ano_construcao],
+    ['rua', values?.rua],
+    ['numero', values?.numero],
+    ['complemento', values?.complemento],
+    ['cidade', values?.cidade],
+    ['estado', values?.estado],
+    ['cep', derived.cep],
+    ['descricao', derived.descricao],
+  ];
+
+  for (const [field, value] of checks) {
+    if (isBlankValue(value)) {
+      statuses[field] = 'missing';
+    }
+  }
+
+  return statuses;
+}
+
+function mergeFieldStatuses(
+  base: Record<string, FieldVisualStatus>,
+  missing: Record<string, FieldVisualStatus>,
+) {
+  const next = { ...base };
+
+  for (const key of Object.keys(next)) {
+    if (next[key] === 'missing' && !missing[key]) {
+      delete next[key];
+    }
+  }
+
+  for (const [key, status] of Object.entries(missing)) {
+    if (base[key] !== 'filled' && base[key] !== 'updated') {
+      next[key] = status;
+    }
+  }
+
+  return next;
+}
+
+function isBlankValue(value: unknown) {
+  if (value == null) {
+    return true;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim() === '';
+  }
+
+  return false;
 }
 
 function Field({

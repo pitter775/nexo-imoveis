@@ -5,9 +5,10 @@ export default function NovoImovelPage() {
   return (
     <AdminImovelForm
       title="Cadastrar novo imovel"
-      description="Preencha os dados abaixo para adicionar um novo imovel ao modulo administrativo."
+      description="Comece com o titulo. Depois da criacao, abrimos o imovel completo para voce finalizar os demais dados."
       submitLabel="Criar imovel"
       action={createImovelAction}
+      minimalTitleOnly
     />
   );
 }
