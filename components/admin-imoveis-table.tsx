@@ -45,8 +45,7 @@ type SortKey =
   | 'data_primeiro_leilao'
   | 'data_segundo_leilao'
   | 'tipo_leilao'
-  | 'valor_primeiro_leilao'
-  | 'status';
+  | 'valor_primeiro_leilao';
 
 type SortConfig = {
   key: SortKey;
@@ -61,7 +60,6 @@ const columns: Array<{ key: SortKey; label: string }> = [
   { key: 'data_segundo_leilao', label: '2o leilao' },
   { key: 'tipo_leilao', label: 'Leilao' },
   { key: 'valor_primeiro_leilao', label: '1o valor' },
-  { key: 'status', label: 'Status' },
 ];
 
 export function AdminImoveisTable({
@@ -308,11 +306,6 @@ export function AdminImoveisTable({
                         {formatCurrency(imovel.valor_primeiro_leilao ?? imovel.valor_minimo)}
                       </span>
                     </td>
-                    <td className="px-6 py-5">
-                      <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
-                        {imovel.status ?? '-'}
-                      </span>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -321,18 +314,17 @@ export function AdminImoveisTable({
         </div>
 
         <div className="lg:hidden">
-          <div className="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.05fr)_auto] gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+          <div className="grid grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)_minmax(0,1.1fr)_auto] gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
             <span>Titulo</span>
             <span>Cadastro</span>
             <span>1o leilao</span>
-            <span>Status</span>
             <span className="text-right">Tipo</span>
           </div>
 
           {sortedImoveis.map((imovel) => (
             <div
               key={imovel.id}
-              className="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.05fr)_auto] gap-3 border-b border-slate-100 px-4 py-3 text-sm text-slate-700"
+              className="grid grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)_minmax(0,1.1fr)_auto] gap-3 border-b border-slate-100 px-4 py-3 text-sm text-slate-700"
             >
               <div className="min-w-0">
                 <div className="flex items-start gap-2.5">
@@ -408,15 +400,13 @@ export function AdminImoveisTable({
                 </p>
               </div>
 
-              <div className="min-w-0 self-start pt-0.5">
-                <p className="text-sm text-slate-700">{imovel.status ?? '-'}</p>
-                <p className="mt-1 text-[11px] text-slate-500">
-                  2o: {formatDate(imovel.data_segundo_leilao ?? null)}
-                </p>
-              </div>
-
               <div className="flex items-start justify-end pt-0.5 text-right text-[11px] text-slate-500">
-                {imovel.tipo_leilao ?? '-'}
+                <div>
+                  <p>{imovel.tipo_leilao ?? '-'}</p>
+                  <p className="mt-1 text-slate-400">
+                    2o: {formatDate(imovel.data_segundo_leilao ?? null)}
+                  </p>
+                </div>
               </div>
             </div>
           ))}
