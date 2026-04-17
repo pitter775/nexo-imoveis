@@ -61,8 +61,6 @@ type InfraChatWindow = Window & {
     destroyAll?: () => void;
   };
   __infraChatScriptPromise__?: Promise<void>;
-  __infraChatFetchPatched__?: boolean;
-  __infraChatOriginalFetch__?: typeof window.fetch;
 };
 
 const INFRA_CHAT_WIDGET_ID = 'infra-chat-widget';
@@ -97,59 +95,7 @@ function cleanupInfraChatWidget() {
     .forEach((element) => element.remove());
 }
 
-function ensureInfraChatFetchCompatibility() {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  const infraWindow = window as InfraChatWindow;
-
-  if (infraWindow.__infraChatFetchPatched__) {
-    return;
-  }
-
-  infraWindow.__infraChatOriginalFetch__ = window.fetch.bind(window);
-  window.fetch = async (input: URL | RequestInfo, init?: RequestInit) => {
-    const requestUrl =
-      typeof input === 'string'
-        ? input
-        : input instanceof URL
-          ? input.toString()
-          : input.url;
-
-    const isInfraChatRequest = requestUrl === `${INFRA_CHAT_API_BASE}/api/chat`;
-    const canPatchBody = Boolean(init?.body) && (!init?.method || init.method.toUpperCase() === 'POST');
-
-    if (!isInfraChatRequest || !canPatchBody) {
-      return infraWindow.__infraChatOriginalFetch__!(input, init);
-    }
-
-    try {
-      const parsedBody = JSON.parse(String(init?.body));
-
-      if (parsedBody?.widgetSlug !== INFRA_CHAT_WIDGET_SLUG) {
-        return infraWindow.__infraChatOriginalFetch__!(input, init);
-      }
-
-      const nextInit: RequestInit = {
-        ...init,
-        body: JSON.stringify({
-          ...parsedBody,
-          projeto: parsedBody.projeto ?? INFRA_CHAT_PROJECT,
-          agente: parsedBody.agente ?? INFRA_CHAT_AGENT,
-        }),
-      };
-
-      return infraWindow.__infraChatOriginalFetch__!(input, nextInit);
-    } catch {
-      return infraWindow.__infraChatOriginalFetch__!(input, init);
-    }
-  };
-
-  infraWindow.__infraChatFetchPatched__ = true;
-}
-
-function loadInfraChatScript() {
+function loadInfraChatScript(context: Record<string, unknown>, externalIdentifier: string) {
   if (typeof window === 'undefined') {
     return Promise.resolve();
   }
@@ -164,12 +110,14 @@ function loadInfraChatScript() {
     return infraWindow.__infraChatScriptPromise__;
   }
 
-  ensureInfraChatFetchCompatibility();
-
   infraWindow.__infraChatScriptPromise__ = new Promise<void>((resolve, reject) => {
     const existingScript = document.getElementById(INFRA_CHAT_WIDGET_ID);
 
     if (existingScript) {
+      existingScript.setAttribute('data-projeto', INFRA_CHAT_PROJECT);
+      existingScript.setAttribute('data-agente', INFRA_CHAT_AGENT);
+      existingScript.setAttribute('data-identificador-externo', externalIdentifier);
+      existingScript.setAttribute('data-context', JSON.stringify(context));
       if (infraWindow.InfraChatWidget) {
         resolve();
         return;
@@ -189,6 +137,10 @@ function loadInfraChatScript() {
     script.src = `${INFRA_CHAT_API_BASE}/chat-widget.js`;
     script.defer = true;
     script.dataset.widget = INFRA_CHAT_WIDGET_SLUG;
+    script.dataset.projeto = INFRA_CHAT_PROJECT;
+    script.dataset.agente = INFRA_CHAT_AGENT;
+    script.dataset.identificadorExterno = externalIdentifier;
+    script.dataset.context = JSON.stringify(context);
     script.dataset.title = 'nexo leiloes';
     script.dataset.theme = 'light';
     script.dataset.accent = '#2c6ef1';
@@ -205,6 +157,20 @@ function loadInfraChatScript() {
   });
 
   return infraWindow.__infraChatScriptPromise__;
+}
+
+function buildInfraChatContext(propertyId: string, pathname: string) {
+  return {
+    route: { path: pathname },
+    ui: {
+      title: 'nexo leiloes',
+      theme: 'light',
+      accent: '#2c6ef1',
+      transparent: true,
+    },
+    resource: { id: propertyId, tipo: 'imovel' },
+    id: propertyId,
+  };
 }
 
 function useSwipeNavigation({
@@ -1047,7 +1013,7 @@ export function PublicMarketplace({
           <span className="text-[10px] font-bold">Buscar</span>
         </button>
       </div>
-      {isChatEnabled ? <InfraChatWidget propertyId={activeChatPropertyId} /> : null}
+      {isChatEnabled ? <InfraChatWidget propertyId={activeChatPropertyId} pathname={pathname} /> : null}
     </div>
   );
 }
@@ -1736,7 +1702,13 @@ function HomeView({
   );
 }
 
-function InfraChatWidget({ propertyId }: { propertyId: string | null }) {
+function InfraChatWidget({
+  propertyId,
+  pathname,
+}: {
+  propertyId: string | null;
+  pathname: string;
+}) {
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
@@ -1748,8 +1720,9 @@ function InfraChatWidget({ propertyId }: { propertyId: string | null }) {
     }
 
     let isCancelled = false;
+    const context = buildInfraChatContext(propertyId, pathname);
 
-    loadInfraChatScript()
+    loadInfraChatScript(context, `imovel:${propertyId}`)
       .then(() => {
         if (isCancelled) {
           return;
@@ -1763,7 +1736,7 @@ function InfraChatWidget({ propertyId }: { propertyId: string | null }) {
       isCancelled = true;
       cleanupInfraChatWidget();
     };
-  }, [propertyId]);
+  }, [propertyId, pathname]);
 
   if (!propertyId) {
     return null;
