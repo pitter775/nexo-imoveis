@@ -53,45 +53,23 @@ import { PropertyDescription } from '@/components/property-description';
 
 type InfraChatWindow = Window & {
   InfraChat?: {
-    mount?: (config: {
-      projeto: string;
-      agente: string;
-      apiBase: string;
-      strictHostControl: boolean;
-      policy?: {
-        allowed: boolean;
-        allowedRoutes: string[];
-      };
-      context: {
-        route: { path: string };
-        ui: {
-          title: string;
-          theme: string;
-          accent: string;
-          transparent: boolean;
-        };
-        resource: { id: string; tipo: string };
-        id: string;
-      };
-    }) => void;
-    updateContext?: (context: {
-      route: { path: string };
-      ui: {
-        title: string;
-        theme: string;
-        accent: string;
-        transparent: boolean;
-      };
-      resource: { id: string; tipo: string };
-      id: string;
-    }) => void;
-    hide?: () => void;
     destroy?: () => void;
-    isMounted?: () => boolean;
-    getState?: () => unknown;
+    destroyAll?: () => void;
+  };
+  InfraChatWidget?: {
+    destroy?: (slug: string) => boolean;
+    destroyAll?: () => void;
   };
   __infraChatScriptPromise__?: Promise<void>;
+  __infraChatFetchPatched__?: boolean;
+  __infraChatOriginalFetch__?: typeof window.fetch;
 };
+
+const INFRA_CHAT_WIDGET_ID = 'infra-chat-widget';
+const INFRA_CHAT_WIDGET_SLUG = 'nexo_leiloes';
+const INFRA_CHAT_API_BASE = 'https://www.infrastudio.pro';
+const INFRA_CHAT_PROJECT = 'nexo';
+const INFRA_CHAT_AGENT = 'agente-imovel';
 
 function cleanupInfraChatWidget() {
   if (typeof window === 'undefined') {
@@ -101,7 +79,10 @@ function cleanupInfraChatWidget() {
   const infraWindow = window as InfraChatWindow;
 
   try {
+    infraWindow.InfraChatWidget?.destroy?.(INFRA_CHAT_WIDGET_SLUG);
     infraWindow.InfraChat?.destroy?.();
+    infraWindow.InfraChatWidget?.destroyAll?.();
+    infraWindow.InfraChat?.destroyAll?.();
   } catch (error) {
     console.error('Failed to cleanup InfraChat widget', error);
   }
@@ -109,12 +90,63 @@ function cleanupInfraChatWidget() {
   document
     .querySelectorAll(
       [
-        '[id="infra-chat-root"]',
-        '[data-infra-chat-root]',
-        'iframe[src*="infrastudio.vercel.app"]',
+        `#${INFRA_CHAT_WIDGET_ID}`,
+        `[id="infrastudio-chat-widget-root-${INFRA_CHAT_WIDGET_SLUG}"]`,
       ].join(','),
     )
     .forEach((element) => element.remove());
+}
+
+function ensureInfraChatFetchCompatibility() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const infraWindow = window as InfraChatWindow;
+
+  if (infraWindow.__infraChatFetchPatched__) {
+    return;
+  }
+
+  infraWindow.__infraChatOriginalFetch__ = window.fetch.bind(window);
+  window.fetch = async (input: URL | RequestInfo, init?: RequestInit) => {
+    const requestUrl =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
+
+    const isInfraChatRequest = requestUrl === `${INFRA_CHAT_API_BASE}/api/chat`;
+    const canPatchBody = Boolean(init?.body) && (!init?.method || init.method.toUpperCase() === 'POST');
+
+    if (!isInfraChatRequest || !canPatchBody) {
+      return infraWindow.__infraChatOriginalFetch__!(input, init);
+    }
+
+    try {
+      const parsedBody = JSON.parse(String(init?.body));
+
+      if (parsedBody?.widgetSlug !== INFRA_CHAT_WIDGET_SLUG) {
+        return infraWindow.__infraChatOriginalFetch__!(input, init);
+      }
+
+      const nextInit: RequestInit = {
+        ...init,
+        body: JSON.stringify({
+          ...parsedBody,
+          projeto: parsedBody.projeto ?? INFRA_CHAT_PROJECT,
+          agente: parsedBody.agente ?? INFRA_CHAT_AGENT,
+        }),
+      };
+
+      return infraWindow.__infraChatOriginalFetch__!(input, nextInit);
+    } catch {
+      return infraWindow.__infraChatOriginalFetch__!(input, init);
+    }
+  };
+
+  infraWindow.__infraChatFetchPatched__ = true;
 }
 
 function loadInfraChatScript() {
@@ -132,11 +164,13 @@ function loadInfraChatScript() {
     return infraWindow.__infraChatScriptPromise__;
   }
 
+  ensureInfraChatFetchCompatibility();
+
   infraWindow.__infraChatScriptPromise__ = new Promise<void>((resolve, reject) => {
-    const existingScript = document.getElementById('infra-chat-widget');
+    const existingScript = document.getElementById(INFRA_CHAT_WIDGET_ID);
 
     if (existingScript) {
-      if (infraWindow.InfraChat) {
+      if (infraWindow.InfraChatWidget) {
         resolve();
         return;
       }
@@ -151,11 +185,14 @@ function loadInfraChatScript() {
     }
 
     const script = document.createElement('script');
-    script.id = 'infra-chat-widget';
-    script.src = 'https://infrastudio.vercel.app/chat.js';
-    script.async = true;
-    script.dataset.projeto = 'nexo';
-    script.dataset.agente = 'agente-imovel';
+    script.id = INFRA_CHAT_WIDGET_ID;
+    script.src = `${INFRA_CHAT_API_BASE}/chat-widget.js`;
+    script.defer = true;
+    script.dataset.widget = INFRA_CHAT_WIDGET_SLUG;
+    script.dataset.title = 'nexo leiloes';
+    script.dataset.theme = 'light';
+    script.dataset.accent = '#2c6ef1';
+    script.dataset.transparent = 'true';
     script.addEventListener('load', () => resolve(), { once: true });
     script.addEventListener(
       'error',
@@ -168,27 +205,6 @@ function loadInfraChatScript() {
   });
 
   return infraWindow.__infraChatScriptPromise__;
-}
-
-function buildInfraChatContext(propertyId: string, pathname: string) {
-  return {
-    route: { path: pathname },
-    ui: {
-      title: 'nexo leiloes',
-      theme: 'light',
-      accent: '#155eef',
-      transparent: true,
-    },
-    resource: { id: propertyId, tipo: 'imovel' },
-    id: propertyId,
-  };
-}
-
-function buildInfraChatPolicy() {
-  return {
-    allowed: true,
-    allowedRoutes: ['/imoveis/*'],
-  };
 }
 
 function useSwipeNavigation({
@@ -1031,7 +1047,7 @@ export function PublicMarketplace({
           <span className="text-[10px] font-bold">Buscar</span>
         </button>
       </div>
-      {isChatEnabled ? <InfraChatWidget propertyId={activeChatPropertyId} pathname={pathname} /> : null}
+      {isChatEnabled ? <InfraChatWidget propertyId={activeChatPropertyId} /> : null}
     </div>
   );
 }
@@ -1720,13 +1736,7 @@ function HomeView({
   );
 }
 
-function InfraChatWidget({
-  propertyId,
-  pathname,
-}: {
-  propertyId: string | null;
-  pathname: string;
-}) {
+function InfraChatWidget({ propertyId }: { propertyId: string | null }) {
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
@@ -1744,23 +1754,6 @@ function InfraChatWidget({
         if (isCancelled) {
           return;
         }
-
-        const infraChat = (window as InfraChatWindow).InfraChat;
-        const context = buildInfraChatContext(propertyId, pathname);
-
-        if (infraChat?.isMounted?.()) {
-          infraChat.updateContext?.(context);
-          return;
-        }
-
-        infraChat?.mount?.({
-          projeto: 'nexo',
-          agente: 'agente-imovel',
-          apiBase: 'https://infrastudio.vercel.app',
-          strictHostControl: true,
-          policy: buildInfraChatPolicy(),
-          context,
-        });
       })
       .catch((error) => {
         console.error('Failed to mount InfraChat widget', error);
@@ -1770,7 +1763,7 @@ function InfraChatWidget({
       isCancelled = true;
       cleanupInfraChatWidget();
     };
-  }, [propertyId, pathname]);
+  }, [propertyId]);
 
   if (!propertyId) {
     return null;
