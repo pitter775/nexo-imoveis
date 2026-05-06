@@ -64,10 +64,12 @@ type InfraChatWindow = Window & {
 };
 
 const INFRA_CHAT_WIDGET_ID = 'infra-chat-widget';
-const INFRA_CHAT_WIDGET_SLUG = 'nexo_leiloes';
+const INFRA_CHAT_WIDGET_SLUG = 'nexo-leiloes-chat';
 const INFRA_CHAT_API_BASE = 'https://www.infrastudio.pro';
-const INFRA_CHAT_PROJECT = 'nexo';
-const INFRA_CHAT_AGENT = 'agente-imovel';
+const INFRA_CHAT_AGENT = 'nexo-leiloes-assistente';
+const INFRA_CHAT_TITLE = 'Nexo Leiloes Chat';
+const INFRA_CHAT_THEME = 'dark';
+const INFRA_CHAT_ACCENT = '#2563eb';
 
 function cleanupInfraChatWidget() {
   if (typeof window === 'undefined') {
@@ -95,7 +97,7 @@ function cleanupInfraChatWidget() {
     .forEach((element) => element.remove());
 }
 
-function loadInfraChatScript(context: Record<string, unknown>, externalIdentifier: string) {
+function loadInfraChatScript(context?: Record<string, unknown>, externalIdentifier?: string) {
   if (typeof window === 'undefined') {
     return Promise.resolve();
   }
@@ -114,10 +116,22 @@ function loadInfraChatScript(context: Record<string, unknown>, externalIdentifie
     const existingScript = document.getElementById(INFRA_CHAT_WIDGET_ID);
 
     if (existingScript) {
-      existingScript.setAttribute('data-projeto', INFRA_CHAT_PROJECT);
+      existingScript.setAttribute('data-widget', INFRA_CHAT_WIDGET_SLUG);
       existingScript.setAttribute('data-agente', INFRA_CHAT_AGENT);
-      existingScript.setAttribute('data-identificador-externo', externalIdentifier);
-      existingScript.setAttribute('data-context', JSON.stringify(context));
+      existingScript.setAttribute('data-title', INFRA_CHAT_TITLE);
+      existingScript.setAttribute('data-theme', INFRA_CHAT_THEME);
+      existingScript.setAttribute('data-accent', INFRA_CHAT_ACCENT);
+      existingScript.setAttribute('data-transparent', 'true');
+      if (externalIdentifier) {
+        existingScript.setAttribute('data-identificador-externo', externalIdentifier);
+      } else {
+        existingScript.removeAttribute('data-identificador-externo');
+      }
+      if (context) {
+        existingScript.setAttribute('data-context', JSON.stringify(context));
+      } else {
+        existingScript.removeAttribute('data-context');
+      }
       if (infraWindow.InfraChatWidget) {
         resolve();
         return;
@@ -137,13 +151,16 @@ function loadInfraChatScript(context: Record<string, unknown>, externalIdentifie
     script.src = `${INFRA_CHAT_API_BASE}/chat-widget.js`;
     script.defer = true;
     script.dataset.widget = INFRA_CHAT_WIDGET_SLUG;
-    script.dataset.projeto = INFRA_CHAT_PROJECT;
     script.dataset.agente = INFRA_CHAT_AGENT;
-    script.dataset.identificadorExterno = externalIdentifier;
-    script.dataset.context = JSON.stringify(context);
-    script.dataset.title = 'nexo leiloes';
-    script.dataset.theme = 'light';
-    script.dataset.accent = '#2c6ef1';
+    if (externalIdentifier) {
+      script.dataset.identificadorExterno = externalIdentifier;
+    }
+    if (context) {
+      script.dataset.context = JSON.stringify(context);
+    }
+    script.dataset.title = INFRA_CHAT_TITLE;
+    script.dataset.theme = INFRA_CHAT_THEME;
+    script.dataset.accent = INFRA_CHAT_ACCENT;
     script.dataset.transparent = 'true';
     script.addEventListener('load', () => resolve(), { once: true });
     script.addEventListener(
@@ -1013,6 +1030,7 @@ export function PublicMarketplace({
           <span className="text-[10px] font-bold">Buscar</span>
         </button>
       </div>
+      {view === 'home' ? <HomeInfraChatWidget /> : null}
       {isChatEnabled ? <InfraChatWidget propertyId={activeChatPropertyId} pathname={pathname} /> : null}
     </div>
   );
@@ -1741,6 +1759,20 @@ function InfraChatWidget({
   if (!propertyId) {
     return null;
   }
+
+  return null;
+}
+
+function HomeInfraChatWidget() {
+  useEffect(() => {
+    loadInfraChatScript().catch((error) => {
+      console.error('Failed to mount InfraChat widget', error);
+    });
+
+    return () => {
+      cleanupInfraChatWidget();
+    };
+  }, []);
 
   return null;
 }
