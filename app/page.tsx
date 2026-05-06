@@ -64,12 +64,9 @@ type InfraChatWindow = Window & {
 };
 
 const INFRA_CHAT_WIDGET_ID = 'infra-chat-widget';
-const INFRA_CHAT_WIDGET_SLUG = 'nexo-leiloes-chat';
+const INFRA_CHAT_WIDGET_SLUG = 'projeto-nexo-leiloes-chat';
 const INFRA_CHAT_API_BASE = 'https://www.infrastudio.pro';
-const INFRA_CHAT_AGENT = 'nexo-leiloes-assistente';
-const INFRA_CHAT_TITLE = 'Nexo Leiloes Chat';
-const INFRA_CHAT_THEME = 'dark';
-const INFRA_CHAT_ACCENT = '#2563eb';
+const INFRA_CHAT_AGENT = 'projeto-nexo-leiloes-assistente';
 
 function cleanupInfraChatWidget() {
   if (typeof window === 'undefined') {
@@ -97,16 +94,12 @@ function cleanupInfraChatWidget() {
     .forEach((element) => element.remove());
 }
 
-function loadInfraChatScript(context?: Record<string, unknown>, externalIdentifier?: string) {
+function loadInfraChatScript() {
   if (typeof window === 'undefined') {
     return Promise.resolve();
   }
 
   const infraWindow = window as InfraChatWindow;
-
-  if (infraWindow.InfraChat) {
-    return Promise.resolve();
-  }
 
   if (infraWindow.__infraChatScriptPromise__) {
     return infraWindow.__infraChatScriptPromise__;
@@ -118,20 +111,6 @@ function loadInfraChatScript(context?: Record<string, unknown>, externalIdentifi
     if (existingScript) {
       existingScript.setAttribute('data-widget', INFRA_CHAT_WIDGET_SLUG);
       existingScript.setAttribute('data-agente', INFRA_CHAT_AGENT);
-      existingScript.setAttribute('data-title', INFRA_CHAT_TITLE);
-      existingScript.setAttribute('data-theme', INFRA_CHAT_THEME);
-      existingScript.setAttribute('data-accent', INFRA_CHAT_ACCENT);
-      existingScript.setAttribute('data-transparent', 'true');
-      if (externalIdentifier) {
-        existingScript.setAttribute('data-identificador-externo', externalIdentifier);
-      } else {
-        existingScript.removeAttribute('data-identificador-externo');
-      }
-      if (context) {
-        existingScript.setAttribute('data-context', JSON.stringify(context));
-      } else {
-        existingScript.removeAttribute('data-context');
-      }
       if (infraWindow.InfraChatWidget) {
         resolve();
         return;
@@ -152,16 +131,6 @@ function loadInfraChatScript(context?: Record<string, unknown>, externalIdentifi
     script.defer = true;
     script.dataset.widget = INFRA_CHAT_WIDGET_SLUG;
     script.dataset.agente = INFRA_CHAT_AGENT;
-    if (externalIdentifier) {
-      script.dataset.identificadorExterno = externalIdentifier;
-    }
-    if (context) {
-      script.dataset.context = JSON.stringify(context);
-    }
-    script.dataset.title = INFRA_CHAT_TITLE;
-    script.dataset.theme = INFRA_CHAT_THEME;
-    script.dataset.accent = INFRA_CHAT_ACCENT;
-    script.dataset.transparent = 'true';
     script.addEventListener('load', () => resolve(), { once: true });
     script.addEventListener(
       'error',
@@ -174,20 +143,6 @@ function loadInfraChatScript(context?: Record<string, unknown>, externalIdentifi
   });
 
   return infraWindow.__infraChatScriptPromise__;
-}
-
-function buildInfraChatContext(propertyId: string, pathname: string) {
-  return {
-    route: { path: pathname },
-    ui: {
-      title: 'nexo leiloes',
-      theme: 'light',
-      accent: '#2c6ef1',
-      transparent: true,
-    },
-    resource: { id: propertyId, tipo: 'imovel' },
-    id: propertyId,
-  };
 }
 
 function useSwipeNavigation({
@@ -1031,7 +986,7 @@ export function PublicMarketplace({
         </button>
       </div>
       {view === 'home' ? <HomeInfraChatWidget /> : null}
-      {isChatEnabled ? <InfraChatWidget propertyId={activeChatPropertyId} pathname={pathname} /> : null}
+      {isChatEnabled ? <InfraChatWidget propertyId={activeChatPropertyId} /> : null}
     </div>
   );
 }
@@ -1722,10 +1677,8 @@ function HomeView({
 
 function InfraChatWidget({
   propertyId,
-  pathname,
 }: {
   propertyId: string | null;
-  pathname: string;
 }) {
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -1738,9 +1691,8 @@ function InfraChatWidget({
     }
 
     let isCancelled = false;
-    const context = buildInfraChatContext(propertyId, pathname);
 
-    loadInfraChatScript(context, `imovel:${propertyId}`)
+    loadInfraChatScript()
       .then(() => {
         if (isCancelled) {
           return;
@@ -1754,7 +1706,7 @@ function InfraChatWidget({
       isCancelled = true;
       cleanupInfraChatWidget();
     };
-  }, [propertyId, pathname]);
+  }, [propertyId]);
 
   if (!propertyId) {
     return null;
