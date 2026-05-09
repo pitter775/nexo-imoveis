@@ -1,39 +1,61 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getAbsoluteUrl } from '@/lib/site';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-export async function GET() {
-  const supabase = createAdminClient();
+const IMOVEL_SELECT =
+  'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, data_primeiro_leilao, valor_primeiro_leilao, data_segundo_leilao, valor_segundo_leilao, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status, destaque, ordem_destaque, created_at';
 
-  const [
-    { data: imoveis, error: imoveisError },
-    { data: imagens, error: imagensError },
-    { data: detalhes, error: detalhesError },
-    { data: arquivos, error: arquivosError },
-  ] =
-    await Promise.all([
-      supabase
-        .from('imoveis')
-        .select(
-          'id, titulo, descricao, tipo_leilao, tipo_propriedade, valor_avaliacao, valor_minimo, data_primeiro_leilao, valor_primeiro_leilao, data_segundo_leilao, valor_segundo_leilao, quartos, banheiros, area_total, area_construida, ano_construcao, rua, numero, complemento, cidade, estado, cep, data_leilao, status, destaque, ordem_destaque, created_at',
-        )
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('imovel_imagens')
-        .select('imovel_id, url, ordem')
-        .order('ordem', { ascending: true }),
-      supabase
-        .from('imovel_detalhes')
-        .select(
-          'imovel_id, resumo_executivo, ocupacao, matricula, cartorio, numero_processo, valor_mercado, lance_recomendado, lucro_estimado, roi_estimado, divida_iptu, divida_condominio, analise, riscos, observacoes_juridicas, estrategia',
-        ),
-      supabase
-        .from('imovel_arquivos')
-        .select(
-          'id, imovel_id, nome_arquivo, url_storage, tipo_arquivo, tipo_documento, visivel_publico, visivel_pagantes, created_at',
-        )
-        .order('created_at', { ascending: false }),
-    ]);
+function parsePositiveInteger(value: string | null, fallback: number) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return fallback;
+  }
+
+  return Math.trunc(parsed);
+}
+
+function parsePagination(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const shouldPaginate =
+    searchParams.has('limit') ||
+    searchParams.has('page') ||
+    searchParams.has('offset');
+
+  if (!shouldPaginate) {
+    return null;
+  }
+
+  const limit = Math.min(parsePositiveInteger(searchParams.get('limit'), 12), 100);
+  const page = parsePositiveInteger(searchParams.get('page'), 1);
+  const offset = searchParams.has('offset')
+    ? Math.max(parsePositiveInteger(searchParams.get('offset'), 1) - 1, 0)
+    : (page - 1) * limit;
+
+  return {
+    limit,
+    offset,
+    page: Math.floor(offset / limit) + 1,
+  };
+}
+
+export async function GET(request: NextRequest) {
+  const supabase = createAdminClient();
+  const pagination = parsePagination(request);
+
+  let imoveisQuery = supabase
+    .from('imoveis')
+    .select(IMOVEL_SELECT, { count: pagination ? 'exact' : undefined })
+    .order('created_at', { ascending: false, nullsFirst: false });
+
+  if (pagination) {
+    imoveisQuery = imoveisQuery.range(
+      pagination.offset,
+      pagination.offset + pagination.limit - 1,
+    );
+  }
+
+  const { data: imoveis, error: imoveisError, count } = await imoveisQuery;
 
   if (imoveisError) {
     return NextResponse.json(
@@ -41,6 +63,52 @@ export async function GET() {
       { status: 500 },
     );
   }
+
+  const imovelIds = (imoveis ?? []).map((imovel) => imovel.id);
+
+  if (imovelIds.length === 0) {
+    return NextResponse.json({
+      properties: [],
+      ...(pagination
+        ? {
+            pagination: {
+              page: pagination.page,
+              limit: pagination.limit,
+              offset: pagination.offset,
+              total: count ?? 0,
+              total_pages: 0,
+              has_more: false,
+            },
+          }
+        : {}),
+    });
+  }
+
+  const [
+    { data: imagens, error: imagensError },
+    { data: detalhes, error: detalhesError },
+    { data: arquivos, error: arquivosError },
+  ] =
+    await Promise.all([
+      supabase
+        .from('imovel_imagens')
+        .select('imovel_id, url, ordem')
+        .in('imovel_id', imovelIds)
+        .order('ordem', { ascending: true }),
+      supabase
+        .from('imovel_detalhes')
+        .select(
+          'imovel_id, resumo_executivo, ocupacao, matricula, cartorio, numero_processo, valor_mercado, lance_recomendado, lucro_estimado, roi_estimado, divida_iptu, divida_condominio, analise, riscos, observacoes_juridicas, estrategia',
+        )
+        .in('imovel_id', imovelIds),
+      supabase
+        .from('imovel_arquivos')
+        .select(
+          'id, imovel_id, nome_arquivo, url_storage, tipo_arquivo, tipo_documento, visivel_publico, visivel_pagantes, created_at',
+        )
+        .in('imovel_id', imovelIds)
+        .order('created_at', { ascending: false }),
+    ]);
 
   if (imagensError) {
     return NextResponse.json(
@@ -137,5 +205,19 @@ export async function GET() {
     };
   });
 
-  return NextResponse.json({ properties });
+  return NextResponse.json({
+    properties,
+    ...(pagination
+      ? {
+          pagination: {
+            page: pagination.page,
+            limit: pagination.limit,
+            offset: pagination.offset,
+            total: count ?? properties.length,
+            total_pages: Math.ceil((count ?? properties.length) / pagination.limit),
+            has_more: pagination.offset + properties.length < (count ?? properties.length),
+          },
+        }
+      : {}),
+  });
 }
