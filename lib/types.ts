@@ -1,5 +1,7 @@
 export interface Property {
   id: string;
+  property_url?: string;
+  link_imovel?: string;
   title: string;
   description: string;
   destaque?: boolean;

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getAbsoluteUrl } from '@/lib/site';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET() {
@@ -83,6 +84,7 @@ export async function GET() {
   }
 
   const properties = (imoveis ?? []).map((imovel) => {
+    const propertyUrl = getAbsoluteUrl(`/imoveis/${imovel.id}`);
     const gallery = imagensPorImovel.get(imovel.id) ?? [];
     const imageUrl =
       gallery[0] ??
@@ -101,6 +103,8 @@ export async function GET() {
 
     return {
       id: imovel.id,
+      property_url: propertyUrl,
+      link_imovel: propertyUrl,
       title: imovel.titulo,
       description: imovel.descricao ?? 'Sem descricao cadastrada.',
       destaque: Boolean(imovel.destaque),
