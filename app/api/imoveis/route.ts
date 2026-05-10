@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAbsoluteUrl } from '@/lib/site';
+import { getPublicAbsoluteUrl } from '@/lib/site';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const IMOVEL_SELECT =
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
   }
 
   const properties = (imoveis ?? []).map((imovel) => {
-    const propertyUrl = getAbsoluteUrl(`/imoveis/${imovel.id}`);
+    const propertyUrl = getPublicAbsoluteUrl(`/imoveis/${imovel.id}`);
     const gallery = imagensPorImovel.get(imovel.id) ?? [];
     const imageUrl =
       gallery[0] ??

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAbsoluteUrl } from '@/lib/site';
+import { getPublicAbsoluteUrl } from '@/lib/site';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 function toNumber(value: number | null | undefined) {
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: imovel.id,
-        link_imovel: getAbsoluteUrl(`/imoveis/${imovel.id}`),
+        link_imovel: getPublicAbsoluteUrl(`/imoveis/${imovel.id}`),
         titulo: imovel.titulo,
         descricao: imovel.descricao,
         cidade: imovel.cidade,
