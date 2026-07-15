@@ -985,7 +985,6 @@ export function PublicMarketplace({
           <span className="text-[10px] font-bold">Buscar</span>
         </button>
       </div>
-      {view === 'home' ? <HomeInfraChatWidget /> : null}
       {isChatEnabled ? <InfraChatWidget propertyId={activeChatPropertyId} /> : null}
     </div>
   );
@@ -1711,20 +1710,6 @@ function InfraChatWidget({
   if (!propertyId) {
     return null;
   }
-
-  return null;
-}
-
-function HomeInfraChatWidget() {
-  useEffect(() => {
-    loadInfraChatScript().catch((error) => {
-      console.error('Failed to mount InfraChat widget', error);
-    });
-
-    return () => {
-      cleanupInfraChatWidget();
-    };
-  }, []);
 
   return null;
 }
