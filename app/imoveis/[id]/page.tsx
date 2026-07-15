@@ -4,6 +4,7 @@ import { PublicMarketplace } from '@/app/page';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
   getAbsoluteUrl,
+  getPublicAbsoluteUrl,
   getSeoImageUrl,
   SITE_DESCRIPTION,
   SITE_NAME,
@@ -101,6 +102,7 @@ export async function generateMetadata({
   const title = `${property.title}${locationLabel}`;
   const description = buildPropertyDescription(property);
   const url = getAbsoluteUrl(`/imoveis/${property.id}`);
+  const socialImageUrl = getPublicAbsoluteUrl(`/imoveis/${property.id}/opengraph-image`);
 
   return {
     title,
@@ -115,7 +117,9 @@ export async function generateMetadata({
       description,
       images: [
         {
-          url: property.imageUrl,
+          url: socialImageUrl,
+          width: 1200,
+          height: 630,
           alt: property.title,
         },
       ],
@@ -124,7 +128,7 @@ export async function generateMetadata({
       card: 'summary_large_image',
       title: `${title} | ${SITE_NAME}`,
       description,
-      images: [property.imageUrl],
+      images: [socialImageUrl],
     },
   };
 }

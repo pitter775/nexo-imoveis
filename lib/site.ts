@@ -12,12 +12,21 @@ function normalizeSiteUrl(value: string) {
   return `https://${value}`;
 }
 
+function isValidSiteUrl(value: string | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  return !['MY_APP_URL', 'YOUR_APP_URL', 'APP_URL'].includes(value.trim().toUpperCase());
+}
+
 export function getSiteUrl() {
   const rawUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.APP_URL ??
-    process.env.VERCEL_URL ??
-    'http://localhost:3000';
+    [
+      process.env.NEXT_PUBLIC_SITE_URL,
+      process.env.APP_URL,
+      process.env.VERCEL_URL,
+    ].find(isValidSiteUrl) ?? PUBLIC_SITE_URL;
 
   return new URL(normalizeSiteUrl(rawUrl));
 }
@@ -31,5 +40,5 @@ export function getPublicAbsoluteUrl(path = '/') {
 }
 
 export function getSeoImageUrl(path = SITE_OG_IMAGE_PATH) {
-  return getAbsoluteUrl(path);
+  return getPublicAbsoluteUrl(path);
 }

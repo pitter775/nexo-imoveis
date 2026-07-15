@@ -1,7 +1,16 @@
+import type { Metadata } from 'next';
 import { redirectIfAuthenticated } from '@/lib/auth';
 import { BrandLogo } from '@/components/brand-logo';
 import { LoginForm } from '@/components/login-form';
 import { SiteFooter } from '@/components/site-footer';
+
+export const metadata: Metadata = {
+  title: 'Login',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 type LoginPageProps = {
   searchParams: Promise<{

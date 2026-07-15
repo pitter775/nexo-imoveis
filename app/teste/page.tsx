@@ -1,4 +1,15 @@
+import type { Metadata } from 'next'
 import { supabase } from '@/lib/supabase'
+
+export const metadata: Metadata = {
+  title: 'Teste',
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
+
+export const dynamic = 'force-dynamic'
 
 export default async function Page() {
 

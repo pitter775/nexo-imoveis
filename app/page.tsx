@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Copy,
   Bath,
   Bed,
   BookText,
@@ -67,6 +68,7 @@ const INFRA_CHAT_WIDGET_ID = 'infra-chat-widget';
 const INFRA_CHAT_WIDGET_SLUG = 'projeto-nexo-leiloes-chat';
 const INFRA_CHAT_API_BASE = 'https://www.infrastudio.pro';
 const INFRA_CHAT_AGENT = 'projeto-nexo-leiloes-assistente';
+const PUBLIC_SHARE_BASE_URL = 'https://nexo-imoveis.vercel.app';
 
 function cleanupInfraChatWidget() {
   if (typeof window === 'undefined') {
@@ -2180,6 +2182,8 @@ function PropertyDetailsView({
     onSwipeLeft: goToNextSimilarPage,
     onSwipeRight: goToPreviousSimilarPage,
   });
+  const shareUrl = buildPublicPropertyUrl(property.id);
+  const sharePostText = buildPropertyShareText(property, shareUrl);
   const premiumTabs: Array<{
     key: 'geral' | 'dossie' | 'analise' | 'arquivos';
     label: string;
@@ -2198,13 +2202,9 @@ function PropertyDetailsView({
   };
 
   const handleShareProperty = async () => {
-    const shareUrl =
-      typeof window === 'undefined'
-        ? `/imoveis/${property.id}`
-        : new URL(`/imoveis/${property.id}`, window.location.origin).toString();
     const shareData = {
       title: `${property.title} | Nexo Leiloes`,
-      text: `Confira este imovel em leilao${property.location ? ` em ${property.location}` : ''}.`,
+      text: sharePostText,
       url: shareUrl,
     };
 
@@ -2229,6 +2229,34 @@ function PropertyDetailsView({
 
       console.error('Falha ao compartilhar imovel', error);
       setShareFeedback('Nao foi possivel compartilhar agora.');
+    }
+  };
+
+  const handleShareOnWhatsApp = () => {
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(sharePostText)}`,
+      '_blank',
+      'noopener,noreferrer',
+    );
+    setShareFeedback('Post aberto no WhatsApp.');
+  };
+
+  const handleShareOnFacebook = () => {
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+      '_blank',
+      'noopener,noreferrer,width=720,height=640',
+    );
+    setShareFeedback('Post aberto no Facebook.');
+  };
+
+  const handleCopyPost = async () => {
+    try {
+      await navigator.clipboard.writeText(sharePostText);
+      setShareFeedback('Texto do post copiado.');
+    } catch (error) {
+      console.error('Falha ao copiar post do imovel', error);
+      setShareFeedback('Nao foi possivel copiar o post.');
     }
   };
 
@@ -2369,15 +2397,36 @@ function PropertyDetailsView({
               {isAdmin ? (
                 <AdminEditPropertyLink propertyId={property.id} className="w-full justify-center" />
               ) : null}
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={handleShareProperty}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 py-3 text-sm font-medium hover:bg-slate-50"
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-3 text-sm font-medium hover:bg-slate-50"
                 >
                   <Share2 className="size-4" /> Compartilhar
                 </button>
-                <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 py-3 text-sm font-medium hover:bg-slate-50">
+                <button
+                  type="button"
+                  onClick={handleShareOnWhatsApp}
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
+                >
+                  <MessageCircle className="size-4" /> WhatsApp
+                </button>
+                <button
+                  type="button"
+                  onClick={handleShareOnFacebook}
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                >
+                  <Share2 className="size-4" /> Facebook
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopyPost}
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-3 text-sm font-medium hover:bg-slate-50"
+                >
+                  <Copy className="size-4" /> Copiar post
+                </button>
+                <button className="col-span-2 flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-3 text-sm font-medium hover:bg-slate-50">
                   <Heart className="size-4" /> Salvar
                 </button>
               </div>
@@ -2887,6 +2936,24 @@ function formatDate(value: string | null | undefined) {
     month: '2-digit',
     year: 'numeric',
   }).format(date);
+}
+
+function buildPublicPropertyUrl(propertyId: string) {
+  return new URL(`/imoveis/${propertyId}`, PUBLIC_SHARE_BASE_URL).toString();
+}
+
+function buildPropertyShareText(property: Property, shareUrl: string) {
+  const lines = [
+    `${property.title} | Nexo Leiloes`,
+    property.location ? `Localizacao: ${property.location}` : null,
+    property.price != null ? `Lance/valor: ${formatCurrency(property.price)}` : null,
+    property.auction_date ? `Data do leilao: ${formatDate(property.auction_date)}` : null,
+    '',
+    'Confira a oportunidade completa:',
+    shareUrl,
+  ];
+
+  return lines.filter((line): line is string => line !== null).join('\n');
 }
 
 
