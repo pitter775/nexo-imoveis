@@ -70,6 +70,47 @@ const INFRA_CHAT_API_BASE = 'https://www.infrastudio.pro';
 const INFRA_CHAT_AGENT = 'projeto-nexo-leiloes-assistente';
 const PUBLIC_SHARE_BASE_URL = 'https://nexo-imoveis.vercel.app';
 
+function buildInfraChatContext(propertyId: string) {
+  return {
+    id: propertyId,
+    propertyId,
+    resource: {
+      id: propertyId,
+      type: 'imovel',
+    },
+    imovel: {
+      id: propertyId,
+    },
+    ui: {
+      chatSessionScope: 'navigation',
+      pageKind: 'property_detail',
+      productDetailPreferred: true,
+    },
+  };
+}
+
+function syncInfraChatContext(propertyId: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const script = document.getElementById(INFRA_CHAT_WIDGET_ID);
+
+  if (!script) {
+    return;
+  }
+
+  script.setAttribute('data-context', JSON.stringify(buildInfraChatContext(propertyId)));
+
+  window.dispatchEvent(
+    new CustomEvent('infrastudio-chat:context-sync', {
+      detail: {
+        widgetSlug: INFRA_CHAT_WIDGET_SLUG,
+      },
+    }),
+  );
+}
+
 function cleanupInfraChatWidget() {
   if (typeof window === 'undefined') {
     return;
@@ -96,7 +137,7 @@ function cleanupInfraChatWidget() {
     .forEach((element) => element.remove());
 }
 
-function loadInfraChatScript() {
+function loadInfraChatScript(propertyId: string) {
   if (typeof window === 'undefined') {
     return Promise.resolve();
   }
@@ -113,7 +154,9 @@ function loadInfraChatScript() {
     if (existingScript) {
       existingScript.setAttribute('data-widget', INFRA_CHAT_WIDGET_SLUG);
       existingScript.setAttribute('data-agente', INFRA_CHAT_AGENT);
+      existingScript.setAttribute('data-context', JSON.stringify(buildInfraChatContext(propertyId)));
       if (infraWindow.InfraChatWidget) {
+        syncInfraChatContext(propertyId);
         resolve();
         return;
       }
@@ -133,6 +176,7 @@ function loadInfraChatScript() {
     script.defer = true;
     script.dataset.widget = INFRA_CHAT_WIDGET_SLUG;
     script.dataset.agente = INFRA_CHAT_AGENT;
+    script.dataset.context = JSON.stringify(buildInfraChatContext(propertyId));
     script.addEventListener('load', () => resolve(), { once: true });
     script.addEventListener(
       'error',
@@ -1693,11 +1737,15 @@ function InfraChatWidget({
 
     let isCancelled = false;
 
-    loadInfraChatScript()
+    syncInfraChatContext(propertyId);
+
+    loadInfraChatScript(propertyId)
       .then(() => {
         if (isCancelled) {
           return;
         }
+
+        syncInfraChatContext(propertyId);
       })
       .catch((error) => {
         console.error('Failed to mount InfraChat widget', error);
