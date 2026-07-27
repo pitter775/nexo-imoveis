@@ -45,6 +45,7 @@ async function parseUsuarioFormData(
     email: String(formData.get('email') ?? '')
       .trim()
       .toLowerCase(),
+    telefone: String(formData.get('telefone') ?? '').trim() || null,
     tipo_usuario:
       String(formData.get('tipo_usuario') ?? '').trim() === 'admin'
         ? 'admin'

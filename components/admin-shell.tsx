@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   BarChart3,
   Bot,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   CreditCard,
@@ -34,6 +35,7 @@ const navigationItems = [
   { href: '/admin', label: 'Dashboard', icon: BarChart3 },
   { href: '/admin/imoveis', label: 'Imoveis', icon: Home },
   { href: '/admin/usuarios', label: 'Usuarios', icon: Users },
+  { href: '/admin/agenda', label: 'Agenda', icon: CalendarDays },
   { href: '/admin/log', label: 'Log', icon: Logs },
   { href: '/admin/ia-tokens', label: 'IA Tokens', icon: Bot },
   { href: '/admin/pagamentos', label: 'Pagamentos', icon: CreditCard },

@@ -8,6 +8,9 @@ export interface Property {
   ordem_destaque?: number | null;
   price: number;
   valuation_price?: number | null;
+  discount_percent?: number | null;
+  discount_basis_label?: string | null;
+  has_premium_access?: boolean;
   location: string;
   city?: string | null;
   state?: string | null;
@@ -56,6 +59,7 @@ export interface Property {
 
 export interface User {
   id: number | string;
+  nome?: string | null;
   email: string;
   role?: string;
   tipo_usuario?: 'admin' | 'cliente';

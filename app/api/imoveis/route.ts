@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentAuthenticatedUser } from '@/lib/auth';
 import { getPublicAbsoluteUrl } from '@/lib/site';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -39,8 +40,29 @@ function parsePagination(request: NextRequest) {
   };
 }
 
+function calculateDiscount(
+  auctionPrice: number,
+  valuationPrice: number | null,
+  firstAuctionPrice: number | null,
+) {
+  const basis = valuationPrice ?? firstAuctionPrice;
+
+  if (!basis || basis <= 0 || auctionPrice <= 0 || auctionPrice >= basis) {
+    return {
+      discount_percent: null,
+      discount_basis_label: null,
+    };
+  }
+
+  return {
+    discount_percent: Math.round(((basis - auctionPrice) / basis) * 100),
+    discount_basis_label: valuationPrice != null ? 'sobre avaliação' : 'sobre 1ª praça',
+  };
+}
+
 export async function GET(request: NextRequest) {
   const supabase = createAdminClient();
+  const currentUser = await getCurrentAuthenticatedUser();
   const pagination = parsePagination(request);
 
   let imoveisQuery = supabase
@@ -134,6 +156,36 @@ export async function GET(request: NextRequest) {
   const imagensPorImovel = new Map<string, string[]>();
   const detalhesPorImovel = new Map<string, (typeof detalhes)[number]>();
   const arquivosPorImovel = new Map<string, (typeof arquivos)>();
+  const premiumAccessByImovelId = new Set<string>();
+  const isAdmin = currentUser?.tipo_usuario === 'admin';
+
+  if (currentUser && !isAdmin) {
+    const { data: accesses, error: accessError } = await supabase
+      .from('user_access')
+      .select('imovel_id, data_expiracao, status')
+      .eq('user_id', currentUser.id)
+      .eq('status', 'ativo')
+      .in('imovel_id', imovelIds);
+
+    if (accessError) {
+      return NextResponse.json(
+        { error: `Failed to load property access: ${accessError.message}` },
+        { status: 500 },
+      );
+    }
+
+    const now = new Date();
+
+    for (const access of accesses ?? []) {
+      if (!access.imovel_id) {
+        continue;
+      }
+
+      if (!access.data_expiracao || new Date(access.data_expiracao) > now) {
+        premiumAccessByImovelId.add(access.imovel_id);
+      }
+    }
+  }
 
   for (const imagem of imagens ?? []) {
     const currentImages = imagensPorImovel.get(imagem.imovel_id) ?? [];
@@ -168,6 +220,19 @@ export async function GET(request: NextRequest) {
       imovel.data_segundo_leilao ??
       imovel.data_primeiro_leilao ??
       imovel.data_leilao;
+    const valuationPrice =
+      imovel.valor_avaliacao == null ? null : Number(imovel.valor_avaliacao);
+    const firstAuctionPrice =
+      imovel.valor_primeiro_leilao == null ? null : Number(imovel.valor_primeiro_leilao);
+    const discount = calculateDiscount(
+      publicAuctionPrice,
+      valuationPrice,
+      firstAuctionPrice,
+    );
+    const hasPremiumAccess = isAdmin || premiumAccessByImovelId.has(imovel.id);
+    const visibleFiles = (arquivosPorImovel.get(imovel.id) ?? []).filter((arquivo) =>
+      hasPremiumAccess ? arquivo.visivel_pagantes !== false : arquivo.visivel_publico === true,
+    );
 
     return {
       id: imovel.id,
@@ -178,8 +243,10 @@ export async function GET(request: NextRequest) {
       destaque: Boolean(imovel.destaque),
       ordem_destaque: imovel.ordem_destaque,
       price: publicAuctionPrice,
-      valuation_price:
-        imovel.valor_avaliacao == null ? null : Number(imovel.valor_avaliacao),
+      valuation_price: valuationPrice,
+      discount_percent: discount.discount_percent,
+      discount_basis_label: discount.discount_basis_label,
+      has_premium_access: hasPremiumAccess,
       location: [imovel.cidade, imovel.estado].filter(Boolean).join(' - '),
       city: imovel.cidade,
       state: imovel.estado,
@@ -200,8 +267,8 @@ export async function GET(request: NextRequest) {
       images: gallery,
       created_at: imovel.created_at,
       cep: imovel.cep,
-      dossier: detalhesPorImovel.get(imovel.id) ?? null,
-      dossier_files: arquivosPorImovel.get(imovel.id) ?? [],
+      dossier: hasPremiumAccess ? detalhesPorImovel.get(imovel.id) ?? null : null,
+      dossier_files: visibleFiles,
     };
   });
 

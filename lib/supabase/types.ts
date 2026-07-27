@@ -50,6 +50,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      agenda_eventos: {
+        Row: {
+          id: string;
+          titulo: string;
+          descricao: string | null;
+          data_inicio: string;
+          data_fim: string | null;
+          status: string;
+          tipo: string;
+          user_id: string | null;
+          imovel_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          titulo: string;
+          descricao?: string | null;
+          data_inicio: string;
+          data_fim?: string | null;
+          status?: string;
+          tipo?: string;
+          user_id?: string | null;
+          imovel_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          titulo?: string;
+          descricao?: string | null;
+          data_inicio?: string;
+          data_fim?: string | null;
+          status?: string;
+          tipo?: string;
+          user_id?: string | null;
+          imovel_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       chat_conversas: {
         Row: {
           id: string;
@@ -419,11 +461,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_access: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          imovel_id: string | null;
+          data_compra: string | null;
+          data_expiracao: string | null;
+          status: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          imovel_id?: string | null;
+          data_compra?: string | null;
+          data_expiracao?: string | null;
+          status?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          imovel_id?: string | null;
+          data_compra?: string | null;
+          data_expiracao?: string | null;
+          status?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
       users: {
         Row: {
           id: string;
           nome: string | null;
           email: string;
+          telefone: string | null;
           senha_hash: string | null;
           tipo_usuario: UserRole | null;
           ativo: boolean | null;
@@ -433,6 +506,7 @@ export type Database = {
           id?: string;
           nome?: string | null;
           email: string;
+          telefone?: string | null;
           senha_hash?: string | null;
           tipo_usuario?: UserRole | null;
           ativo?: boolean | null;
@@ -442,6 +516,7 @@ export type Database = {
           id?: string;
           nome?: string | null;
           email?: string;
+          telefone?: string | null;
           senha_hash?: string | null;
           tipo_usuario?: UserRole | null;
           ativo?: boolean | null;

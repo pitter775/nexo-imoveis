@@ -89,6 +89,20 @@ export function LoginForm({ redirectTo = '/' }: LoginFormProps) {
           Voltar ao site
         </Link>
       </div>
+      <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500">
+        <Link
+          href="/politica-de-privacidade"
+          className="font-semibold text-primary hover:text-primary/80"
+        >
+          Política de Privacidade
+        </Link>
+        <Link
+          href="/termos-de-uso"
+          className="font-semibold text-primary hover:text-primary/80"
+        >
+          Termos de Uso
+        </Link>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   Building2,
   Compass,
@@ -22,6 +23,11 @@ const footerItems = [
   { label: 'Servicos', id: 'servicos', icon: MessageCircle },
   { label: 'Oportunidades', id: 'planos', icon: PlayCircle },
   { label: 'FAQ', id: 'faq', icon: MessageCircle },
+];
+
+const legalItems = [
+  { label: 'Política de Privacidade', href: '/politica-de-privacidade' },
+  { label: 'Termos de Uso', href: '/termos-de-uso' },
 ];
 
 export function SiteFooter({ onNavigate }: SiteFooterProps) {
@@ -59,6 +65,22 @@ export function SiteFooter({ onNavigate }: SiteFooterProps) {
                 </span>
               ),
             )}
+          </div>
+          <div className="mt-6 border-t border-slate-800 pt-5">
+            <h4 className="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">
+              Legal
+            </h4>
+            <div className="mt-3 grid gap-2 text-sm text-slate-300">
+              {legalItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="transition hover:text-white"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
 

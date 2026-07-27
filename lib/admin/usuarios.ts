@@ -6,6 +6,7 @@ export type UsuarioRecord = {
   id: string;
   nome: string | null;
   email: string;
+  telefone: string | null;
   senha_hash: string | null;
   tipo_usuario: 'admin' | 'cliente' | null;
   ativo: boolean | null;
@@ -15,6 +16,7 @@ export type UsuarioRecord = {
 export type UsuarioInput = {
   nome: string;
   email: string;
+  telefone: string | null;
   tipo_usuario: 'admin' | 'cliente';
   ativo: boolean;
   senha_hash?: string;
@@ -24,10 +26,26 @@ export async function listUsuarios() {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('users')
-    .select('id, nome, email, senha_hash, tipo_usuario, ativo, created_at')
+    .select('id, nome, email, telefone, senha_hash, tipo_usuario, ativo, created_at')
     .order('created_at', { ascending: false });
 
   if (error) {
+    if (isMissingTelefoneColumn(error.message)) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('users')
+        .select('id, nome, email, senha_hash, tipo_usuario, ativo, created_at')
+        .order('created_at', { ascending: false });
+
+      if (fallbackError) {
+        throw new Error(`Failed to list users: ${fallbackError.message}`);
+      }
+
+      return ((fallbackData ?? []) as Omit<UsuarioRecord, 'telefone'>[]).map((usuario) => ({
+        ...usuario,
+        telefone: null,
+      }));
+    }
+
     throw new Error(`Failed to list users: ${error.message}`);
   }
 
@@ -38,11 +56,25 @@ export async function getUsuarioById(id: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('users')
-    .select('id, nome, email, senha_hash, tipo_usuario, ativo, created_at')
+    .select('id, nome, email, telefone, senha_hash, tipo_usuario, ativo, created_at')
     .eq('id', id)
     .maybeSingle();
 
   if (error) {
+    if (isMissingTelefoneColumn(error.message)) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('users')
+        .select('id, nome, email, senha_hash, tipo_usuario, ativo, created_at')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (fallbackError) {
+        throw new Error(`Failed to fetch user: ${fallbackError.message}`);
+      }
+
+      return fallbackData ? ({ ...fallbackData, telefone: null } as UsuarioRecord) : null;
+    }
+
     throw new Error(`Failed to fetch user: ${error.message}`);
   }
 
@@ -65,4 +97,8 @@ export async function updateUsuario(id: string, input: UsuarioInput) {
   if (error) {
     throw new Error(`Failed to update user: ${error.message}`);
   }
+}
+
+function isMissingTelefoneColumn(message: string) {
+  return message.toLowerCase().includes('telefone');
 }

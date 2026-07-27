@@ -13,6 +13,7 @@ type DatabaseUser = {
   id: string;
   nome: string | null;
   email: string;
+  telefone: string | null;
   senha_hash: string | null;
   tipo_usuario: 'admin' | 'cliente' | null;
   ativo: boolean | null;
@@ -32,7 +33,7 @@ async function getUserByEmail(email: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('users')
-    .select('id, nome, email, senha_hash, tipo_usuario, ativo')
+    .select('id, nome, email, telefone, senha_hash, tipo_usuario, ativo')
     .eq('email', email.toLowerCase())
     .maybeSingle();
 
@@ -47,7 +48,7 @@ async function getUserById(userId: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('users')
-    .select('id, nome, email, senha_hash, tipo_usuario, ativo')
+    .select('id, nome, email, telefone, senha_hash, tipo_usuario, ativo')
     .eq('id', userId)
     .maybeSingle();
 

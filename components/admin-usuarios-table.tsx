@@ -8,6 +8,7 @@ import {
   ArrowDownUp,
   ArrowUp,
   Mail,
+  Phone,
   Pencil,
   Plus,
   Search,
@@ -21,7 +22,7 @@ type AdminUsuariosTableProps = {
   createHref: string;
 };
 
-type SortKey = 'nome' | 'email' | 'tipo_usuario' | 'ativo' | 'created_at';
+type SortKey = 'nome' | 'email' | 'telefone' | 'tipo_usuario' | 'ativo' | 'created_at';
 
 type SortConfig = {
   key: SortKey;
@@ -31,6 +32,7 @@ type SortConfig = {
 const columns: Array<{ key: SortKey; label: string }> = [
   { key: 'nome', label: 'Usuario' },
   { key: 'email', label: 'Email' },
+  { key: 'telefone', label: 'Telefone' },
   { key: 'tipo_usuario', label: 'Perfil' },
   { key: 'ativo', label: 'Status' },
   { key: 'created_at', label: 'Cadastro' },
@@ -124,7 +126,7 @@ export function AdminUsuariosTable({
       </div>
 
       <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-        <div className="hidden grid-cols-[1.2fr_1.2fr_0.7fr_0.6fr_0.7fr_0.4fr] gap-4 border-b border-slate-100 px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-400 lg:grid">
+        <div className="hidden grid-cols-[1.2fr_1.2fr_0.8fr_0.7fr_0.6fr_0.7fr_0.4fr] gap-4 border-b border-slate-100 px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-400 lg:grid">
           {columns.map((column) => (
             <button
               key={column.key}
@@ -143,7 +145,7 @@ export function AdminUsuariosTable({
           {filteredUsuarios.map((usuario) => (
             <div
               key={usuario.id}
-              className="grid gap-4 px-4 py-4 text-sm text-slate-700 sm:px-6 lg:grid-cols-[1.2fr_1.2fr_0.7fr_0.6fr_0.7fr_0.4fr]"
+              className="grid gap-4 px-4 py-4 text-sm text-slate-700 sm:px-6 lg:grid-cols-[1.2fr_1.2fr_0.8fr_0.7fr_0.6fr_0.7fr_0.4fr]"
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-3">
@@ -169,6 +171,7 @@ export function AdminUsuariosTable({
               </div>
 
               <DataCell label="Email" value={usuario.email} icon={<Mail className="size-3.5 text-slate-400" />} />
+              <DataCell label="Telefone" value={usuario.telefone || '-'} icon={<Phone className="size-3.5 text-slate-400" />} />
               <DataCell
                 label="Perfil"
                 value={usuario.tipo_usuario === 'admin' ? 'Admin' : 'Cliente'}

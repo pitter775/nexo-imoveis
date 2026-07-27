@@ -593,6 +593,8 @@ export function PublicMarketplace({
     router.push('/imoveis');
   };
 
+  const displayName = user?.nome?.trim() || user?.email;
+
   const handleGoHome = () => {
     cleanupInfraChatWidget();
     setView('home');
@@ -783,12 +785,20 @@ export function PublicMarketplace({
                 </div>
               ) : !user ? (
                 <div className="flex justify-end">
-                  <Link
-                    href="/login"
-                    className="inline-flex h-11 min-w-[132px] items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary/90"
-                  >
-                    Login
-                  </Link>
+                  <div className="flex gap-2">
+                    <Link
+                      href="/login"
+                      className="inline-flex h-11 min-w-[112px] items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition-all hover:border-primary/30 hover:text-primary"
+                    >
+                      Acesso
+                    </Link>
+                    <Link
+                      href="/cadastro"
+                      className="inline-flex h-11 min-w-[132px] items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary/90"
+                    >
+                      Cadastrar
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div
@@ -796,7 +806,7 @@ export function PublicMarketplace({
                   onMouseEnter={() => setIsUserMenuOpen(true)}
                   onMouseLeave={() => setIsUserMenuOpen(false)}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     {adminHref ? (
                       <Link
                         href={adminHref}
@@ -822,6 +832,12 @@ export function PublicMarketplace({
                         }`}
                       />
                     </button>
+                    <div className="hidden max-w-[180px] text-right lg:block">
+                      <p className="truncate text-sm font-bold text-slate-900">
+                        {displayName}
+                      </p>
+                      <p className="text-xs text-slate-400">Acesso ativo</p>
+                    </div>
                   </div>
 
                   <AnimatePresence>
@@ -926,16 +942,28 @@ export function PublicMarketplace({
                   </form>
                 </>
               ) : (
-                <Link
-                  href="/login"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center gap-3 rounded-2xl bg-slate-950 px-4 py-3 text-left font-semibold text-white"
-                >
-                  <span className="inline-flex size-9 items-center justify-center rounded-xl bg-white/10">
-                    <UserRound className="size-4" />
-                  </span>
-                  Login
-                </Link>
+                <div className="grid gap-3">
+                  <Link
+                    href="/login"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left font-semibold text-slate-700"
+                  >
+                    <span className="inline-flex size-9 items-center justify-center rounded-xl bg-slate-100">
+                      <UserRound className="size-4" />
+                    </span>
+                    Acesso
+                  </Link>
+                  <Link
+                    href="/cadastro"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-2xl bg-slate-950 px-4 py-3 text-left font-semibold text-white"
+                  >
+                    <span className="inline-flex size-9 items-center justify-center rounded-xl bg-white/10">
+                      <UserRound className="size-4" />
+                    </span>
+                    Cadastrar
+                  </Link>
+                </div>
               )}
             </div>
           </motion.div>
@@ -966,6 +994,7 @@ export function PublicMarketplace({
                 <HomeView
                   featuredProperties={featuredProperties}
                   isAdmin={user?.tipo_usuario === 'admin'}
+                  isAuthenticated={Boolean(user)}
                   isLoading={isLoadingProperties}
                   onBrowse={handleBrowse}
                   onPropertyClick={handlePropertyClick}
@@ -1135,6 +1164,7 @@ function MarketplaceLoadingState({
 function HomeView({
   featuredProperties,
   isAdmin = false,
+  isAuthenticated = false,
   isLoading,
   onBrowse,
   onPropertyClick,
@@ -1142,6 +1172,7 @@ function HomeView({
 }: {
   featuredProperties: Property[];
   isAdmin?: boolean;
+  isAuthenticated?: boolean;
   isLoading: boolean;
   onBrowse: () => void;
   onPropertyClick: (p: Property) => void;
@@ -1152,6 +1183,7 @@ function HomeView({
   const visibleProperties = properties.slice(0, visibleCount);
   const hasMoreProperties = visibleCount < properties.length;
   const featuredProperty = featuredProperties[featuredIndex] ?? null;
+
   const goToPreviousFeatured = () => {
     if (featuredProperties.length <= 1) {
       return;
@@ -1188,6 +1220,31 @@ function HomeView({
 
     return () => window.clearInterval(intervalId);
   }, [featuredProperties]);
+
+  if (isAuthenticated) {
+    return (
+      <div className="space-y-8">
+        <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+          <p className="text-sm font-bold uppercase tracking-[0.24em] text-primary/80">
+            Área do cliente
+          </p>
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+            Oportunidades disponíveis
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
+            Acompanhe imóveis cadastrados, filtre oportunidades e acesse os detalhes
+            liberados para sua conta.
+          </p>
+        </section>
+        <ListingsView
+          isAdmin={isAdmin}
+          isLoading={isLoading}
+          properties={properties}
+          onPropertyClick={onPropertyClick}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-12 pb-12">
@@ -1857,6 +1914,11 @@ function PropertyCard({
             {property.status || 'ativo'}
           </span>
         </div>
+        {property.discount_percent != null ? (
+          <div className="absolute bottom-3 right-3 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-extrabold text-white shadow-lg">
+            {property.discount_percent}% off
+          </div>
+        ) : null}
         {isAdmin ? (
           <div className="absolute right-4 top-4">
             <AdminEditPropertyLink propertyId={property.id} compact floating />
@@ -1877,9 +1939,16 @@ function PropertyCard({
       </div>
       <div className="flex flex-1 flex-col p-5">
         <div className="mb-2 flex items-center justify-between gap-3">
-          <span className="text-lg font-bold text-primary">
-            {formatCurrency(property.price)}
-          </span>
+          <div>
+            <span className="text-lg font-bold text-primary">
+              {formatCurrency(property.price)}
+            </span>
+            {property.discount_percent != null ? (
+              <p className="text-xs font-semibold text-emerald-700">
+                {property.discount_percent}% de desconto {property.discount_basis_label}
+              </p>
+            ) : null}
+          </div>
           <div className="flex items-center gap-1 text-slate-500">
             <MapPin className="size-3" />
             <span className="text-xs">{property.location || 'Localizacao nao informada'}</span>
@@ -1922,8 +1991,11 @@ function ListingsView({
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [minBeds, setMinBeds] = useState('');
   const [minArea, setMinArea] = useState('');
+  const [minDiscount, setMinDiscount] = useState('');
   const [visibleCount, setVisibleCount] = useState(9);
 
   const filteredProperties = useMemo(() => {
@@ -1933,6 +2005,9 @@ function ListingsView({
     const maxPriceValue = maxPrice ? Number(maxPrice) : null;
     const minBedsValue = minBeds ? Number(minBeds) : null;
     const minAreaValue = minArea ? Number(minArea) : null;
+    const minDiscountValue = minDiscount ? Number(minDiscount) : null;
+    const normalizedTypeFilter = typeFilter.trim().toLowerCase();
+    const normalizedStatusFilter = statusFilter.trim().toLowerCase();
 
     return properties.filter((property) => {
       const matchesQuery =
@@ -1970,6 +2045,14 @@ function ListingsView({
 
       const matchesArea =
         minAreaValue == null || (property.sqft ?? 0) >= minAreaValue;
+      const matchesType =
+        !normalizedTypeFilter || property.type.toLowerCase().includes(normalizedTypeFilter);
+      const matchesStatus =
+        !normalizedStatusFilter ||
+        (property.status ?? '').toLowerCase().includes(normalizedStatusFilter);
+      const matchesDiscount =
+        minDiscountValue == null ||
+        (property.discount_percent ?? 0) >= minDiscountValue;
 
       return (
         matchesQuery &&
@@ -1977,14 +2060,28 @@ function ListingsView({
         matchesMinPrice &&
         matchesMaxPrice &&
         matchesBeds &&
-        matchesArea
+        matchesArea &&
+        matchesType &&
+        matchesStatus &&
+        matchesDiscount
       );
     });
-  }, [locationFilter, maxPrice, minArea, minBeds, minPrice, properties, query]);
+  }, [
+    locationFilter,
+    maxPrice,
+    minArea,
+    minBeds,
+    minDiscount,
+    minPrice,
+    properties,
+    query,
+    statusFilter,
+    typeFilter,
+  ]);
 
   useEffect(() => {
     setVisibleCount(9);
-  }, [query, locationFilter, minPrice, maxPrice, minBeds, minArea]);
+  }, [query, locationFilter, minPrice, maxPrice, minBeds, minArea, minDiscount, typeFilter, statusFilter]);
 
   const visibleProperties = filteredProperties.slice(0, visibleCount);
   const hasMoreFilteredProperties = visibleCount < filteredProperties.length;
@@ -2033,12 +2130,24 @@ function ListingsView({
               className="overflow-hidden"
             >
               <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <FilterField
                     label="Localizacao"
                     value={locationFilter}
                     onChange={setLocationFilter}
                     placeholder="Cidade, estado ou bairro"
+                  />
+                  <FilterField
+                    label="Tipo de imovel"
+                    value={typeFilter}
+                    onChange={setTypeFilter}
+                    placeholder="Apartamento, casa..."
+                  />
+                  <FilterField
+                    label="Status"
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                    placeholder="Ativo, encerrado..."
                   />
                   <FilterField
                     label="Valor minimo"
@@ -2068,6 +2177,13 @@ function ListingsView({
                     placeholder="Ex: 120"
                     type="number"
                   />
+                  <FilterField
+                    label="Desconto minimo (%)"
+                    value={minDiscount}
+                    onChange={setMinDiscount}
+                    placeholder="Ex: 30"
+                    type="number"
+                  />
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -2081,10 +2197,13 @@ function ListingsView({
                     type="button"
                     onClick={() => {
                       setLocationFilter('');
+                      setTypeFilter('');
+                      setStatusFilter('');
                       setMinPrice('');
                       setMaxPrice('');
                       setMinBeds('');
                       setMinArea('');
+                      setMinDiscount('');
                     }}
                     className="text-sm font-semibold text-primary transition hover:text-primary/80"
                   >
@@ -2179,18 +2298,19 @@ function PropertyDetailsView({
 }) {
   const [activeImage, setActiveImage] = useState(property.image_url);
   const isAdmin = user?.tipo_usuario === 'admin';
-  const [hasUnlockedPremium, setHasUnlockedPremium] = useState(false);
+  const hasPremiumAccess = isAdmin || property.has_premium_access === true;
+  const [hasUnlockedPremium, setHasUnlockedPremium] = useState(hasPremiumAccess);
   const [activePremiumTab, setActivePremiumTab] = useState<'geral' | 'dossie' | 'analise' | 'arquivos'>('geral');
   const [similarPage, setSimilarPage] = useState(0);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     setActiveImage(property.image_url);
-    setHasUnlockedPremium(false);
+    setHasUnlockedPremium(hasPremiumAccess);
     setActivePremiumTab('geral');
     setSimilarPage(0);
     setShareFeedback(null);
-  }, [property.id, property.image_url]);
+  }, [hasPremiumAccess, property.id, property.image_url]);
 
   const gallery = property.images?.length ? property.images : [property.image_url];
   const SIMILAR_PROPERTIES_PER_PAGE = 3;
@@ -2244,8 +2364,18 @@ function PropertyDetailsView({
   ];
 
   const handleUnlockInformation = () => {
-    setHasUnlockedPremium(true);
-    setActivePremiumTab('dossie');
+    if (hasPremiumAccess) {
+      setHasUnlockedPremium(true);
+      setActivePremiumTab('dossie');
+      return;
+    }
+
+    if (!user) {
+      window.location.href = `/login?redirectTo=${encodeURIComponent(`/imoveis/${property.id}`)}`;
+      return;
+    }
+
+    setShareFeedback('Solicitação registrada. A equipe Nexo seguirá o atendimento pelo chat.');
     onUnlockInformation();
   };
 
@@ -2404,6 +2534,16 @@ function PropertyDetailsView({
                 value={property.valuation_price == null ? '-' : formatCurrency(property.valuation_price)}
               />
               <SummaryRow
+                icon={<TrendingUp className="size-4 text-primary" />}
+                label="Desconto"
+                value={
+                  property.discount_percent == null
+                    ? '-'
+                    : `${property.discount_percent}% ${property.discount_basis_label ?? ''}`.trim()
+                }
+                valueClassName={property.discount_percent == null ? undefined : 'text-emerald-700'}
+              />
+              <SummaryRow
                 icon={<Building2 className="size-4 text-primary" />}
                 label="Tipo de propriedade"
                 value={property.type}
@@ -2440,7 +2580,7 @@ function PropertyDetailsView({
                 onClick={handleUnlockInformation}
                 className="w-full rounded-xl bg-primary py-4 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90"
               >
-                Solicitar Informacoes
+                {hasPremiumAccess ? 'Ver informações liberadas' : 'Solicitar Informações'}
               </button>
               {isAdmin ? (
                 <AdminEditPropertyLink propertyId={property.id} className="w-full justify-center" />

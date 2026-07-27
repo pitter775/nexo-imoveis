@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { CalendarDays, KeyRound, Mail, Shield, UserRound } from 'lucide-react';
+import { CalendarDays, KeyRound, Mail, Phone, Shield, UserRound } from 'lucide-react';
 import { FormSelect } from '@/components/form-select';
 
 const PERFIL_OPTIONS = [
@@ -16,6 +16,7 @@ type UsuarioFormValues = {
   id?: string;
   nome?: string | null;
   email?: string;
+  telefone?: string | null;
   tipo_usuario?: 'admin' | 'cliente' | null;
   ativo?: boolean | null;
   created_at?: string | null;
@@ -97,6 +98,13 @@ export function AdminUsuarioForm({
               defaultValue={initialValues?.email ?? ''}
               required
               className="xl:col-span-4"
+            />
+            <Field
+              label="Telefone"
+              name="telefone"
+              type="tel"
+              defaultValue={initialValues?.telefone ?? ''}
+              className="xl:col-span-3"
             />
             <FormSelect
               label="Perfil"
@@ -204,6 +212,10 @@ function UserFieldIcon({ label }: { label: string }) {
 
   if (normalizedLabel.includes('email')) {
     return <Mail className="size-4 text-primary" />;
+  }
+
+  if (normalizedLabel.includes('telefone')) {
+    return <Phone className="size-4 text-primary" />;
   }
 
   if (normalizedLabel.includes('senha')) {
