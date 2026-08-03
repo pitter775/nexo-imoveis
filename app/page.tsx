@@ -1960,6 +1960,10 @@ function PropertyCard({
         <p className="mb-4 line-clamp-2 text-sm leading-6 text-slate-600">
           {cardDescriptionPreview}
         </p>
+        <div className="mb-4 space-y-1.5 border-t border-slate-100 pt-4 text-xs text-slate-600">
+          <AuctionDateLine label="Data 1º Leilão" value={property.auction_first_date} />
+          <AuctionDateLine label="Data 2º Leilão" value={property.auction_second_date} />
+        </div>
         <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
           <div className="flex gap-4">
             <MiniMetric label="Quartos" value={formatMetric(property.beds)} />
@@ -1971,6 +1975,21 @@ function PropertyCard({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function AuctionDateLine({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | null | undefined;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="font-semibold text-slate-700">{label}</span>
+      <span className="text-right font-bold text-slate-900">{formatDate(value)}</span>
     </div>
   );
 }

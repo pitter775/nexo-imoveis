@@ -76,12 +76,12 @@ export function RegisterForm() {
           />
           <span>
             Li e aceito os{' '}
-            <Link href="/termos-de-uso" className="font-semibold text-primary hover:text-primary/80">
+            <Link href="/termos-de-uso?returnTo=/cadastro" className="font-semibold text-primary hover:text-primary/80">
               Termos de Uso
             </Link>{' '}
             e a{' '}
             <Link
-              href="/politica-de-privacidade"
+              href="/politica-de-privacidade?returnTo=/cadastro"
               className="font-semibold text-primary hover:text-primary/80"
             >
               Política de Privacidade

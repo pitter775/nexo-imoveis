@@ -316,6 +316,8 @@ async function extractStructuredDataFromPdf({
           'Se faltar base suficiente para uma estimativa confiavel, retorne null nesses campos.',
           'Corrija pequenos erros visuais do documento quando forem obvios.',
           'Use datas em formato ISO quando houver dia completo.',
+          'Quando o edital informar inicio e encerramento do 1o ou 2o leilao, salve sempre a data de encerramento como data do respectivo leilao.',
+          'Quando o valor da 2a praca vier como percentual do valor de avaliacao, calcule valor_segundo_leilao a partir desse percentual.',
           'Use numeros decimais sem simbolo monetario.',
           'Preencha textos longos de forma objetiva e util para o cadastro do imovel.',
           getDocumentSpecificInstructions(documentType),
@@ -859,6 +861,8 @@ async function extractAuctionDataFromPdfStrict({
           'Cada campo deve ser tratado de forma independente.',
           'Nao descarte o resultado se algum campo estiver ausente.',
           'Nao confie na ordem do texto. Use contexto explicito como avaliacao, 1 leilao, 1a praca, 2 leilao e 2a praca.',
+          'Se houver inicio e encerramento do 1o ou 2o leilao, use a data de encerramento, nao a data de inicio.',
+          'Se o 2o leilao ou 2a praca trouxer apenas percentual minimo sobre a avaliacao, calcule valor_segundo_leilao com valor_avaliacao * percentual / 100.',
           'Retorne somente JSON valido, sem markdown e sem texto extra.',
           'Datas devem sair no formato YYYY-MM-DD quando houver confianca suficiente.',
           'Valores monetarios devem sair como numero decimal sem simbolos.',
@@ -951,13 +955,31 @@ function normalizeAuctionDataFromText(text: string) {
   }
 
   const normalizedText = normalizeSearchText(text);
+  const valorAvaliacao = extractMoneyByContext(normalizedText, [
+    'valor de avaliacao',
+    'avaliacao judicial',
+    'avaliacao',
+    'avaliado em',
+  ]);
+  const valorSegundoLeilao =
+    extractMoneyByContext(normalizedText, [
+      '2 leilao',
+      '2o leilao',
+      '2 leilao',
+      '2a praca',
+      'segundo leilao',
+      'segunda praca',
+    ]) ?? calculateAuctionValueFromPercentage(normalizedText, valorAvaliacao, [
+      '2 leilao',
+      '2o leilao',
+      '2 leilao',
+      '2a praca',
+      'segundo leilao',
+      'segunda praca',
+    ]);
 
   return normalizeAuctionData({
-    valor_avaliacao: extractMoneyByContext(normalizedText, [
-      'avaliacao',
-      'valor de avaliacao',
-      'avaliado em',
-    ]),
+    valor_avaliacao: valorAvaliacao,
     valor_primeiro_leilao: extractMoneyByContext(normalizedText, [
       '1 leilao',
       '1o leilao',
@@ -966,14 +988,7 @@ function normalizeAuctionDataFromText(text: string) {
       'primeiro leilao',
       'primeira praca',
     ]),
-    valor_segundo_leilao: extractMoneyByContext(normalizedText, [
-      '2 leilao',
-      '2o leilao',
-      '2 leilao',
-      '2a praca',
-      'segundo leilao',
-      'segunda praca',
-    ]),
+    valor_segundo_leilao: valorSegundoLeilao,
     data_primeiro_leilao: extractDateByContext(normalizedText, [
       '1 leilao',
       '1o leilao',
@@ -1124,21 +1139,71 @@ function extractMoneyByContext(text: string, contexts: string[]) {
   return null;
 }
 
-function extractDateByContext(text: string, contexts: string[]) {
-  for (const context of contexts) {
-    const escapedContext = escapeRegExp(context);
-    const regex = new RegExp(
-      `${escapedContext}[\\s\\S]{0,80}?(\\d{2}/\\d{2}/\\d{4})`,
-      'i',
-    );
-    const match = text.match(regex);
+function calculateAuctionValueFromPercentage(
+  text: string,
+  valuationPrice: number | null,
+  contexts: string[],
+) {
+  if (!valuationPrice || valuationPrice <= 0) {
+    return null;
+  }
 
-    if (match?.[1]) {
-      return normalizeDateValue(match[1]);
+  for (const context of contexts) {
+    const window = getContextWindow(text, context, 260);
+    if (!window) {
+      continue;
+    }
+
+    const match = window.match(
+      /(?:minimo|correspondera|aceitos lances|lances com|valor minimo)?[\s\S]{0,120}?(\d{1,3})(?:,\d+)?\s*%[\s\S]{0,120}?(?:avaliacao|valor de avaliacao|avaliacao judicial)/i,
+    );
+
+    if (!match?.[1]) {
+      continue;
+    }
+
+    const percentage = Number(match[1]);
+    if (Number.isFinite(percentage) && percentage > 0 && percentage <= 100) {
+      return Math.round((valuationPrice * percentage) / 100);
     }
   }
 
   return null;
+}
+
+function extractDateByContext(text: string, contexts: string[]) {
+  for (const context of contexts) {
+    const window = getContextWindow(text, context, 320);
+    if (!window) {
+      continue;
+    }
+
+    const closingMatch = window.match(
+      /(?:se\s+)?encerr(?:a|ara|arao|amento|ar[a-z]*)[\s\S]{0,60}?(?:no\s+)?(?:dia\s+)?(\d{2}\/\d{2}\/\d{4})/i,
+    );
+
+    if (closingMatch?.[1]) {
+      return normalizeDateValue(closingMatch[1]);
+    }
+
+    const matches = [...window.matchAll(/\b(\d{2}\/\d{2}\/\d{4})\b/g)];
+    const lastDate = matches.at(-1)?.[1];
+
+    if (lastDate) {
+      return normalizeDateValue(lastDate);
+    }
+  }
+
+  return null;
+}
+
+function getContextWindow(text: string, context: string, maxLength: number) {
+  const index = text.indexOf(context);
+  if (index === -1) {
+    return null;
+  }
+
+  return text.slice(index, index + maxLength);
 }
 
 function escapeRegExp(value: string) {

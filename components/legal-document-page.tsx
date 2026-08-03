@@ -6,16 +6,17 @@ import type { LegalDocument } from '@/lib/legal-content';
 
 type LegalDocumentPageProps = {
   document: LegalDocument;
+  backHref?: string;
 };
 
-export function LegalDocumentPage({ document }: LegalDocumentPageProps) {
+export function LegalDocumentPage({ document, backHref = '/' }: LegalDocumentPageProps) {
   return (
     <div className="min-h-screen bg-[#f6f7f8] text-slate-900">
       <header className="border-b border-slate-200 bg-white/90 px-4 py-5 backdrop-blur sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
           <BrandLogo href="/" />
           <Link
-            href="/"
+            href={backHref}
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             <ArrowLeft className="size-4" />

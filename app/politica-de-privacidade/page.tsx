@@ -18,6 +18,29 @@ export const metadata: Metadata = {
   },
 };
 
-export default function PoliticaDePrivacidadePage() {
-  return <LegalDocumentPage document={privacyPolicy} />;
+type LegalPageProps = {
+  searchParams?: Promise<{
+    returnTo?: string | string[];
+  }>;
+};
+
+function getSafeReturnPath(value: string | string[] | undefined) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+
+  if (!candidate?.startsWith('/') || candidate.startsWith('//')) {
+    return '/';
+  }
+
+  return candidate;
+}
+
+export default async function PoliticaDePrivacidadePage({ searchParams }: LegalPageProps) {
+  const params = await searchParams;
+
+  return (
+    <LegalDocumentPage
+      document={privacyPolicy}
+      backHref={getSafeReturnPath(params?.returnTo)}
+    />
+  );
 }

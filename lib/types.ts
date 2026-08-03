@@ -18,6 +18,8 @@ export interface Property {
   type: string;
   auction_type?: string;
   auction_date?: string | null;
+  auction_first_date?: string | null;
+  auction_second_date?: string | null;
   status?: string;
   sqft?: number | null;
   built_area?: number | null;

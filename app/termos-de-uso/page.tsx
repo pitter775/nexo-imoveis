@@ -18,6 +18,29 @@ export const metadata: Metadata = {
   },
 };
 
-export default function TermosDeUsoPage() {
-  return <LegalDocumentPage document={termsOfUse} />;
+type LegalPageProps = {
+  searchParams?: Promise<{
+    returnTo?: string | string[];
+  }>;
+};
+
+function getSafeReturnPath(value: string | string[] | undefined) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+
+  if (!candidate?.startsWith('/') || candidate.startsWith('//')) {
+    return '/';
+  }
+
+  return candidate;
+}
+
+export default async function TermosDeUsoPage({ searchParams }: LegalPageProps) {
+  const params = await searchParams;
+
+  return (
+    <LegalDocumentPage
+      document={termsOfUse}
+      backHref={getSafeReturnPath(params?.returnTo)}
+    />
+  );
 }

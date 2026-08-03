@@ -256,6 +256,8 @@ export async function GET(request: NextRequest) {
       type: imovel.tipo_propriedade ?? 'Imovel',
       auction_type: imovel.tipo_leilao ?? 'Nao informado',
       auction_date: publicAuctionDate,
+      auction_first_date: imovel.data_primeiro_leilao ?? imovel.data_leilao,
+      auction_second_date: imovel.data_segundo_leilao,
       status: imovel.status ?? 'ativo',
       sqft: imovel.area_total == null ? null : Number(imovel.area_total),
       built_area:
