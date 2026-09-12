@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import { PublicMarketplace } from '@/app/page';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
-  getAbsoluteUrl,
   getPublicAbsoluteUrl,
   getSeoImageUrl,
   SITE_DESCRIPTION,
@@ -71,14 +70,35 @@ function formatCurrency(value: number | null | undefined) {
   });
 }
 
+function cleanText(value: string | null | undefined) {
+  return value
+    ?.replace(/\r\n/g, '\n')
+    .replace(/#{1,6}\s*/g, ' ')
+    .replace(/\*\*/g, '')
+    .replace(/[-*•]+\s*/g, ' ')
+    .replace(/[|_[\]{}<>~`]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function truncateText(value: string, maxLength: number) {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
 function buildPropertyDescription(property: NonNullable<Awaited<ReturnType<typeof getPropertySeoData>>>) {
+  const summary = cleanText(property.description);
   const parts = [
     property.type,
     property.location,
     formatCurrency(property.publicPrice),
   ].filter(Boolean);
+  const fallback = parts.join(' | ') || SITE_DESCRIPTION;
 
-  return property.description?.trim() || parts.join(' | ') || SITE_DESCRIPTION;
+  return truncateText(summary || fallback, 180);
 }
 
 export async function generateMetadata({
@@ -101,12 +121,20 @@ export async function generateMetadata({
   const locationLabel = property.location ? ` em ${property.location}` : '';
   const title = `${property.title}${locationLabel}`;
   const description = buildPropertyDescription(property);
-  const url = getAbsoluteUrl(`/imoveis/${property.id}`);
+  const url = getPublicAbsoluteUrl(`/imoveis/${property.id}`);
   const socialImageUrl = getPublicAbsoluteUrl(`/imoveis/${property.id}/opengraph-image`);
 
   return {
     title,
     description,
+    keywords: [
+      property.title,
+      property.type,
+      property.location,
+      'imovel em leilao',
+      'leilao de imoveis',
+      'Nexo Leiloes',
+    ].filter(Boolean),
     alternates: {
       canonical: url,
     },
@@ -138,7 +166,7 @@ export default async function ImovelDetailsPage({
 }: ImovelDetailsPageProps) {
   const { id } = await params;
   const property = await getPropertySeoData(id);
-  const propertyUrl = getAbsoluteUrl(`/imoveis/${id}`);
+  const propertyUrl = getPublicAbsoluteUrl(`/imoveis/${id}`);
   const structuredData = property
     ? {
         '@context': 'https://schema.org',
@@ -148,6 +176,7 @@ export default async function ImovelDetailsPage({
         url: propertyUrl,
         image: [property.imageUrl],
         category: property.type,
+        address: property.location || undefined,
         offers: property.publicPrice
           ? {
               '@type': 'Offer',

@@ -68,7 +68,7 @@ const INFRA_CHAT_WIDGET_ID = 'infra-chat-widget';
 const INFRA_CHAT_WIDGET_SLUG = 'projeto-nexo-leiloes-chat';
 const INFRA_CHAT_API_BASE = 'https://www.infrastudio.pro';
 const INFRA_CHAT_AGENT = 'projeto-nexo-leiloes-assistente';
-const PUBLIC_SHARE_BASE_URL = 'https://nexo-imoveis.vercel.app';
+const PUBLIC_SHARE_BASE_URL = 'https://www.nexoleiloes.com.br';
 
 function buildInfraChatContext(propertyId: string) {
   return {
@@ -3145,18 +3145,42 @@ function formatDate(value: string | null | undefined) {
   }).format(date);
 }
 
+function cleanShareText(value: string | null | undefined) {
+  return value
+    ?.replace(/\r\n/g, '\n')
+    .replace(/#{1,6}\s*/g, ' ')
+    .replace(/\*\*/g, '')
+    .replace(/[-*•]+\s*/g, ' ')
+    .replace(/[|_[\]{}<>~`]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function truncateShareText(value: string, maxLength: number) {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
 function buildPublicPropertyUrl(propertyId: string) {
   return new URL(`/imoveis/${propertyId}`, PUBLIC_SHARE_BASE_URL).toString();
 }
 
 function buildPropertyShareText(property: Property, shareUrl: string) {
+  const summary = cleanShareText(property.description);
   const lines = [
     `${property.title} | Nexo Leiloes`,
+    summary ? `Resumo: ${truncateShareText(summary, 220)}` : null,
     property.location ? `Localizacao: ${property.location}` : null,
     property.price != null ? `Lance/valor: ${formatCurrency(property.price)}` : null,
+    property.discount_percent != null
+      ? `Desconto: ${property.discount_percent}% ${property.discount_basis_label ?? ''}`.trim()
+      : null,
     property.auction_date ? `Data do leilao: ${formatDate(property.auction_date)}` : null,
     '',
-    'Confira a oportunidade completa:',
+    'Confira a oportunidade completa com foto do imovel:',
     shareUrl,
   ];
 
