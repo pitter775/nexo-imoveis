@@ -51,6 +51,7 @@ import { BrandLogo } from '@/components/brand-logo';
 import { Property, User as UserType } from '@/lib/types';
 import { SiteFooter } from '@/components/site-footer';
 import { PropertyDescription } from '@/components/property-description';
+import { PUBLIC_SITE_URL, SITE_NAME } from '@/lib/site';
 
 type InfraChatWindow = Window & {
   InfraChat?: {
@@ -68,7 +69,7 @@ const INFRA_CHAT_WIDGET_ID = 'infra-chat-widget';
 const INFRA_CHAT_WIDGET_SLUG = 'projeto-nexo-leiloes-chat';
 const INFRA_CHAT_API_BASE = 'https://www.infrastudio.pro';
 const INFRA_CHAT_AGENT = 'projeto-nexo-leiloes-assistente';
-const PUBLIC_SHARE_BASE_URL = 'https://www.nexoleiloes.com.br';
+const PUBLIC_SHARE_BASE_URL = PUBLIC_SITE_URL;
 
 function buildInfraChatContext(propertyId: string) {
   return {
@@ -366,6 +367,20 @@ const FAQ_ITEMS = [
       'Alguns leilões permitem parcelamento e outros exigem pagamento à vista. Essa condição sempre é informada no relatório do imóvel.',
   },
 ] as const;
+
+const HOME_FAQ_STRUCTURED_DATA = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  '@id': `${PUBLIC_SHARE_BASE_URL}/#faq`,
+  mainEntity: FAQ_ITEMS.map((item) => ({
+    '@type': 'Question',
+    name: item.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: item.answer,
+    },
+  })),
+};
 
 type PublicMarketplaceProps = {
   initialView?: 'home' | 'listings' | 'details';
@@ -743,6 +758,12 @@ export function PublicMarketplace({
 
   return (
     <div className="min-h-screen bg-[#f6f7f8] font-sans text-slate-900 selection:bg-primary/30">
+      {initialView === 'home' ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_FAQ_STRUCTURED_DATA) }}
+        />
+      ) : null}
       <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto grid h-16 max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-6 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-start">
@@ -1247,10 +1268,10 @@ function HomeView({
   }
 
   return (
-    <div className="space-y-12 pb-12">
+    <div className="flex flex-col gap-12 pb-12">
       <section
         id="topo"
-        className="flex scroll-mt-24 flex-col items-center gap-12 py-6 lg:flex-row"
+        className="order-1 flex scroll-mt-24 flex-col items-center gap-12 py-6 lg:flex-row"
       >
         <div className="flex-1 space-y-3">
           <div className="inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-accent">
@@ -1349,7 +1370,7 @@ function HomeView({
         </div>
       </section>
 
-      <section className="scroll-mt-24">
+      <section className="order-3 scroll-mt-24 lg:order-2">
         <div className="mb-8 space-y-3">
           <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
             Diferenciais
@@ -1390,7 +1411,7 @@ function HomeView({
         </div>
       </section>
 
-      <section className="scroll-mt-24" id="institucional">
+      <section className="order-4 scroll-mt-24 lg:order-3" id="institucional">
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="rounded-[2.25rem] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-8 text-white shadow-sm sm:p-10">
             <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
@@ -1444,7 +1465,7 @@ function HomeView({
         </div>
       </section>
 
-      <section className="scroll-mt-24" id="planos">
+      <section className="order-2 scroll-mt-24 lg:order-4" id="planos">
         <div className="mb-8 max-w-3xl space-y-3">
           <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
             Oportunidades de imóveis
@@ -1506,7 +1527,7 @@ function HomeView({
         )}
       </section>
 
-      <section className="scroll-mt-24" id="servicos">
+      <section className="order-5 scroll-mt-24" id="servicos">
         <div className="mb-8 max-w-3xl space-y-3">
           <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
             Como funciona
@@ -1557,7 +1578,7 @@ function HomeView({
 
       <section
         id="sobre"
-        className="scroll-mt-24 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-sm"
+        className="order-6 scroll-mt-24 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-sm"
       >
         <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr]">
           <div className="relative p-8 sm:p-10">
@@ -1676,7 +1697,7 @@ function HomeView({
       </section>
 
       <section
-        className="scroll-mt-24 rounded-[2.25rem] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-8 shadow-sm sm:p-10"
+        className="order-7 scroll-mt-24 rounded-[2.25rem] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-8 shadow-sm sm:p-10"
         id="servicos-diferenciais"
       >
         <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
@@ -1732,7 +1753,7 @@ function HomeView({
 
       <section
         id="faq"
-        className="scroll-mt-24 rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10"
+        className="order-8 scroll-mt-24 rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10"
       >
         <div className="mb-8 max-w-3xl space-y-3">
           <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">
@@ -2400,9 +2421,8 @@ function PropertyDetailsView({
 
   const handleShareProperty = async () => {
     const shareData = {
-      title: `${property.title} | Nexo Leiloes`,
+      title: `${property.title} | ${SITE_NAME}`,
       text: sharePostText,
-      url: shareUrl,
     };
 
     try {
@@ -3171,7 +3191,7 @@ function buildPublicPropertyUrl(propertyId: string) {
 function buildPropertyShareText(property: Property, shareUrl: string) {
   const summary = cleanShareText(property.description);
   const lines = [
-    `${property.title} | Nexo Leiloes`,
+    `${property.title} | ${SITE_NAME}`,
     summary ? `Resumo: ${truncateShareText(summary, 220)}` : null,
     property.location ? `Localizacao: ${property.location}` : null,
     property.price != null ? `Lance/valor: ${formatCurrency(property.price)}` : null,

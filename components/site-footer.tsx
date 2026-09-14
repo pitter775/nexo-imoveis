@@ -12,6 +12,7 @@ import {
   PlayCircle,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
+import { SITE_ADDRESS, SITE_EMAIL, SITE_PHONE } from '@/lib/site';
 
 type SiteFooterProps = {
   onNavigate?: (sectionId: string) => void;
@@ -93,9 +94,9 @@ export function SiteFooter({ onNavigate }: SiteFooterProps) {
               <MapPin className="size-4" />
             </span>
             <p>
-              Praca Samuel Sabatini, 226 - Centro
+              {SITE_ADDRESS.streetAddress}
               <br />
-              Sao Bernardo do Campo/SP
+              {SITE_ADDRESS.addressLocality}/{SITE_ADDRESS.addressRegion}
             </p>
           </div>
         </div>
@@ -109,13 +110,13 @@ export function SiteFooter({ onNavigate }: SiteFooterProps) {
               <span className="inline-flex size-9 items-center justify-center rounded-2xl bg-slate-900 text-primary">
                 <MessageCircle className="size-4" />
               </span>
-              (11) 91675-1213
+              {SITE_PHONE.replace('+55 ', '(').replace(' 9', ') 9')}
             </p>
             <p className="flex items-center gap-3">
               <span className="inline-flex size-9 items-center justify-center rounded-2xl bg-slate-900 text-primary">
                 <Mail className="size-4" />
               </span>
-              contato@nexoleiloes.com.br
+              {SITE_EMAIL}
             </p>
           </div>
           <div className="mt-5 flex flex-wrap gap-3 text-sm font-semibold text-slate-200">

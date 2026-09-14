@@ -1,7 +1,8 @@
 import { ImageResponse } from 'next/og';
+import { SITE_NAME } from '@/lib/site';
 
 export const runtime = 'edge';
-export const alt = 'Imovel em leilao na Nexo Leiloes';
+export const alt = `Imóvel em leilão na ${SITE_NAME}`;
 export const size = {
   width: 1200,
   height: 630,
@@ -165,7 +166,7 @@ export default async function OpenGraphImage({ params }: OpenGraphImageProps) {
               >
                 N
               </div>
-              Nexo Leiloes
+              {SITE_NAME}
             </div>
             <div
               style={{

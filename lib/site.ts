@@ -1,8 +1,18 @@
-export const SITE_NAME = 'Nexo Leiloes';
+export const SITE_NAME = 'Nexo Leilões';
 export const SITE_DESCRIPTION =
-  'Marketplace de imoveis em leilao com curadoria, analise juridica e oportunidades publicas.';
+  'Imóveis em leilão com curadoria, análise jurídica e oportunidades selecionadas em São Bernardo do Campo e região.';
 export const SITE_OG_IMAGE_PATH = '/images/analise-imovel.png';
 export const PUBLIC_SITE_URL = 'https://www.nexoleiloes.com.br';
+export const SITE_EMAIL = 'contato@nexoleiloes.com.br';
+export const SITE_PHONE = '+55 11 91675-1213';
+export const SITE_WHATSAPP_URL = 'https://wa.me/5511916751213';
+export const SITE_ADDRESS = {
+  streetAddress: 'Praça Samuel Sabatini, 226 - Centro',
+  addressLocality: 'São Bernardo do Campo',
+  addressRegion: 'SP',
+  addressCountry: 'BR',
+};
+export const SITE_SAME_AS = ['https://www.instagram.com/nexoleiloes/'];
 
 function normalizeSiteUrl(value: string) {
   if (/^https?:\/\//i.test(value)) {

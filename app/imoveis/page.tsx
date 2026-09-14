@@ -3,9 +3,9 @@ import { PublicMarketplace } from '@/app/page';
 import { getPublicAbsoluteUrl, getSeoImageUrl, SITE_DESCRIPTION, SITE_NAME } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: `Imoveis em leilao | ${SITE_NAME}`,
+  title: `Imóveis em leilão | ${SITE_NAME}`,
   description:
-    'Encontre imoveis em leilao analisados pela Nexo, com oportunidades selecionadas e informacoes para tomada de decisao.',
+    'Encontre imóveis em leilão analisados pela Nexo, com oportunidades selecionadas e informações para tomada de decisão.',
   alternates: {
     canonical: getPublicAbsoluteUrl('/imoveis'),
   },
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     type: 'website',
     url: getPublicAbsoluteUrl('/imoveis'),
     siteName: SITE_NAME,
-    title: `Imoveis em leilao | ${SITE_NAME}`,
+    title: `Imóveis em leilão | ${SITE_NAME}`,
     description: SITE_DESCRIPTION,
     images: [
       {
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `Imoveis em leilao | ${SITE_NAME}`,
+    title: `Imóveis em leilão | ${SITE_NAME}`,
     description: SITE_DESCRIPTION,
     images: [getSeoImageUrl()],
   },

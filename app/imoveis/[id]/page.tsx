@@ -122,7 +122,7 @@ export async function generateMetadata({
   const title = `${property.title}${locationLabel}`;
   const description = buildPropertyDescription(property);
   const url = getPublicAbsoluteUrl(`/imoveis/${property.id}`);
-  const socialImageUrl = getPublicAbsoluteUrl(`/imoveis/${property.id}/opengraph-image`);
+  const socialImageUrl = property.imageUrl;
 
   return {
     title,
@@ -133,7 +133,7 @@ export async function generateMetadata({
       property.location,
       'imovel em leilao',
       'leilao de imoveis',
-      'Nexo Leiloes',
+      'Nexo Leilões',
     ].filter(Boolean),
     alternates: {
       canonical: url,

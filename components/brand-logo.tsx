@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Home } from 'lucide-react';
+import { SITE_NAME } from '@/lib/site';
 
 type BrandLogoProps = {
   href?: string;
@@ -31,11 +32,11 @@ export function BrandLogo({
             compact ? 'text-lg' : 'text-xl'
           }`}
         >
-          Nexo Leiloes
+          {SITE_NAME}
         </p>
         {!compact ? (
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-            Leiloes Imobiliarios
+            Leilões Imobiliários
           </p>
         ) : null}
       </div>
