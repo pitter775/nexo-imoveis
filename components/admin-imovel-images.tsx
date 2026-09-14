@@ -16,6 +16,10 @@ type AdminImovelImagesProps = {
   initialImages: ImovelImagem[];
 };
 
+const MIN_TARGET_IMAGE_BYTES = 500 * 1024;
+const MAX_TARGET_IMAGE_BYTES = 800 * 1024;
+const MAX_IMAGE_DIMENSION = 2400;
+
 export function AdminImovelImages({
   imovelId,
   initialImages,
@@ -39,11 +43,16 @@ export function AdminImovelImages({
 
       try {
         for (const [index, file] of Array.from(files).entries()) {
-          const fileName = `imovel-${imovelId}-${Date.now()}-${index}-${file.name}`;
+          const optimizedFile = await optimizeImageFile(file);
+          const fileName = `imovel-${imovelId}-${Date.now()}-${index}-${sanitizeImageFileName(
+            optimizedFile.name,
+          )}`;
 
           const { error: uploadError } = await supabase.storage
             .from('imoveis')
-            .upload(fileName, file);
+            .upload(fileName, optimizedFile, {
+              contentType: optimizedFile.type,
+            });
 
           if (uploadError) {
             throw uploadError;
@@ -298,4 +307,133 @@ function reorderUrls(
   nextImages.splice(targetIndex, 0, movedImage);
 
   return nextImages.map((image) => image.url);
+}
+
+async function optimizeImageFile(file: File) {
+  if (!file.type.startsWith('image/')) {
+    return file;
+  }
+
+  const image = await loadImage(file);
+  const bestBlob = await findBestImageBlob(image);
+
+  URL.revokeObjectURL(image.src);
+
+  if (!bestBlob || bestBlob.size >= file.size) {
+    return file;
+  }
+
+  return new File([bestBlob], replaceImageExtension(file.name), {
+    type: 'image/jpeg',
+    lastModified: Date.now(),
+  });
+}
+
+async function findBestImageBlob(image: HTMLImageElement) {
+  const originalMaxDimension = Math.max(image.naturalWidth, image.naturalHeight);
+  const dimensions = uniqueNumbers([
+    Math.min(originalMaxDimension, MAX_IMAGE_DIMENSION),
+    2200,
+    2000,
+    1800,
+    1600,
+    1400,
+  ]).filter((dimension) => dimension > 0 && dimension <= originalMaxDimension);
+  const qualities = [0.95, 0.92, 0.89, 0.86, 0.83, 0.8, 0.77, 0.74];
+  let bestUnderMax: Blob | null = null;
+  let smallestOverMax: Blob | null = null;
+
+  for (const dimension of dimensions) {
+    const scale = Math.min(1, dimension / originalMaxDimension);
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+
+    for (const quality of qualities) {
+      const blob = await renderImageToJpeg(image, width, height, quality);
+
+      if (blob.size >= MIN_TARGET_IMAGE_BYTES && blob.size <= MAX_TARGET_IMAGE_BYTES) {
+        return blob;
+      }
+
+      if (blob.size <= MAX_TARGET_IMAGE_BYTES) {
+        if (!bestUnderMax || blob.size > bestUnderMax.size) {
+          bestUnderMax = blob;
+        }
+      } else if (!smallestOverMax || blob.size < smallestOverMax.size) {
+        smallestOverMax = blob;
+      }
+    }
+  }
+
+  return bestUnderMax ?? smallestOverMax;
+}
+
+function uniqueNumbers(values: number[]) {
+  return [...new Set(values.map((value) => Math.round(value)))].sort(
+    (left, right) => right - left,
+  );
+}
+
+function loadImage(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = document.createElement('img');
+    image.onload = () => resolve(image);
+    image.onerror = () => {
+      URL.revokeObjectURL(image.src);
+      reject(new Error('Nao foi possivel otimizar a imagem.'));
+    };
+    image.src = URL.createObjectURL(file);
+  });
+}
+
+function renderImageToJpeg(
+  image: HTMLImageElement,
+  width: number,
+  height: number,
+  quality: number,
+) {
+  return new Promise<Blob>((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d', {
+      alpha: false,
+    });
+
+    if (!context) {
+      reject(new Error('Nao foi possivel preparar a imagem.'));
+      return;
+    }
+
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('Nao foi possivel comprimir a imagem.'));
+          return;
+        }
+
+        resolve(blob);
+      },
+      'image/jpeg',
+      quality,
+    );
+  });
+}
+
+function replaceImageExtension(fileName: string) {
+  return `${fileName.replace(/\.[^.]+$/, '')}.jpg`;
+}
+
+function sanitizeImageFileName(fileName: string) {
+  return replaceImageExtension(fileName)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
 }

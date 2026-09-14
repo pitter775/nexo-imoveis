@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { PublicMarketplace } from '@/app/page';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
+  getOptimizedSocialImageUrl,
   getPublicAbsoluteUrl,
   getSeoImageUrl,
   SITE_DESCRIPTION,
@@ -122,7 +123,7 @@ export async function generateMetadata({
   const title = `${property.title}${locationLabel}`;
   const description = buildPropertyDescription(property);
   const url = getPublicAbsoluteUrl(`/imoveis/${property.id}`);
-  const socialImageUrl = property.imageUrl;
+  const socialImageUrl = getOptimizedSocialImageUrl(property.imageUrl);
 
   return {
     title,

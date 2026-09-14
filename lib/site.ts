@@ -52,3 +52,13 @@ export function getPublicAbsoluteUrl(path = '/') {
 export function getSeoImageUrl(path = SITE_OG_IMAGE_PATH) {
   return getPublicAbsoluteUrl(path);
 }
+
+export function getOptimizedSocialImageUrl(imageUrl: string | null | undefined) {
+  if (!imageUrl) {
+    return getSeoImageUrl();
+  }
+
+  return getPublicAbsoluteUrl(
+    `/_next/image?url=${encodeURIComponent(imageUrl)}&w=1200&q=75`,
+  );
+}

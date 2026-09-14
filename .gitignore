@@ -9,3 +9,4 @@ coverage/
 .next
 node_modules
 tsconfig.tsbuildinfo
+scripts/optimized-images-backup-*.json
