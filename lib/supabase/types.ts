@@ -534,6 +534,7 @@ export type Database = {
           nome: string | null;
           email: string;
           telefone: string | null;
+          avatar_url: string | null;
           senha_hash: string | null;
           tipo_usuario: UserRole | null;
           ativo: boolean | null;
@@ -544,6 +545,7 @@ export type Database = {
           nome?: string | null;
           email: string;
           telefone?: string | null;
+          avatar_url?: string | null;
           senha_hash?: string | null;
           tipo_usuario?: UserRole | null;
           ativo?: boolean | null;
@@ -554,6 +556,7 @@ export type Database = {
           nome?: string | null;
           email?: string;
           telefone?: string | null;
+          avatar_url?: string | null;
           senha_hash?: string | null;
           tipo_usuario?: UserRole | null;
           ativo?: boolean | null;

@@ -855,11 +855,11 @@ export function PublicMarketplace({
                         aria-label="Abrir area da conta"
                         className="flex size-11 items-center justify-center transition hover:scale-[1.02]"
                       >
-                        <UserAvatar email={user.email} />
+                        <UserAvatar email={user.email} avatarUrl={user.avatar_url} />
                       </Link>
                     ) : (
                       <div className="flex size-11 items-center justify-center">
-                        <UserAvatar email={user.email} />
+                        <UserAvatar email={user.email} avatarUrl={user.avatar_url} />
                       </div>
                     )}
                     <button
@@ -3077,8 +3077,28 @@ function AdminEditPropertyLink({
   );
 }
 
-function UserAvatar({ email }: { email: string }) {
+function UserAvatar({
+  avatarUrl,
+  email,
+}: {
+  avatarUrl?: string | null;
+  email: string;
+}) {
   const initial = email.trim().charAt(0).toUpperCase() || 'U';
+
+  if (avatarUrl) {
+    return (
+      <div className="ml-auto relative size-8 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
+        <Image
+          src={avatarUrl}
+          alt="Foto do usuario"
+          fill
+          className="object-cover"
+          unoptimized
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="ml-auto flex size-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">

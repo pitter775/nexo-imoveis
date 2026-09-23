@@ -17,6 +17,7 @@ type UsuarioFormValues = {
   nome?: string | null;
   email?: string;
   telefone?: string | null;
+  avatar_url?: string | null;
   tipo_usuario?: 'admin' | 'cliente' | null;
   ativo?: boolean | null;
   created_at?: string | null;
@@ -63,7 +64,10 @@ export function AdminUsuarioForm({
           <aside className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
             <div className="mx-auto relative h-24 w-24 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white">
               <Image
-                src={`https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(avatarSeed)}&backgroundType=gradientLinear`}
+                src={
+                  initialValues?.avatar_url ||
+                  `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(avatarSeed)}&backgroundType=gradientLinear`
+                }
                 alt="Avatar do usuario"
                 fill
                 className="object-cover"
@@ -75,11 +79,13 @@ export function AdminUsuarioForm({
                 {initialValues?.nome || 'Novo usuario'}
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                Avatar automatico gerado pelo nome/email.
+                {initialValues?.avatar_url
+                  ? 'Foto importada do login com Google.'
+                  : 'Avatar automatico gerado pelo nome/email.'}
               </p>
             </div>
             <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-xs leading-5 text-slate-500">
-              O schema atual de <code>users</code> nao possui campo para foto, entao o modulo usa avatar gerado automaticamente.
+              Quando o usuario entra com Google, a foto do perfil fica salva em <code>avatar_url</code>.
             </div>
           </aside>
 

@@ -278,6 +278,10 @@ function getSortableValue(usuario: UsuarioRecord, key: SortKey) {
 }
 
 function getAvatarUrl(usuario: UsuarioRecord) {
+  if (usuario.avatar_url) {
+    return usuario.avatar_url;
+  }
+
   const seed = encodeURIComponent(usuario.email || usuario.nome || usuario.id);
   return `https://api.dicebear.com/9.x/initials/svg?seed=${seed}&backgroundType=gradientLinear`;
 }

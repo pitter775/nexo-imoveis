@@ -13,6 +13,7 @@ type GoogleProfile = {
   sub?: string;
   email?: string;
   name?: string;
+  picture?: string;
 };
 
 function getSessionSecret() {
@@ -120,6 +121,7 @@ export async function completeGoogleCallback(searchParams: URLSearchParams) {
   const user = await loginOrCreateGoogleUser({
     email: profile.email,
     nome: profile.name?.trim() || profile.email.split('@')[0],
+    avatarUrl: profile.picture?.trim() || null,
   });
 
   if (!user) {

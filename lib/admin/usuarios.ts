@@ -7,6 +7,7 @@ export type UsuarioRecord = {
   nome: string | null;
   email: string;
   telefone: string | null;
+  avatar_url: string | null;
   senha_hash: string | null;
   tipo_usuario: 'admin' | 'cliente' | null;
   ativo: boolean | null;
@@ -26,10 +27,26 @@ export async function listUsuarios() {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('users')
-    .select('id, nome, email, telefone, senha_hash, tipo_usuario, ativo, created_at')
+    .select('id, nome, email, telefone, avatar_url, senha_hash, tipo_usuario, ativo, created_at')
     .order('created_at', { ascending: false });
 
   if (error) {
+    if (isMissingAvatarColumn(error.message)) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('users')
+        .select('id, nome, email, telefone, senha_hash, tipo_usuario, ativo, created_at')
+        .order('created_at', { ascending: false });
+
+      if (fallbackError) {
+        throw new Error(`Failed to list users: ${fallbackError.message}`);
+      }
+
+      return ((fallbackData ?? []) as Omit<UsuarioRecord, 'avatar_url'>[]).map((usuario) => ({
+        ...usuario,
+        avatar_url: null,
+      }));
+    }
+
     if (isMissingTelefoneColumn(error.message)) {
       const { data: fallbackData, error: fallbackError } = await supabase
         .from('users')
@@ -43,6 +60,7 @@ export async function listUsuarios() {
       return ((fallbackData ?? []) as Omit<UsuarioRecord, 'telefone'>[]).map((usuario) => ({
         ...usuario,
         telefone: null,
+        avatar_url: null,
       }));
     }
 
@@ -56,11 +74,25 @@ export async function getUsuarioById(id: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('users')
-    .select('id, nome, email, telefone, senha_hash, tipo_usuario, ativo, created_at')
+    .select('id, nome, email, telefone, avatar_url, senha_hash, tipo_usuario, ativo, created_at')
     .eq('id', id)
     .maybeSingle();
 
   if (error) {
+    if (isMissingAvatarColumn(error.message)) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('users')
+        .select('id, nome, email, telefone, senha_hash, tipo_usuario, ativo, created_at')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (fallbackError) {
+        throw new Error(`Failed to fetch user: ${fallbackError.message}`);
+      }
+
+      return fallbackData ? ({ ...fallbackData, avatar_url: null } as UsuarioRecord) : null;
+    }
+
     if (isMissingTelefoneColumn(error.message)) {
       const { data: fallbackData, error: fallbackError } = await supabase
         .from('users')
@@ -101,4 +133,8 @@ export async function updateUsuario(id: string, input: UsuarioInput) {
 
 function isMissingTelefoneColumn(message: string) {
   return message.toLowerCase().includes('telefone');
+}
+
+function isMissingAvatarColumn(message: string) {
+  return message.toLowerCase().includes('avatar_url');
 }

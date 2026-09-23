@@ -63,6 +63,7 @@ export interface User {
   id: number | string;
   nome?: string | null;
   email: string;
+  avatar_url?: string | null;
   role?: string;
   tipo_usuario?: 'admin' | 'cliente';
   is_premium?: number;
@@ -77,5 +78,6 @@ export interface AppUserProfile {
   id: string;
   nome?: string | null;
   email: string;
+  avatar_url?: string | null;
   tipo_usuario: 'admin' | 'cliente';
 }
