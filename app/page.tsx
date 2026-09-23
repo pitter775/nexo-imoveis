@@ -559,6 +559,27 @@ export function PublicMarketplace({
     setActiveChatPropertyId(null);
   }, [activeChatPropertyId, selectedProperty]);
 
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      view !== 'details' ||
+      !selectedProperty ||
+      !user
+    ) {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+
+    if (url.searchParams.get('chat') !== '1') {
+      return;
+    }
+
+    setActiveChatPropertyId(selectedProperty.id);
+    url.searchParams.delete('chat');
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [selectedProperty, user, view]);
+
   const handleMenuNavigation = (sectionId: string) => {
     cleanupInfraChatWidget();
     setIsMenuOpen(false);
@@ -2411,7 +2432,9 @@ function PropertyDetailsView({
     }
 
     if (!user) {
-      window.location.href = `/login?redirectTo=${encodeURIComponent(`/imoveis/${property.id}`)}`;
+      window.location.href = `/login?redirectTo=${encodeURIComponent(
+        `/imoveis/${property.id}?chat=1`,
+      )}`;
       return;
     }
 
