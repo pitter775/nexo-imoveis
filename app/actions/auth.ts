@@ -69,8 +69,8 @@ export async function registerAction(
   const acceptedTerms = formData.get('acceptedTerms') === 'on';
   const redirectTo = String(formData.get('redirectTo') ?? '/');
 
-  if (!nome || !email || !telefone || !password) {
-    return { error: 'Preencha nome, e-mail, telefone e senha para continuar.' };
+  if (!nome || !email || !password) {
+    return { error: 'Preencha nome, e-mail e senha para continuar.' };
   }
 
   if (password.length < 6) {
@@ -88,7 +88,7 @@ export async function registerAction(
     .insert({
       nome,
       email,
-      telefone,
+      telefone: telefone || null,
       senha_hash,
       tipo_usuario: 'cliente',
       ativo: true,

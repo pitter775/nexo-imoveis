@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useActionState } from 'react';
-import { Chrome, LoaderCircle, LockKeyhole, Mail, ShieldCheck, UserPlus } from 'lucide-react';
+import { LoaderCircle, LockKeyhole, Mail, ShieldCheck, UserPlus } from 'lucide-react';
 import { loginAction, type LoginFormState } from '@/app/actions/auth';
+import { GoogleIcon } from '@/components/google-icon';
 
 const initialState: LoginFormState = {};
 
@@ -50,7 +51,7 @@ export function LoginForm({ redirectTo = '/' }: LoginFormProps) {
         href={googleHref}
         className="mb-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-primary/30 hover:text-primary"
       >
-        <Chrome className="size-4" />
+        <GoogleIcon />
         Entrar com Google
       </Link>
 

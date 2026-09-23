@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useActionState } from 'react';
-import { Chrome, LoaderCircle, LockKeyhole, Mail, Phone, ShieldCheck, UserRound } from 'lucide-react';
+import { LoaderCircle, LockKeyhole, Mail, Phone, ShieldCheck, UserRound } from 'lucide-react';
 import { registerAction, type RegisterFormState } from '@/app/actions/auth';
+import { GoogleIcon } from '@/components/google-icon';
 
 const initialState: RegisterFormState = {};
 
@@ -50,7 +51,7 @@ export function RegisterForm({ redirectTo = '/' }: RegisterFormProps) {
         href={googleHref}
         className="mb-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-primary/30 hover:text-primary"
       >
-        <Chrome className="size-4" />
+        <GoogleIcon />
         Cadastrar com Google
       </Link>
 
@@ -87,7 +88,6 @@ export function RegisterForm({ redirectTo = '/' }: RegisterFormProps) {
           type="tel"
           placeholder="(11) 99999-9999"
           autoComplete="tel"
-          required
         />
         <RegisterField
           icon={<LockKeyhole className="size-4 text-slate-400" />}
