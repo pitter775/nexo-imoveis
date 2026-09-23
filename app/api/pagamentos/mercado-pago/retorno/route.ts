@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const pagamentoId = url.searchParams.get('pagamentoId')?.trim() ?? null;
+  const preferenceId = url.searchParams.get('preference_id')?.trim() ?? null;
   const paymentId =
     url.searchParams.get('payment_id')?.trim() ||
     url.searchParams.get('collection_id')?.trim() ||
@@ -23,14 +24,14 @@ export async function GET(request: Request) {
       approved = result.approved;
     }
 
-    if (!imovelId && pagamentoId) {
-      const supabase = createAdminClient();
-      const { data } = await supabase
-        .from('pagamentos_itens')
-        .select('imovel_id')
-        .eq('pagamento_id', pagamentoId)
-        .maybeSingle();
-      imovelId = data?.imovel_id ?? null;
+    if (!imovelId) {
+      const resolved = await resolvePaymentReturn({
+        pagamentoId,
+        preferenceId,
+      });
+
+      imovelId = resolved.imovelId;
+      approved = approved || resolved.approved;
     }
   } catch (error) {
     console.error('[mercado-pago] return sync failed', error);
@@ -41,4 +42,53 @@ export async function GET(request: Request) {
     : '/imoveis?payment=pending';
 
   return NextResponse.redirect(getPublicAbsoluteUrl(destination));
+}
+
+async function resolvePaymentReturn({
+  pagamentoId,
+  preferenceId,
+}: {
+  pagamentoId: string | null;
+  preferenceId: string | null;
+}) {
+  const supabase = createAdminClient();
+  let resolvedPagamentoId = pagamentoId;
+  let approved = false;
+
+  if (!resolvedPagamentoId && preferenceId) {
+    const { data: pagamento } = await supabase
+      .from('pagamentos')
+      .select('id, status')
+      .eq('referencia_gateway', preferenceId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    resolvedPagamentoId = pagamento?.id ?? null;
+    approved = ['pago', 'aprovado', 'concluido'].includes(pagamento?.status ?? '');
+  }
+
+  if (!resolvedPagamentoId) {
+    return { imovelId: null, approved };
+  }
+
+  const [{ data: item }, { data: pagamento }] = await Promise.all([
+    supabase
+      .from('pagamentos_itens')
+      .select('imovel_id')
+      .eq('pagamento_id', resolvedPagamentoId)
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('pagamentos')
+      .select('status')
+      .eq('id', resolvedPagamentoId)
+      .maybeSingle(),
+  ]);
+
+  return {
+    imovelId: item?.imovel_id ?? null,
+    approved:
+      approved || ['pago', 'aprovado', 'concluido'].includes(pagamento?.status ?? ''),
+  };
 }

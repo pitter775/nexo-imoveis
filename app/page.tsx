@@ -2413,6 +2413,7 @@ function PropertyDetailsView({
   const [similarPage, setSimilarPage] = useState(0);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
   const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
+  const autoCheckoutStartedRef = useRef(false);
 
   useEffect(() => {
     setActiveImage(property.image_url);
@@ -2421,6 +2422,7 @@ function PropertyDetailsView({
     setSimilarPage(0);
     setShareFeedback(null);
     setIsCreatingCheckout(false);
+    autoCheckoutStartedRef.current = false;
   }, [hasPremiumAccess, property.id, property.image_url]);
 
   const gallery = property.images?.length ? property.images : [property.image_url];
@@ -2483,7 +2485,7 @@ function PropertyDetailsView({
 
     if (!user) {
       window.location.href = `/login?redirectTo=${encodeURIComponent(
-        `/imoveis/${property.id}?chat=1`,
+        `/imoveis/${property.id}?pay=1`,
       )}`;
       return;
     }
@@ -2535,6 +2537,29 @@ function PropertyDetailsView({
       setIsCreatingCheckout(false);
     }
   };
+
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      !user ||
+      hasPremiumAccess ||
+      isCreatingCheckout ||
+      autoCheckoutStartedRef.current
+    ) {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+
+    if (url.searchParams.get('pay') !== '1') {
+      return;
+    }
+
+    autoCheckoutStartedRef.current = true;
+    url.searchParams.delete('pay');
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    void handleUnlockInformation();
+  }, [handleUnlockInformation, hasPremiumAccess, isCreatingCheckout, user]);
 
   const handleShareProperty = async () => {
     const shareData = {

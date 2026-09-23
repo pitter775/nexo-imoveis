@@ -22,6 +22,7 @@ export async function userHasActivePropertyAccess(userId: string, imovelId: stri
     .eq('user_id', userId)
     .eq('imovel_id', imovelId)
     .eq('status', 'ativo')
+    .limit(1)
     .maybeSingle();
 
   if (error) {
