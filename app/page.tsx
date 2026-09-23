@@ -621,8 +621,21 @@ export function PublicMarketplace({
       return;
     }
 
+    setProperties((currentProperties) =>
+      currentProperties.map((property) =>
+        property.id === selectedProperty.id
+          ? { ...property, has_premium_access: true }
+          : property,
+      ),
+    );
+    setSelectedProperty((currentProperty) =>
+      currentProperty?.id === selectedProperty.id
+        ? { ...currentProperty, has_premium_access: true }
+        : currentProperty,
+    );
     setActiveChatPropertyId(selectedProperty.id);
     url.searchParams.delete('chat');
+    url.searchParams.delete('payment');
     window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
     setCurrentPath(url.pathname);
   }, [selectedProperty, user, view]);
@@ -2413,7 +2426,15 @@ function PropertyDetailsView({
   const [similarPage, setSimilarPage] = useState(0);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
   const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
+  const [paymentState, setPaymentState] = useState<'idle' | 'pending' | 'approved'>('idle');
   const autoCheckoutStartedRef = useRef(false);
+
+  const markPropertyAsUnlocked = () => {
+    setPaymentState('approved');
+    setHasUnlockedPremium(true);
+    setActivePremiumTab('dossie');
+    onUnlockInformation();
+  };
 
   useEffect(() => {
     setActiveImage(property.image_url);
@@ -2422,8 +2443,32 @@ function PropertyDetailsView({
     setSimilarPage(0);
     setShareFeedback(null);
     setIsCreatingCheckout(false);
+    setPaymentState('idle');
     autoCheckoutStartedRef.current = false;
   }, [hasPremiumAccess, property.id, property.image_url]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    const payment = url.searchParams.get('payment');
+
+    if (payment === 'pending') {
+      setPaymentState('pending');
+      setShareFeedback('Pagamento recebido pelo Mercado Pago e aguardando confirmacao.');
+      url.searchParams.delete('payment');
+      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+      return;
+    }
+
+    if (payment === 'approved') {
+      markPropertyAsUnlocked();
+      url.searchParams.delete('payment');
+      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+  }, [property.id]);
 
   const gallery = property.images?.length ? property.images : [property.image_url];
   const SIMILAR_PROPERTIES_PER_PAGE = 3;
@@ -2511,9 +2556,7 @@ function PropertyDetailsView({
       }
 
       if (payload.alreadyUnlocked) {
-        setHasUnlockedPremium(true);
-        setActivePremiumTab('dossie');
-        onUnlockInformation();
+        markPropertyAsUnlocked();
         return;
       }
 
@@ -2560,6 +2603,37 @@ function PropertyDetailsView({
     window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
     void handleUnlockInformation();
   }, [handleUnlockInformation, hasPremiumAccess, isCreatingCheckout, user]);
+
+  useEffect(() => {
+    if (paymentState !== 'pending') {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const checkAccess = async () => {
+      try {
+        const response = await fetch('/api/imoveis', { cache: 'no-store' });
+        const payload = (await response.json()) as { properties?: Property[] };
+        const updatedProperty = payload.properties?.find((item) => item.id === property.id);
+
+        if (!isCancelled && updatedProperty?.has_premium_access) {
+          markPropertyAsUnlocked();
+          setShareFeedback('Pagamento confirmado. Informações liberadas.');
+        }
+      } catch (error) {
+        console.error('Falha ao verificar liberacao do pagamento', error);
+      }
+    };
+
+    void checkAccess();
+    const intervalId = window.setInterval(checkAccess, 4000);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [paymentState, property.id]);
 
   const handleShareProperty = async () => {
     const shareData = {
@@ -2760,12 +2834,19 @@ function PropertyDetailsView({
                 type="button"
                 onClick={handleUnlockInformation}
                 disabled={isCreatingCheckout}
-                className="w-full rounded-xl bg-primary py-4 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
+                className={[
+                  'w-full rounded-xl bg-primary py-4 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70',
+                  paymentState === 'pending' ? 'animate-pulse' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
               >
                 {hasPremiumAccess
-                  ? 'Ver informações liberadas'
+                  ? 'Informações liberadas'
                   : isCreatingCheckout
                     ? 'Gerando pagamento...'
+                    : paymentState === 'pending'
+                      ? 'Pagamento em análise'
                     : 'Solicitar Informações - R$ 0,50'}
               </button>
               {isAdmin ? (
