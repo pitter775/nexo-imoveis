@@ -26,17 +26,12 @@ export default async function DashboardPage() {
     <main className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
-          <Link href="/" className="flex items-center gap-3">
-            <BrandLogo className="size-11" />
-            <div>
-              <p className="text-lg font-extrabold tracking-tight text-slate-950">
-                Nexo Leilões
-              </p>
-              <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-slate-400">
-                Área do cliente
-              </p>
-            </div>
-          </Link>
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <BrandLogo href="/" compact className="shrink-0" />
+            <span className="rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+              Área do cliente
+            </span>
+          </div>
 
           <div className="flex items-center gap-2">
             <Link
