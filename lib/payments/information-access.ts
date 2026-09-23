@@ -98,7 +98,7 @@ export async function syncInformationPayment(payment: MercadoPagoPayment): Promi
         status: 'ativo',
       });
 
-      if (accessError) {
+      if (accessError && accessError.code !== '23505') {
         throw new Error(`Failed to grant property access: ${accessError.message}`);
       }
     }

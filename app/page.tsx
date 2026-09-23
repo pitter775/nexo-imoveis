@@ -960,6 +960,13 @@ export function PublicMarketplace({
                             Ambiente administrativo
                           </Link>
                         ) : null}
+                        <Link
+                          href="/dashboard"
+                          className="flex items-center gap-3 rounded-[1.1rem] px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                        >
+                          <Home className="size-4 text-primary" />
+                          Meus imóveis
+                        </Link>
                         <form action={logoutAction} className="mt-1">
                           <button
                             type="submit"
@@ -1032,6 +1039,16 @@ export function PublicMarketplace({
                       Ambiente administrativo
                     </Link>
                   ) : null}
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    <span className="inline-flex size-9 items-center justify-center rounded-xl bg-white shadow-sm">
+                      <Home className="size-4" />
+                    </span>
+                    Meus imóveis
+                  </Link>
                   <form action={logoutAction}>
                     <button
                       type="submit"
