@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { getMercadoPagoPayment } from '@/lib/payments/mercado-pago';
 import { syncInformationPayment } from '@/lib/payments/information-access';
 
@@ -49,6 +50,10 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const paymentId = getPaymentIdFromBody(body) || getPaymentIdFromUrl(url);
 
+  if (!isValidWebhookSignature(request, paymentId)) {
+    return NextResponse.json({ ok: false }, { status: 401 });
+  }
+
   if (paymentId) {
     await syncPaymentById(paymentId);
   }
@@ -62,5 +67,48 @@ async function syncPaymentById(paymentId: string) {
     await syncInformationPayment(payment);
   } catch (error) {
     console.error('[mercado-pago] webhook sync failed', error);
+  }
+}
+
+function isValidWebhookSignature(request: Request, paymentId: string | null) {
+  const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET?.trim();
+
+  if (!secret) {
+    return true;
+  }
+
+  const signatureHeader = request.headers.get('x-signature');
+  const requestId = request.headers.get('x-request-id');
+
+  if (!paymentId || !signatureHeader || !requestId) {
+    return false;
+  }
+
+  const signatureParts = new Map(
+    signatureHeader.split(',').map((part) => {
+      const [key, value] = part.split('=');
+      return [key?.trim(), value?.trim()];
+    }),
+  );
+  const timestamp = signatureParts.get('ts');
+  const signature = signatureParts.get('v1');
+
+  if (!timestamp || !signature) {
+    return false;
+  }
+
+  const manifest = `id:${paymentId};request-id:${requestId};ts:${timestamp};`;
+  const expected = createHmac('sha256', secret).update(manifest).digest('hex');
+
+  try {
+    const expectedBuffer = Buffer.from(expected, 'hex');
+    const signatureBuffer = Buffer.from(signature, 'hex');
+
+    return (
+      expectedBuffer.length === signatureBuffer.length &&
+      timingSafeEqual(expectedBuffer, signatureBuffer)
+    );
+  } catch {
+    return false;
   }
 }
