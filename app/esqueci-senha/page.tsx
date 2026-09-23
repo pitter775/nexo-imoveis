@@ -1,24 +1,24 @@
 import type { Metadata } from 'next';
 import { redirectIfAuthenticated } from '@/lib/auth';
 import { BrandLogo } from '@/components/brand-logo';
-import { RegisterForm } from '@/components/register-form';
+import { ForgotPasswordForm } from '@/components/forgot-password-form';
 import { SiteFooter } from '@/components/site-footer';
 
 export const metadata: Metadata = {
-  title: 'Cadastro',
+  title: 'Recuperar senha',
   robots: {
     index: false,
     follow: false,
   },
 };
 
-type CadastroPageProps = {
+type ForgotPasswordPageProps = {
   searchParams: Promise<{
     redirectTo?: string;
   }>;
 };
 
-export default async function CadastroPage({ searchParams }: CadastroPageProps) {
+export default async function ForgotPasswordPage({ searchParams }: ForgotPasswordPageProps) {
   await redirectIfAuthenticated();
 
   const { redirectTo } = await searchParams;
@@ -32,16 +32,16 @@ export default async function CadastroPage({ searchParams }: CadastroPageProps) 
             <BrandLogo href="/" />
             <div className="space-y-4">
               <h2 className="text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl">
-                Oportunidades de leilão com análise e acompanhamento
+                Recupere seu acesso com segurança
               </h2>
               <p className="max-w-lg text-base leading-7 text-slate-600">
-                Crie sua conta para salvar seu acesso, solicitar informações e
-                acompanhar imóveis cadastrados pela equipe Nexo.
+                Enviaremos um link temporário para você criar uma nova senha e voltar
+                a acompanhar suas oportunidades.
               </p>
             </div>
           </section>
 
-          <RegisterForm redirectTo={redirectTo} />
+          <ForgotPasswordForm redirectTo={redirectTo} />
         </div>
       </main>
       <SiteFooter />

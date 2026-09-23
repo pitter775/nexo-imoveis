@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useActionState } from 'react';
-import { LoaderCircle, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
+import { Chrome, LoaderCircle, LockKeyhole, Mail, ShieldCheck, UserPlus } from 'lucide-react';
 import { loginAction, type LoginFormState } from '@/app/actions/auth';
 
 const initialState: LoginFormState = {};
@@ -13,6 +13,18 @@ type LoginFormProps = {
 
 export function LoginForm({ redirectTo = '/' }: LoginFormProps) {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
+  const registerHref =
+    redirectTo && redirectTo !== '/'
+      ? `/cadastro?redirectTo=${encodeURIComponent(redirectTo)}`
+      : '/cadastro';
+  const forgotPasswordHref =
+    redirectTo && redirectTo !== '/'
+      ? `/esqueci-senha?redirectTo=${encodeURIComponent(redirectTo)}`
+      : '/esqueci-senha';
+  const googleHref =
+    redirectTo && redirectTo !== '/'
+      ? `/api/auth/google/start?redirectTo=${encodeURIComponent(redirectTo)}`
+      : '/api/auth/google/start';
 
   return (
     <div className="w-full max-w-md rounded-[2rem] border border-white/60 bg-white/90 p-8 shadow-2xl shadow-slate-900/10 backdrop-blur">
@@ -34,6 +46,20 @@ export function LoginForm({ redirectTo = '/' }: LoginFormProps) {
         </div>
       </div>
 
+      <Link
+        href={googleHref}
+        className="mb-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-primary/30 hover:text-primary"
+      >
+        <Chrome className="size-4" />
+        Entrar com Google
+      </Link>
+
+      <div className="mb-5 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-300">
+        <span className="h-px flex-1 bg-slate-100" />
+        ou
+        <span className="h-px flex-1 bg-slate-100" />
+      </div>
+
       <form action={formAction} className="space-y-5">
         <input type="hidden" name="redirectTo" value={redirectTo} />
 
@@ -53,7 +79,15 @@ export function LoginForm({ redirectTo = '/' }: LoginFormProps) {
         </label>
 
         <label className="block space-y-2">
-          <span className="text-sm font-semibold text-slate-700">Senha</span>
+          <span className="flex items-center justify-between gap-3 text-sm font-semibold text-slate-700">
+            Senha
+            <Link
+              href={forgotPasswordHref}
+              className="text-xs font-bold text-primary hover:text-primary/80"
+            >
+              Esqueci minha senha
+            </Link>
+          </span>
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition focus-within:border-primary focus-within:bg-white focus-within:ring-4 focus-within:ring-primary/10">
             <LockKeyhole className="size-4 text-slate-400" />
             <input
@@ -83,11 +117,23 @@ export function LoginForm({ redirectTo = '/' }: LoginFormProps) {
         </button>
       </form>
 
-      <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-100 pt-5 text-sm text-slate-500">
-        <span>Acesso para clientes e equipe Nexo</span>
-        <Link href="/" className="font-semibold text-primary hover:text-primary/80">
-          Voltar ao site
-        </Link>
+      <div className="mt-6 space-y-4 border-t border-slate-100 pt-5 text-sm text-slate-500">
+        <div className="flex items-center justify-between gap-3">
+          <span>Novo por aqui?</span>
+          <Link
+            href={registerHref}
+            className="inline-flex items-center gap-2 font-semibold text-primary hover:text-primary/80"
+          >
+            <UserPlus className="size-4" />
+            Cadastrar
+          </Link>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span>Acesso para clientes e equipe Nexo</span>
+          <Link href="/" className="font-semibold text-primary hover:text-primary/80">
+            Voltar ao site
+          </Link>
+        </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500">
         <Link

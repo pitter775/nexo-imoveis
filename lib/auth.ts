@@ -83,6 +83,65 @@ export async function login(email: string, password: string) {
   return authenticatedUser;
 }
 
+export async function loginOrCreateGoogleUser({
+  email,
+  nome,
+}: {
+  email: string;
+  nome: string;
+}) {
+  const supabase = createAdminClient();
+  const normalizedEmail = email.trim().toLowerCase();
+  const existingUser = await getUserByEmail(normalizedEmail);
+
+  if (existingUser) {
+    if (existingUser.ativo !== true) {
+      return null;
+    }
+
+    if (!existingUser.nome && nome.trim()) {
+      await supabase.from('users').update({ nome: nome.trim() }).eq('id', existingUser.id);
+      existingUser.nome = nome.trim();
+    }
+
+    const authenticatedUser = mapDatabaseUserToProfile(existingUser);
+
+    await createSession({
+      sub: authenticatedUser.id,
+      email: authenticatedUser.email,
+      tipo_usuario: authenticatedUser.tipo_usuario,
+    });
+
+    return authenticatedUser;
+  }
+
+  const { data, error } = await supabase
+    .from('users')
+    .insert({
+      nome: nome.trim() || normalizedEmail.split('@')[0],
+      email: normalizedEmail,
+      senha_hash: null,
+      tipo_usuario: 'cliente',
+      ativo: true,
+    })
+    .select('id, nome, email, telefone, senha_hash, tipo_usuario, ativo')
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to create Google user: ${error.message}`);
+  }
+
+  const authenticatedUser = mapDatabaseUserToProfile(data as DatabaseUser);
+
+  await createSession({
+    sub: authenticatedUser.id,
+    email: authenticatedUser.email,
+    tipo_usuario: authenticatedUser.tipo_usuario,
+  });
+
+  return authenticatedUser;
+}
+
 export async function logout() {
   await clearSession();
 }

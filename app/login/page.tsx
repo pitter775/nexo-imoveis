@@ -16,13 +16,14 @@ type LoginPageProps = {
   searchParams: Promise<{
     redirectTo?: string;
     error?: string;
+    reset?: string;
   }>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   await redirectIfAuthenticated();
 
-  const { redirectTo, error } = await searchParams;
+  const { redirectTo, error, reset } = await searchParams;
 
   return (
     <div className="min-h-screen bg-[#f6f7f8] text-slate-900 selection:bg-primary/30">
@@ -58,6 +59,16 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 Seu acesso atual nao permite entrar nessa area administrativa. Se precisar,
                 fale com a equipe Nexo.
+              </div>
+            ) : null}
+            {error === 'google' ? (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                Não foi possível entrar com Google. Tente novamente ou use e-mail e senha.
+              </div>
+            ) : null}
+            {reset === 'success' ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                Senha redefinida com sucesso. Entre com sua nova senha para continuar.
               </div>
             ) : null}
             <LoginForm redirectTo={redirectTo} />

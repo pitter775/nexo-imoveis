@@ -1,27 +1,27 @@
 import type { Metadata } from 'next';
 import { redirectIfAuthenticated } from '@/lib/auth';
 import { BrandLogo } from '@/components/brand-logo';
-import { RegisterForm } from '@/components/register-form';
+import { ResetPasswordForm } from '@/components/reset-password-form';
 import { SiteFooter } from '@/components/site-footer';
 
 export const metadata: Metadata = {
-  title: 'Cadastro',
+  title: 'Redefinir senha',
   robots: {
     index: false,
     follow: false,
   },
 };
 
-type CadastroPageProps = {
+type ResetPasswordPageProps = {
   searchParams: Promise<{
-    redirectTo?: string;
+    token?: string;
   }>;
 };
 
-export default async function CadastroPage({ searchParams }: CadastroPageProps) {
+export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
   await redirectIfAuthenticated();
 
-  const { redirectTo } = await searchParams;
+  const { token } = await searchParams;
 
   return (
     <div className="min-h-screen bg-[#f6f7f8] text-slate-900 selection:bg-primary/30">
@@ -32,16 +32,16 @@ export default async function CadastroPage({ searchParams }: CadastroPageProps) 
             <BrandLogo href="/" />
             <div className="space-y-4">
               <h2 className="text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl">
-                Oportunidades de leilão com análise e acompanhamento
+                Defina uma nova senha para sua conta
               </h2>
               <p className="max-w-lg text-base leading-7 text-slate-600">
-                Crie sua conta para salvar seu acesso, solicitar informações e
-                acompanhar imóveis cadastrados pela equipe Nexo.
+                Depois da redefinição, você poderá acessar sua área exclusiva e seguir
+                para o imóvel que estava consultando.
               </p>
             </div>
           </section>
 
-          <RegisterForm redirectTo={redirectTo} />
+          <ResetPasswordForm token={token} />
         </div>
       </main>
       <SiteFooter />

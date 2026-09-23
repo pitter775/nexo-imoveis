@@ -2,13 +2,29 @@
 
 import Link from 'next/link';
 import { useActionState } from 'react';
-import { LoaderCircle, LockKeyhole, Mail, Phone, ShieldCheck, UserRound } from 'lucide-react';
+import { Chrome, LoaderCircle, LockKeyhole, Mail, Phone, ShieldCheck, UserRound } from 'lucide-react';
 import { registerAction, type RegisterFormState } from '@/app/actions/auth';
 
 const initialState: RegisterFormState = {};
 
-export function RegisterForm() {
+type RegisterFormProps = {
+  redirectTo?: string;
+};
+
+export function RegisterForm({ redirectTo = '/' }: RegisterFormProps) {
   const [state, formAction, isPending] = useActionState(registerAction, initialState);
+  const loginHref =
+    redirectTo && redirectTo !== '/'
+      ? `/login?redirectTo=${encodeURIComponent(redirectTo)}`
+      : '/login';
+  const termsReturnTo =
+    redirectTo && redirectTo !== '/'
+      ? `/cadastro?redirectTo=${encodeURIComponent(redirectTo)}`
+      : '/cadastro';
+  const googleHref =
+    redirectTo && redirectTo !== '/'
+      ? `/api/auth/google/start?redirectTo=${encodeURIComponent(redirectTo)}`
+      : '/api/auth/google/start';
 
   return (
     <div className="w-full max-w-md rounded-[2rem] border border-white/60 bg-white/90 p-8 shadow-2xl shadow-slate-900/10 backdrop-blur">
@@ -30,7 +46,23 @@ export function RegisterForm() {
         </div>
       </div>
 
+      <Link
+        href={googleHref}
+        className="mb-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-primary/30 hover:text-primary"
+      >
+        <Chrome className="size-4" />
+        Cadastrar com Google
+      </Link>
+
+      <div className="mb-5 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-300">
+        <span className="h-px flex-1 bg-slate-100" />
+        ou
+        <span className="h-px flex-1 bg-slate-100" />
+      </div>
+
       <form action={formAction} className="space-y-5">
+        <input type="hidden" name="redirectTo" value={redirectTo} />
+
         <RegisterField
           icon={<UserRound className="size-4 text-slate-400" />}
           label="Nome completo"
@@ -76,12 +108,15 @@ export function RegisterForm() {
           />
           <span>
             Li e aceito os{' '}
-            <Link href="/termos-de-uso?returnTo=/cadastro" className="font-semibold text-primary hover:text-primary/80">
+            <Link
+              href={`/termos-de-uso?returnTo=${encodeURIComponent(termsReturnTo)}`}
+              className="font-semibold text-primary hover:text-primary/80"
+            >
               Termos de Uso
             </Link>{' '}
             e a{' '}
             <Link
-              href="/politica-de-privacidade?returnTo=/cadastro"
+              href={`/politica-de-privacidade?returnTo=${encodeURIComponent(termsReturnTo)}`}
               className="font-semibold text-primary hover:text-primary/80"
             >
               Política de Privacidade
@@ -108,7 +143,7 @@ export function RegisterForm() {
 
       <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-100 pt-5 text-sm text-slate-500">
         <span>Já tem conta?</span>
-        <Link href="/login" className="font-semibold text-primary hover:text-primary/80">
+        <Link href={loginHref} className="font-semibold text-primary hover:text-primary/80">
           Acessar
         </Link>
       </div>
