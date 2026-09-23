@@ -13,6 +13,7 @@ import {
   getAdminPagamentosData,
   type AdminPagamentoItem,
 } from '@/lib/admin/pagamentos';
+import { PaymentReference } from './payment-reference';
 
 const STATUS_LABELS: Record<string, string> = {
   pago: 'Pago',
@@ -212,9 +213,7 @@ function PaymentRow({ pagamento }: { pagamento: AdminPagamentoItem }) {
         <MobileLabel>Status</MobileLabel>
         <StatusBadge status={pagamento.status} />
         {pagamento.gatewayReference ? (
-          <p className="mt-2 truncate text-[11px] font-medium text-slate-400">
-            {pagamento.gatewayReference}
-          </p>
+          <PaymentReference value={pagamento.gatewayReference} />
         ) : null}
       </div>
       <DataBlock label="Cliente" value={pagamento.userLabel} helper={pagamento.userEmail} />

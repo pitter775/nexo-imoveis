@@ -56,6 +56,11 @@ export type AdminPagamentoItem = {
   hasAccess: boolean;
 };
 
+type MappedPagamentoItem = AdminPagamentoItem & {
+  userId: string | null;
+  imovelId: string | null;
+};
+
 export type AdminPagamentoAccess = {
   id: string;
   userLabel: string;
@@ -152,31 +157,57 @@ export async function getAdminPagamentosData(): Promise<AdminPagamentosData> {
       .map((item) => `${item.user_id}:${item.imovel_id}`),
   );
 
+  const acessosAtivos = acessos.filter((item) => normalizeStatus(item.status) === 'ativo').length;
+  const mappedPagamentos = pagamentos.map((pagamento): MappedPagamentoItem => {
+    const item = itemByPagamentoId.get(pagamento.id);
+    const user = userById.get(pagamento.user_id ?? '');
+    const imovel = imovelById.get(item?.imovel_id ?? '');
+    const status = normalizeStatus(pagamento.status);
+    const hasAccess =
+      Boolean(pagamento.user_id && item?.imovel_id) &&
+      activeAccessKey.has(`${pagamento.user_id}:${item?.imovel_id}`);
+
+    return {
+      id: pagamento.id,
+      userId: pagamento.user_id,
+      imovelId: item?.imovel_id ?? null,
+      userLabel: formatUserLabel(user),
+      userEmail: user?.email ?? 'Email nao identificado',
+      imovelLabel: imovel?.titulo ?? 'Imovel nao identificado',
+      imovelLocation: formatLocation(imovel),
+      valor: Number(pagamento.valor ?? 0),
+      itemValor: Number(item?.valor ?? pagamento.valor ?? 0),
+      metodo: pagamento.metodo ?? 'nao informado',
+      status,
+      gatewayReference: pagamento.referencia_gateway,
+      createdAt: pagamento.created_at,
+      hasAccess,
+    };
+  });
+  const visiblePagamentos = mappedPagamentos.filter(
+    (pagamento) => !(PENDING_STATUSES.has(pagamento.status) && pagamento.hasAccess),
+  );
   const statusBuckets = new Map<string, { total: number; valor: number }>();
   let totalReceita = 0;
   let totalPago = 0;
   let totalPendente = 0;
   let totalFalhou = 0;
 
-  for (const pagamento of pagamentos) {
-    const status = normalizeStatus(pagamento.status);
-    const valor = Number(pagamento.valor ?? 0);
-    const bucket = statusBuckets.get(status) ?? { total: 0, valor: 0 };
+  for (const pagamento of visiblePagamentos) {
+    const bucket = statusBuckets.get(pagamento.status) ?? { total: 0, valor: 0 };
     bucket.total += 1;
-    bucket.valor += valor;
-    statusBuckets.set(status, bucket);
+    bucket.valor += pagamento.valor;
+    statusBuckets.set(pagamento.status, bucket);
 
-    if (PAID_STATUSES.has(status)) {
-      totalReceita += valor;
+    if (PAID_STATUSES.has(pagamento.status)) {
+      totalReceita += pagamento.valor;
       totalPago += 1;
-    } else if (PENDING_STATUSES.has(status)) {
+    } else if (PENDING_STATUSES.has(pagamento.status)) {
       totalPendente += 1;
-    } else if (FAILED_STATUSES.has(status)) {
+    } else if (FAILED_STATUSES.has(pagamento.status)) {
       totalFalhou += 1;
     }
   }
-
-  const acessosAtivos = acessos.filter((item) => normalizeStatus(item.status) === 'ativo').length;
 
   return {
     metrics: {
@@ -194,28 +225,7 @@ export async function getAdminPagamentosData(): Promise<AdminPagamentosData> {
         valor: bucket.valor,
       }))
       .sort((left, right) => right.total - left.total),
-    pagamentos: pagamentos.map((pagamento) => {
-      const item = itemByPagamentoId.get(pagamento.id);
-      const user = userById.get(pagamento.user_id ?? '');
-      const imovel = imovelById.get(item?.imovel_id ?? '');
-
-      return {
-        id: pagamento.id,
-        userLabel: formatUserLabel(user),
-        userEmail: user?.email ?? 'Email nao identificado',
-        imovelLabel: imovel?.titulo ?? 'Imovel nao identificado',
-        imovelLocation: formatLocation(imovel),
-        valor: Number(pagamento.valor ?? 0),
-        itemValor: Number(item?.valor ?? pagamento.valor ?? 0),
-        metodo: pagamento.metodo ?? 'nao informado',
-        status: normalizeStatus(pagamento.status),
-        gatewayReference: pagamento.referencia_gateway,
-        createdAt: pagamento.created_at,
-        hasAccess:
-          Boolean(pagamento.user_id && item?.imovel_id) &&
-          activeAccessKey.has(`${pagamento.user_id}:${item?.imovel_id}`),
-      };
-    }),
+    pagamentos: visiblePagamentos.map(({ userId, imovelId, ...pagamento }) => pagamento),
     acessosRecentes: acessos.slice(0, 8).map((access) => ({
       id: access.id,
       userLabel: formatUserLabel(userById.get(access.user_id ?? '')),
