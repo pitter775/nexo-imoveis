@@ -461,6 +461,60 @@ export type Database = {
         };
         Relationships: [];
       };
+      pagamentos: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          valor: number | null;
+          metodo: string | null;
+          status: string | null;
+          referencia_gateway: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          valor?: number | null;
+          metodo?: string | null;
+          status?: string | null;
+          referencia_gateway?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          valor?: number | null;
+          metodo?: string | null;
+          status?: string | null;
+          referencia_gateway?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
+      pagamentos_itens: {
+        Row: {
+          id: string;
+          pagamento_id: string | null;
+          imovel_id: string | null;
+          valor: number | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          pagamento_id?: string | null;
+          imovel_id?: string | null;
+          valor?: number | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          pagamento_id?: string | null;
+          imovel_id?: string | null;
+          valor?: number | null;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
       user_access: {
         Row: {
           id: string;

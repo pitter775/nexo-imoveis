@@ -2364,6 +2364,7 @@ function PropertyDetailsView({
   const [activePremiumTab, setActivePremiumTab] = useState<'geral' | 'dossie' | 'analise' | 'arquivos'>('geral');
   const [similarPage, setSimilarPage] = useState(0);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+  const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
 
   useEffect(() => {
     setActiveImage(property.image_url);
@@ -2371,6 +2372,7 @@ function PropertyDetailsView({
     setActivePremiumTab('geral');
     setSimilarPage(0);
     setShareFeedback(null);
+    setIsCreatingCheckout(false);
   }, [hasPremiumAccess, property.id, property.image_url]);
 
   const gallery = property.images?.length ? property.images : [property.image_url];
@@ -2424,7 +2426,7 @@ function PropertyDetailsView({
     { key: 'arquivos', label: 'Arquivos', icon: <File className="size-4" /> },
   ];
 
-  const handleUnlockInformation = () => {
+  const handleUnlockInformation = async () => {
     if (hasPremiumAccess) {
       setHasUnlockedPremium(true);
       setActivePremiumTab('dossie');
@@ -2438,8 +2440,52 @@ function PropertyDetailsView({
       return;
     }
 
-    setShareFeedback('Solicitação registrada. A equipe Nexo seguirá o atendimento pelo chat.');
-    onUnlockInformation();
+    setIsCreatingCheckout(true);
+    setShareFeedback(null);
+
+    try {
+      const response = await fetch('/api/pagamentos/informacoes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imovelId: property.id }),
+      });
+      const payload = (await response.json()) as {
+        alreadyUnlocked?: boolean;
+        checkoutUrl?: string;
+        redirectUrl?: string;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Nao foi possivel iniciar o pagamento.');
+      }
+
+      if (payload.alreadyUnlocked) {
+        setHasUnlockedPremium(true);
+        setActivePremiumTab('dossie');
+        onUnlockInformation();
+        return;
+      }
+
+      if (payload.checkoutUrl) {
+        window.location.href = payload.checkoutUrl;
+        return;
+      }
+
+      if (payload.redirectUrl) {
+        window.location.href = payload.redirectUrl;
+        return;
+      }
+
+      throw new Error('Checkout indisponivel no momento.');
+    } catch (error) {
+      setShareFeedback(
+        error instanceof Error
+          ? error.message
+          : 'Nao foi possivel iniciar o pagamento.',
+      );
+      setIsCreatingCheckout(false);
+    }
   };
 
   const handleShareProperty = async () => {
@@ -2640,9 +2686,14 @@ function PropertyDetailsView({
               <button
                 type="button"
                 onClick={handleUnlockInformation}
-                className="w-full rounded-xl bg-primary py-4 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90"
+                disabled={isCreatingCheckout}
+                className="w-full rounded-xl bg-primary py-4 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {hasPremiumAccess ? 'Ver informações liberadas' : 'Solicitar Informações'}
+                {hasPremiumAccess
+                  ? 'Ver informações liberadas'
+                  : isCreatingCheckout
+                    ? 'Gerando pagamento...'
+                    : 'Solicitar Informações - R$ 0,50'}
               </button>
               {isAdmin ? (
                 <AdminEditPropertyLink propertyId={property.id} className="w-full justify-center" />
