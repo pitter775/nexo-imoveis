@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowLeft,
@@ -391,8 +391,8 @@ export function PublicMarketplace({
   initialView = 'home',
   initialPropertyId,
 }: PublicMarketplaceProps) {
-  const router = useRouter();
   const pathname = usePathname();
+  const [currentPath, setCurrentPath] = useState(pathname);
   const [view, setView] = useState<'home' | 'listings' | 'details'>(initialView);
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -407,6 +407,10 @@ export function PublicMarketplace({
   useEffect(() => {
     setView(initialView);
   }, [initialView]);
+
+  useEffect(() => {
+    setCurrentPath(pathname);
+  }, [pathname]);
 
   useEffect(() => {
     let isMounted = true;
@@ -448,6 +452,48 @@ export function PublicMarketplace({
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const syncViewWithLocation = () => {
+      const nextPath = window.location.pathname;
+      setCurrentPath(nextPath);
+
+      if (nextPath === '/') {
+        cleanupInfraChatWidget();
+        setView('home');
+        setSelectedProperty(null);
+        setActiveChatPropertyId(null);
+        return;
+      }
+
+      if (nextPath === '/imoveis') {
+        cleanupInfraChatWidget();
+        setView('listings');
+        setSelectedProperty(null);
+        setActiveChatPropertyId(null);
+        return;
+      }
+
+      const detailMatch = nextPath.match(/^\/imoveis\/([^/]+)$/);
+
+      if (detailMatch) {
+        setView('details');
+        setActiveChatPropertyId(null);
+
+        const propertyId = detailMatch[1];
+        const property = properties.find((item) => item.id === propertyId) ?? null;
+        setSelectedProperty(property);
+      }
+    };
+
+    window.addEventListener('popstate', syncViewWithLocation);
+
+    return () => window.removeEventListener('popstate', syncViewWithLocation);
+  }, [properties]);
 
   useEffect(() => {
     if (initialView !== 'details') {
@@ -543,13 +589,13 @@ export function PublicMarketplace({
   }, [view, properties.length]);
 
   useEffect(() => {
-    const isPropertyDetailPath = /^\/imoveis\/[^/]+$/.test(pathname);
+    const isPropertyDetailPath = /^\/imoveis\/[^/]+$/.test(currentPath);
 
     if (view !== 'details' || !isPropertyDetailPath) {
       setActiveChatPropertyId(null);
       cleanupInfraChatWidget();
     }
-  }, [pathname, view]);
+  }, [currentPath, view]);
 
   useEffect(() => {
     if (!selectedProperty || activeChatPropertyId === selectedProperty.id) {
@@ -578,6 +624,7 @@ export function PublicMarketplace({
     setActiveChatPropertyId(selectedProperty.id);
     url.searchParams.delete('chat');
     window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    setCurrentPath(url.pathname);
   }, [selectedProperty, user, view]);
 
   const handleMenuNavigation = (sectionId: string) => {
@@ -593,20 +640,16 @@ export function PublicMarketplace({
 
     const targetHref = sectionId === 'topo' ? '/' : `/#${sectionId}`;
 
-    if (window.location.pathname !== '/') {
-      router.push(targetHref);
-      return;
-    }
+    window.history.pushState(null, '', targetHref);
+    setCurrentPath('/');
 
     if (sectionId === 'topo') {
       setActiveSection('topo');
-      window.history.replaceState(null, '', '/');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
     setActiveSection(sectionId);
-    window.history.replaceState(null, '', targetHref);
     const section = document.getElementById(sectionId);
 
     if (section) {
@@ -618,7 +661,9 @@ export function PublicMarketplace({
     setActiveChatPropertyId(null);
     setSelectedProperty(property);
     setView('details');
-    router.push(`/imoveis/${property.id}`);
+    const targetPath = `/imoveis/${property.id}`;
+    window.history.pushState(null, '', targetPath);
+    setCurrentPath(targetPath);
   };
 
   const handleBrowse = () => {
@@ -626,7 +671,8 @@ export function PublicMarketplace({
     setView('listings');
     setSelectedProperty(null);
     setActiveChatPropertyId(null);
-    router.push('/imoveis');
+    window.history.pushState(null, '', '/imoveis');
+    setCurrentPath('/imoveis');
   };
 
   const displayName = user?.nome?.trim() || user?.email;
@@ -636,7 +682,8 @@ export function PublicMarketplace({
     setView('home');
     setSelectedProperty(null);
     setActiveChatPropertyId(null);
-    router.push('/');
+    window.history.pushState(null, '', '/');
+    setCurrentPath('/');
   };
 
   const adminHref = user?.tipo_usuario === 'admin' ? '/admin' : null;
@@ -649,10 +696,11 @@ export function PublicMarketplace({
     setView('listings');
     setSelectedProperty(null);
     setActiveChatPropertyId(null);
-    router.push('/imoveis');
+    window.history.pushState(null, '', '/imoveis');
+    setCurrentPath('/imoveis');
   };
 
-  const isPropertyDetailPath = /^\/imoveis\/[^/]+$/.test(pathname);
+  const isPropertyDetailPath = /^\/imoveis\/[^/]+$/.test(currentPath);
   const isChatEnabled =
     view === 'details' &&
     isPropertyDetailPath &&
