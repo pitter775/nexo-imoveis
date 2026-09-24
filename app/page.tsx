@@ -70,6 +70,14 @@ const INFRA_CHAT_WIDGET_SLUG = 'projeto-nexo-leiloes-chat';
 const INFRA_CHAT_API_BASE = 'https://www.infrastudio.pro';
 const INFRA_CHAT_AGENT = 'projeto-nexo-leiloes-assistente';
 const PUBLIC_SHARE_BASE_URL = PUBLIC_SITE_URL;
+const PROPERTY_ACCESS_PRICE_LABEL = 'R$ 14,90';
+const MONTHLY_ACCESS_PRICE_LABEL = 'R$ 119';
+const premiumOfferItems = [
+  'Dossiê do imóvel com matrícula, processo e documentos',
+  'Análise de risco, estratégia e observações jurídicas',
+  'Estimativa de lucro, ROI, dívidas e lance recomendado',
+  'Assistente de IA para tirar dúvidas sobre este imóvel',
+];
 
 function buildInfraChatContext(propertyId: string) {
   return {
@@ -2444,6 +2452,7 @@ function PropertyDetailsView({
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
   const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
   const [paymentState, setPaymentState] = useState<'idle' | 'pending' | 'approved'>('idle');
+  const [showUnlockOptions, setShowUnlockOptions] = useState(false);
   const autoCheckoutStartedRef = useRef(false);
 
   const markPropertyAsUnlocked = () => {
@@ -2461,6 +2470,7 @@ function PropertyDetailsView({
     setShareFeedback(null);
     setIsCreatingCheckout(false);
     setPaymentState('idle');
+    setShowUnlockOptions(false);
     autoCheckoutStartedRef.current = false;
   }, [hasPremiumAccess, property.id, property.image_url]);
 
@@ -2545,6 +2555,16 @@ function PropertyDetailsView({
       return;
     }
 
+    setShowUnlockOptions(true);
+  };
+
+  const handleStartInformationCheckout = async (plano: 'imovel' | 'mensal') => {
+    if (hasPremiumAccess) {
+      setHasUnlockedPremium(true);
+      setActivePremiumTab('dossie');
+      return;
+    }
+
     if (!user) {
       window.location.href = `/login?redirectTo=${encodeURIComponent(
         `/imoveis/${property.id}?pay=1`,
@@ -2556,11 +2576,14 @@ function PropertyDetailsView({
     setShareFeedback(null);
 
     try {
-      const response = await fetch('/api/pagamentos/informacoes', {
+      const response = await fetch(
+        plano === 'mensal' ? '/api/pagamentos/assinatura' : '/api/pagamentos/informacoes',
+        {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imovelId: property.id }),
-      });
+          body: JSON.stringify({ imovelId: property.id }),
+        },
+      );
       const payload = (await response.json()) as {
         alreadyUnlocked?: boolean;
         checkoutUrl?: string;
@@ -2618,8 +2641,8 @@ function PropertyDetailsView({
     autoCheckoutStartedRef.current = true;
     url.searchParams.delete('pay');
     window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
-    void handleUnlockInformation();
-  }, [handleUnlockInformation, hasPremiumAccess, isCreatingCheckout, user]);
+    void handleStartInformationCheckout('imovel');
+  }, [handleStartInformationCheckout, hasPremiumAccess, isCreatingCheckout, user]);
 
   useEffect(() => {
     if (paymentState !== 'pending') {
@@ -2847,25 +2870,33 @@ function PropertyDetailsView({
               />
             </div>
             <div className="mt-auto space-y-3">
-              <button
-                type="button"
-                onClick={handleUnlockInformation}
-                disabled={isCreatingCheckout}
-                className={[
-                  'w-full rounded-xl bg-primary py-4 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70',
-                  paymentState === 'pending' ? 'animate-pulse' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                {hasPremiumAccess
-                  ? 'Informações liberadas'
-                  : isCreatingCheckout
+              {hasPremiumAccess ? (
+                <button
+                  type="button"
+                  onClick={handleUnlockInformation}
+                  className="w-full rounded-xl bg-emerald-600 py-4 font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700"
+                >
+                  Informações liberadas
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleUnlockInformation}
+                  disabled={isCreatingCheckout}
+                  className={[
+                    'w-full rounded-xl bg-primary py-4 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70',
+                    paymentState === 'pending' ? 'animate-pulse' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  {isCreatingCheckout
                     ? 'Gerando pagamento...'
                     : paymentState === 'pending'
                       ? 'Pagamento em análise'
-                    : 'Solicitar Informações - R$ 0,50'}
-              </button>
+                      : 'Solicitar informações'}
+                </button>
+              )}
               {isAdmin ? (
                 <AdminEditPropertyLink propertyId={property.id} className="w-full justify-center" />
               ) : null}
@@ -3200,6 +3231,127 @@ function PropertyDetailsView({
           </div>
         </section>
       ) : null}
+
+      <AnimatePresence>
+        {showUnlockOptions ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 px-4 py-4 backdrop-blur-sm sm:items-center sm:py-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="unlock-options-title"
+          >
+            <motion.div
+              className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl shadow-slate-950/30"
+              initial={{ opacity: 0, y: 28, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 260 }}
+            >
+              <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-5 sm:px-7">
+                <div className="space-y-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+                    <ShieldCheck className="size-3.5" />
+                    Acesso premium
+                  </span>
+                  <div>
+                    <h3 id="unlock-options-title" className="text-2xl font-black tracking-tight text-slate-950">
+                      Escolha como desbloquear este imóvel
+                    </h3>
+                    <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                      Libere os dados que ajudam a decidir com segurança: documentos,
+                      análise jurídica, riscos, estratégia e IA no contexto deste imóvel.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowUnlockOptions(false)}
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+                  aria-label="Fechar opções de acesso"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+
+              <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-7">
+                <div className="flex flex-col rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-base font-black text-slate-950">Acesso avulso</p>
+                      <p className="mt-1 text-sm leading-5 text-slate-500">
+                        Ideal para analisar apenas este imóvel agora.
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                      Por imóvel
+                    </span>
+                  </div>
+                  <p className="mt-5 text-4xl font-black tracking-tight text-primary">
+                    {PROPERTY_ACCESS_PRICE_LABEL}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">
+                    Pagamento único, sem assinatura.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleStartInformationCheckout('imovel')}
+                    disabled={isCreatingCheckout}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <CircleDollarSign className="size-4" />
+                    {isCreatingCheckout ? 'Gerando cobrança...' : 'Pagar este imóvel'}
+                  </button>
+                </div>
+
+                <div className="relative flex flex-col rounded-2xl border-2 border-primary bg-white p-5 shadow-xl shadow-primary/10">
+                  <div className="absolute right-4 top-4 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">
+                    Melhor valor
+                  </div>
+                  <div className="pr-28">
+                    <p className="text-base font-black text-slate-950">Plano mensal</p>
+                    <p className="mt-1 text-sm leading-5 text-slate-500">
+                      Melhor para acompanhar várias oportunidades.
+                    </p>
+                  </div>
+                  <p className="mt-5 text-4xl font-black tracking-tight text-slate-950">
+                    {MONTHLY_ACCESS_PRICE_LABEL}
+                    <span className="text-sm font-semibold text-slate-500">/mês</span>
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">
+                    Cobrança mensal para usar a plataforma com mais liberdade.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleStartInformationCheckout('mensal')}
+                    disabled={isCreatingCheckout}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <Wallet className="size-4" />
+                    {isCreatingCheckout ? 'Gerando cobrança...' : 'Assinar mensal'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-200 bg-slate-50 px-5 py-5 sm:px-7">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {premiumOfferItems.map((item) => (
+                    <p key={item} className="flex gap-2 text-sm leading-5 text-slate-600">
+                      <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+                      <span>{item}</span>
+                    </p>
+                  ))}
+                </div>
+                <p className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-medium leading-5 text-emerald-800">
+                  Compra segura. Depois da confirmação do pagamento, as informações são liberadas automaticamente.
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
       </motion.div>
     </>
   );

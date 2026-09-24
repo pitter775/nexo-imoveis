@@ -491,6 +491,51 @@ export type Database = {
         };
         Relationships: [];
       };
+      assinaturas: {
+        Row: {
+          id: string;
+          user_id: string;
+          imovel_referencia_id: string | null;
+          status: string;
+          provider: string;
+          mp_preapproval_id: string | null;
+          payer_email: string | null;
+          valor: number;
+          data_inicio: string | null;
+          data_fim: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          imovel_referencia_id?: string | null;
+          status?: string;
+          provider?: string;
+          mp_preapproval_id?: string | null;
+          payer_email?: string | null;
+          valor?: number;
+          data_inicio?: string | null;
+          data_fim?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          imovel_referencia_id?: string | null;
+          status?: string;
+          provider?: string;
+          mp_preapproval_id?: string | null;
+          payer_email?: string | null;
+          valor?: number;
+          data_inicio?: string | null;
+          data_fim?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
       pagamentos_itens: {
         Row: {
           id: string;

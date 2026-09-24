@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentAuthenticatedUser } from '@/lib/auth';
+import { userHasActiveMonthlySubscription } from '@/lib/payments/subscriptions';
 import { getPublicAbsoluteUrl } from '@/lib/site';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -158,8 +159,10 @@ export async function GET(request: NextRequest) {
   const arquivosPorImovel = new Map<string, (typeof arquivos)>();
   const premiumAccessByImovelId = new Set<string>();
   const isAdmin = currentUser?.tipo_usuario === 'admin';
+  const hasMonthlySubscription =
+    currentUser && !isAdmin ? await userHasActiveMonthlySubscription(currentUser.id) : false;
 
-  if (currentUser && !isAdmin) {
+  if (currentUser && !isAdmin && !hasMonthlySubscription) {
     const { data: accesses, error: accessError } = await supabase
       .from('user_access')
       .select('imovel_id, data_expiracao, status')
@@ -229,7 +232,7 @@ export async function GET(request: NextRequest) {
       valuationPrice,
       firstAuctionPrice,
     );
-    const hasPremiumAccess = isAdmin || premiumAccessByImovelId.has(imovel.id);
+    const hasPremiumAccess = isAdmin || hasMonthlySubscription || premiumAccessByImovelId.has(imovel.id);
     const visibleFiles = (arquivosPorImovel.get(imovel.id) ?? []).filter((arquivo) =>
       hasPremiumAccess ? arquivo.visivel_pagantes !== false : arquivo.visivel_publico === true,
     );

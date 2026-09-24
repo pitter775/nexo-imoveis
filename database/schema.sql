@@ -180,6 +180,23 @@ CREATE TABLE public.pagamentos_itens (
   CONSTRAINT pagamentos_itens_pagamento_id_fkey FOREIGN KEY (pagamento_id) REFERENCES public.pagamentos(id),
   CONSTRAINT pagamentos_itens_imovel_id_fkey FOREIGN KEY (imovel_id) REFERENCES public.imoveis(id)
 );
+CREATE TABLE public.assinaturas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  imovel_referencia_id uuid,
+  status text NOT NULL DEFAULT 'pendente'::text,
+  provider text NOT NULL DEFAULT 'mercado_pago'::text,
+  mp_preapproval_id text UNIQUE,
+  payer_email text,
+  valor numeric NOT NULL DEFAULT 119,
+  data_inicio timestamp with time zone,
+  data_fim timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT assinaturas_pkey PRIMARY KEY (id),
+  CONSTRAINT assinaturas_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT assinaturas_imovel_referencia_id_fkey FOREIGN KEY (imovel_referencia_id) REFERENCES public.imoveis(id)
+);
 CREATE TABLE public.user_access (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid,

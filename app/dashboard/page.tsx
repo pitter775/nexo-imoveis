@@ -6,21 +6,29 @@ import {
   ArrowRight,
   CalendarDays,
   CheckCircle2,
+  CreditCard,
   Home,
   KeyRound,
   MapPin,
+  ShieldCheck,
 } from 'lucide-react';
 import { logoutAction } from '@/app/actions/auth';
 import { BrandLogo } from '@/components/brand-logo';
 import { getCurrentAuthenticatedUser } from '@/lib/auth';
 import {
-  getPurchasedProperties,
+  getClientAccessSummary,
   type PurchasedProperty,
+  type ClientSubscription,
 } from '@/lib/client/purchased-properties';
 
 export default async function DashboardPage() {
   const user = await getCurrentAuthenticatedUser();
-  const properties = user ? await getPurchasedProperties(user.id) : [];
+  const access = user
+    ? await getClientAccessSummary(user.id)
+    : { properties: [], subscription: null };
+  const properties = access.properties;
+  const subscription = access.subscription;
+  const hasMonthlyAccess = Boolean(subscription);
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -61,35 +69,75 @@ export default async function DashboardPage() {
                 Minha conta
               </p>
               <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
-                Meus imóveis liberados
+                Meus acessos premium
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-500">
-                Acesse novamente as informações completas dos imóveis que já foram
-                liberados para sua conta.
+                Acesse novamente as informações completas dos imóveis liberados
+                para sua conta, seja por assinatura mensal ou compra avulsa.
               </p>
             </div>
 
             <div className="border-t border-slate-200 bg-slate-950 p-6 text-white sm:p-8 lg:border-l lg:border-t-0">
               <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-blue-200">
-                Acesso ativo
+                Status premium
               </p>
               <p className="mt-3 text-4xl font-extrabold">
-                {formatNumber(properties.length)}
+                {hasMonthlyAccess ? 'Ativo' : formatNumber(properties.length)}
               </p>
               <p className="mt-2 text-sm text-slate-300">
-                {properties.length === 1 ? 'imóvel comprado' : 'imóveis comprados'}
+                {hasMonthlyAccess
+                  ? 'assinatura mensal com acesso total'
+                  : properties.length === 1
+                    ? 'imóvel comprado'
+                    : 'imóveis comprados'}
               </p>
             </div>
           </div>
         </section>
 
+        {subscription ? <SubscriptionCard subscription={subscription} /> : null}
+
         <section className="mt-8">
-          {properties.length > 0 ? (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {properties.map((property) => (
-                <PurchasedPropertyCard key={property.accessId} property={property} />
-              ))}
+          {hasMonthlyAccess ? (
+            <div className="rounded-[2rem] border border-primary/20 bg-white p-8 shadow-sm">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-[0.24em] text-primary">
+                    Acesso total
+                  </p>
+                  <h2 className="mt-2 text-2xl font-extrabold text-slate-950">
+                    Todos os imóveis estão liberados
+                  </h2>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500">
+                    Enquanto sua assinatura estiver ativa, você pode abrir qualquer
+                    oportunidade e consultar dossiê, documentos e assistente de IA.
+                  </p>
+                </div>
+                <Link
+                  href="/imoveis"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
+                >
+                  Ver todos os imóveis
+                  <ArrowRight className="size-4" />
+                </Link>
+              </div>
             </div>
+          ) : properties.length > 0 ? (
+            <>
+              <div className="mb-5">
+                <h2 className="text-2xl font-extrabold text-slate-950">
+                  Imóveis comprados avulsos
+                </h2>
+                <p className="mt-2 text-sm text-slate-500">
+                  Estes imóveis foram liberados individualmente para sua conta.
+                </p>
+              </div>
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {properties.map((property) => (
+                  <PurchasedPropertyCard key={property.accessId} property={property} />
+                ))}
+              </div>
+            </>
           ) : (
             <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center">
               <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -113,6 +161,49 @@ export default async function DashboardPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+function SubscriptionCard({ subscription }: { subscription: ClientSubscription }) {
+  return (
+    <section className="mt-8 overflow-hidden rounded-[2rem] border border-emerald-200 bg-emerald-50 shadow-sm">
+      <div className="grid gap-0 lg:grid-cols-[1fr_0.8fr]">
+        <div className="p-6 sm:p-8">
+          <div className="flex items-center gap-3">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-500 text-white">
+              <ShieldCheck className="size-6" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-emerald-700">
+                Plano mensal
+              </p>
+              <h2 className="mt-1 text-2xl font-extrabold text-emerald-950">
+                Assinatura ativa
+              </h2>
+            </div>
+          </div>
+          <p className="mt-5 max-w-2xl text-sm leading-7 text-emerald-900/80">
+            Sua assinatura libera acesso completo a todos os imóveis da plataforma
+            enquanto o pagamento recorrente estiver ativo.
+          </p>
+        </div>
+
+        <div className="border-t border-emerald-200 bg-white/70 p-6 sm:p-8 lg:border-l lg:border-t-0">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <InfoPill
+              icon={<CreditCard className="size-4" />}
+              label="Mensalidade"
+              value={`${formatCurrency(subscription.valor)}/mês`}
+            />
+            <InfoPill
+              icon={<CalendarDays className="size-4" />}
+              label="Início"
+              value={formatDate(subscription.startedAt)}
+            />
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

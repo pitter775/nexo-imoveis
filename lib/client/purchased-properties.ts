@@ -35,6 +35,15 @@ type ImovelImageRow = {
   ordem: number | null;
 };
 
+type SubscriptionRow = {
+  id: string;
+  status: string | null;
+  valor: number | null;
+  data_inicio: string | null;
+  data_fim: string | null;
+  created_at: string | null;
+};
+
 export type PurchasedProperty = {
   accessId: string;
   imovelId: string;
@@ -50,6 +59,65 @@ export type PurchasedProperty = {
   purchasedAt: string | null;
   expiresAt: string | null;
 };
+
+export type ClientSubscription = {
+  id: string;
+  status: string;
+  valor: number;
+  startedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string | null;
+};
+
+export type ClientAccessSummary = {
+  properties: PurchasedProperty[];
+  subscription: ClientSubscription | null;
+};
+
+const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['ativa', 'active', 'authorized']);
+
+export async function getClientAccessSummary(userId: string): Promise<ClientAccessSummary> {
+  const [properties, subscription] = await Promise.all([
+    getPurchasedProperties(userId),
+    getActiveClientSubscription(userId),
+  ]);
+
+  return {
+    properties,
+    subscription,
+  };
+}
+
+export async function getActiveClientSubscription(userId: string): Promise<ClientSubscription | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('assinaturas')
+    .select('id, status, valor, data_inicio, data_fim, created_at')
+    .eq('user_id', userId)
+    .in('status', Array.from(ACTIVE_SUBSCRIPTION_STATUSES))
+    .order('created_at', { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load active subscription: ${error.message}`);
+  }
+
+  const subscription = data as SubscriptionRow | null;
+
+  if (!subscription || !isSubscriptionActive(subscription)) {
+    return null;
+  }
+
+  return {
+    id: subscription.id,
+    status: subscription.status ?? 'ativa',
+    valor: Number(subscription.valor ?? 0),
+    startedAt: subscription.data_inicio ?? subscription.created_at,
+    expiresAt: subscription.data_fim,
+    createdAt: subscription.created_at,
+  };
+}
 
 export async function getPurchasedProperties(userId: string): Promise<PurchasedProperty[]> {
   const supabase = createAdminClient();
@@ -143,6 +211,18 @@ export async function getPurchasedProperties(userId: string): Promise<PurchasedP
       };
     })
     .filter((item): item is PurchasedProperty => Boolean(item));
+}
+
+function isSubscriptionActive(subscription: SubscriptionRow) {
+  if (!ACTIVE_SUBSCRIPTION_STATUSES.has(subscription.status ?? '')) {
+    return false;
+  }
+
+  if (!subscription.data_fim) {
+    return true;
+  }
+
+  return new Date(subscription.data_fim) > new Date();
 }
 
 function isAccessActive(access: AccessRow) {

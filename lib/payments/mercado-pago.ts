@@ -2,7 +2,8 @@ import 'server-only';
 
 import { getAbsoluteUrl } from '@/lib/site';
 
-export const INFORMATION_ACCESS_PRICE = 0.5;
+export const INFORMATION_ACCESS_PRICE = 14.9;
+export const MONTHLY_ACCESS_PRICE = 119;
 export const INFORMATION_ACCESS_CURRENCY = 'BRL';
 
 type MercadoPagoPreferenceInput = {
@@ -10,6 +11,8 @@ type MercadoPagoPreferenceInput = {
   imovelId: string;
   title: string;
   description?: string | null;
+  unitPrice?: number;
+  itemTitle?: string;
   payer: {
     email: string;
     name?: string | null;
@@ -23,11 +26,35 @@ type MercadoPagoPreferenceResponse = {
   message?: string;
 };
 
+type MercadoPagoPreapprovalInput = {
+  assinaturaId: string;
+  reason: string;
+  payerEmail: string;
+  backUrl: string;
+};
+
+type MercadoPagoPreapprovalResponse = {
+  id?: string;
+  init_point?: string;
+  sandbox_init_point?: string;
+  status?: string;
+  external_reference?: string;
+  payer_email?: string;
+  message?: string;
+};
+
 export type MercadoPagoPayment = {
   id: number | string;
   status?: string;
   external_reference?: string;
   transaction_amount?: number;
+};
+
+export type MercadoPagoPreapproval = {
+  id: string;
+  status?: string;
+  external_reference?: string;
+  payer_email?: string;
 };
 
 function getMercadoPagoAccessToken() {
@@ -45,6 +72,8 @@ export async function createInformationPreference({
   imovelId,
   title,
   description,
+  unitPrice = INFORMATION_ACCESS_PRICE,
+  itemTitle,
   payer,
 }: MercadoPagoPreferenceInput) {
   const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
@@ -71,11 +100,11 @@ export async function createInformationPreference({
       items: [
         {
           id: imovelId,
-          title: `Informacoes do imovel - ${title}`,
+          title: itemTitle ?? `Informacoes do imovel - ${title}`,
           description: description?.slice(0, 240) || 'Acesso as informacoes detalhadas do imovel.',
           quantity: 1,
           currency_id: INFORMATION_ACCESS_CURRENCY,
-          unit_price: INFORMATION_ACCESS_PRICE,
+          unit_price: unitPrice,
         },
       ],
       payer: {
@@ -114,6 +143,67 @@ export async function getMercadoPagoPayment(paymentId: string) {
   return payload;
 }
 
+export async function createMonthlySubscriptionPreapproval({
+  assinaturaId,
+  reason,
+  payerEmail,
+  backUrl,
+}: MercadoPagoPreapprovalInput) {
+  const response = await fetch('https://api.mercadopago.com/preapproval', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${getMercadoPagoAccessToken()}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      reason,
+      external_reference: assinaturaId,
+      payer_email: payerEmail,
+      back_url: backUrl,
+      auto_recurring: {
+        frequency: 1,
+        frequency_type: 'months',
+        transaction_amount: MONTHLY_ACCESS_PRICE,
+        currency_id: INFORMATION_ACCESS_CURRENCY,
+      },
+    }),
+  });
+
+  const payload = (await response.json()) as MercadoPagoPreapprovalResponse;
+
+  if (!response.ok || !payload.id || !payload.init_point) {
+    throw new Error(payload.message || 'Nao foi possivel criar a assinatura no Mercado Pago.');
+  }
+
+  return {
+    preapprovalId: payload.id,
+    checkoutUrl: payload.init_point,
+    sandboxCheckoutUrl: payload.sandbox_init_point,
+    status: payload.status,
+  };
+}
+
+export async function getMercadoPagoPreapproval(preapprovalId: string) {
+  const response = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
+    headers: {
+      Authorization: `Bearer ${getMercadoPagoAccessToken()}`,
+    },
+  });
+
+  const payload = (await response.json()) as MercadoPagoPreapprovalResponse;
+
+  if (!response.ok || !payload.id) {
+    throw new Error(payload.message || 'Nao foi possivel consultar a assinatura.');
+  }
+
+  return {
+    id: payload.id,
+    status: payload.status,
+    external_reference: payload.external_reference,
+    payer_email: payload.payer_email,
+  };
+}
+
 export function mapMercadoPagoStatus(status: string | null | undefined) {
   if (status === 'approved') {
     return 'pago';
@@ -136,4 +226,20 @@ export function mapMercadoPagoStatus(status: string | null | undefined) {
 
 export function isMercadoPagoApproved(status: string | null | undefined) {
   return status === 'approved';
+}
+
+export function mapMercadoPagoPreapprovalStatus(status: string | null | undefined) {
+  if (status === 'authorized') {
+    return 'ativa';
+  }
+
+  if (status === 'cancelled') {
+    return 'cancelada';
+  }
+
+  if (status === 'paused') {
+    return 'pausada';
+  }
+
+  return 'pendente';
 }

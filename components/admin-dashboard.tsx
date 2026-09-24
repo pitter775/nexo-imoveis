@@ -4,6 +4,7 @@ import {
   Bot,
   Building2,
   CircleDollarSign,
+  CreditCard,
   LockKeyhole,
   TrendingUp,
   Users,
@@ -59,15 +60,21 @@ export function AdminDashboard({ profile, data }: AdminDashboardProps) {
           icon={<Building2 className="size-5 text-primary" />}
         />
         <StatCard
-          title="Acessos premium ativos"
+          title="Acessos avulsos ativos"
           value={formatNumber(data.metrics.totalAcessosAtivos)}
-          helper="Clientes com acesso comprado em vigor"
+          helper="Imoveis liberados individualmente"
           icon={<LockKeyhole className="size-5 text-primary" />}
+        />
+        <StatCard
+          title="Assinaturas ativas"
+          value={formatNumber(data.metrics.totalAssinaturasAtivas)}
+          helper={`${formatCurrency(data.metrics.receitaRecorrenteAtiva)}/mes recorrente`}
+          icon={<CreditCard className="size-5 text-primary" />}
         />
         <StatCard
           title="Receita aprovada"
           value={formatCurrency(data.metrics.receitaAprovada)}
-          helper="Somatorio de pagamentos aprovados"
+          helper="Pagamentos avulsos aprovados"
           icon={<CircleDollarSign className="size-5 text-primary" />}
         />
         <StatCard

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { getMercadoPagoPayment } from '@/lib/payments/mercado-pago';
 import { syncInformationPayment } from '@/lib/payments/information-access';
+import { syncSubscriptionPreapproval } from '@/lib/payments/subscriptions';
 
 function getPaymentIdFromUrl(url: URL) {
   return (
@@ -34,11 +35,34 @@ function getPaymentIdFromBody(body: unknown) {
   return payload.id ? String(payload.id) : null;
 }
 
+function getNotificationKind(url: URL, body: unknown) {
+  const topic = url.searchParams.get('topic') || url.searchParams.get('type');
+
+  if (topic) {
+    return topic;
+  }
+
+  if (!body || typeof body !== 'object') {
+    return null;
+  }
+
+  const payload = body as { type?: string; topic?: string; action?: string };
+
+  return payload.type || payload.topic || payload.action || null;
+}
+
+function isSubscriptionNotification(kind: string | null) {
+  return Boolean(kind?.includes('subscription') || kind?.includes('preapproval'));
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const paymentId = getPaymentIdFromUrl(url);
+  const kind = getNotificationKind(url, null);
 
-  if (paymentId) {
+  if (paymentId && isSubscriptionNotification(kind)) {
+    await syncSubscriptionById(paymentId);
+  } else if (paymentId) {
     await syncPaymentById(paymentId);
   }
 
@@ -49,12 +73,15 @@ export async function POST(request: Request) {
   const url = new URL(request.url);
   const body = await request.json().catch(() => null);
   const paymentId = getPaymentIdFromBody(body) || getPaymentIdFromUrl(url);
+  const kind = getNotificationKind(url, body);
 
   if (!isValidWebhookSignature(request, paymentId)) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
-  if (paymentId) {
+  if (paymentId && isSubscriptionNotification(kind)) {
+    await syncSubscriptionById(paymentId);
+  } else if (paymentId) {
     await syncPaymentById(paymentId);
   }
 
@@ -67,6 +94,14 @@ async function syncPaymentById(paymentId: string) {
     await syncInformationPayment(payment);
   } catch (error) {
     console.error('[mercado-pago] webhook sync failed', error);
+  }
+}
+
+async function syncSubscriptionById(preapprovalId: string) {
+  try {
+    await syncSubscriptionPreapproval(preapprovalId);
+  } catch (error) {
+    console.error('[mercado-pago] subscription webhook sync failed', error);
   }
 }
 

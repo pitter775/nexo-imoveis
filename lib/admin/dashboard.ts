@@ -10,6 +10,10 @@ type RevenueResponse = {
   valor: number | null;
 };
 
+type SubscriptionRevenueResponse = {
+  valor: number | null;
+};
+
 type AccessTrendRow = {
   created_at: string | null;
 };
@@ -51,7 +55,9 @@ export type AdminDashboardData = {
     totalUsers: number;
     totalImoveisAtivos: number;
     totalAcessosAtivos: number;
+    totalAssinaturasAtivas: number;
     receitaAprovada: number;
+    receitaRecorrenteAtiva: number;
     conversasIaMes: number;
     tokensMes: number;
   };
@@ -84,6 +90,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     totalUsersResponse,
     totalImoveisAtivosResponse,
     totalAcessosAtivosResponse,
+    totalAssinaturasAtivasResponse,
+    assinaturasAtivasResponse,
     pagamentosResponse,
     chatsMonthResponse,
     accessTrendResponse,
@@ -99,6 +107,14 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       .from('user_access')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'ativo'),
+    supabase
+      .from('assinaturas')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['ativa', 'active', 'authorized']),
+    supabase
+      .from('assinaturas')
+      .select('valor')
+      .in('status', ['ativa', 'active', 'authorized']),
     supabase
       .from('pagamentos')
       .select('valor')
@@ -125,6 +141,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   throwIfError(totalUsersResponse.error, 'users count');
   throwIfError(totalImoveisAtivosResponse.error, 'active properties count');
   throwIfError(totalAcessosAtivosResponse.error, 'active access count');
+  throwIfError(totalAssinaturasAtivasResponse.error, 'active subscriptions count');
+  throwIfError(assinaturasAtivasResponse.error, 'active subscriptions');
   throwIfError(pagamentosResponse.error, 'payments');
   throwIfError(chatsMonthResponse.error, 'chat month');
   throwIfError(accessTrendResponse.error, 'access trend');
@@ -175,6 +193,10 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     (sum, item) => sum + Number(item.valor ?? 0),
     0,
   );
+  const receitaRecorrenteAtiva = ((assinaturasAtivasResponse.data ?? []) as SubscriptionRevenueResponse[]).reduce(
+    (sum, item) => sum + Number(item.valor ?? 0),
+    0,
+  );
 
   const chatMessages = (chatsMonthResponse.data ?? []) as ChatMessageRow[];
   const tokensMes = chatMessages.reduce(
@@ -218,7 +240,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       totalUsers: totalUsersResponse.count ?? 0,
       totalImoveisAtivos: totalImoveisAtivosResponse.count ?? 0,
       totalAcessosAtivos: totalAcessosAtivosResponse.count ?? 0,
+      totalAssinaturasAtivas: totalAssinaturasAtivasResponse.count ?? 0,
       receitaAprovada,
+      receitaRecorrenteAtiva,
       conversasIaMes: new Set(chatMessages.map((item) => item.conversa_id)).size,
       tokensMes,
     },

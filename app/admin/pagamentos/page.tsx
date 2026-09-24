@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import {
   getAdminPagamentosData,
+  type AdminAssinaturaItem,
   type AdminPagamentoItem,
 } from '@/lib/admin/pagamentos';
 import { PaymentReference } from './payment-reference';
@@ -20,6 +21,13 @@ const STATUS_LABELS: Record<string, string> = {
   aprovado: 'Pago',
   concluido: 'Pago',
   approved: 'Pago',
+  ativa: 'Ativa',
+  active: 'Ativa',
+  authorized: 'Ativa',
+  pausada: 'Pausada',
+  paused: 'Pausada',
+  cancelada: 'Cancelada',
+  cancelled: 'Cancelada',
   pendente: 'Pendente',
   pending: 'Pendente',
   em_analise: 'Em analise',
@@ -36,6 +44,13 @@ const STATUS_STYLES: Record<string, string> = {
   aprovado: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   concluido: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   approved: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  ativa: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  active: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  authorized: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  pausada: 'border-sky-200 bg-sky-50 text-sky-700',
+  paused: 'border-sky-200 bg-sky-50 text-sky-700',
+  cancelada: 'border-slate-200 bg-slate-100 text-slate-600',
+  cancelled: 'border-slate-200 bg-slate-100 text-slate-600',
   pendente: 'border-amber-200 bg-amber-50 text-amber-700',
   pending: 'border-amber-200 bg-amber-50 text-amber-700',
   em_analise: 'border-sky-200 bg-sky-50 text-sky-700',
@@ -72,18 +87,24 @@ export default async function AdminPagamentosPage() {
               Checkout ativo
             </p>
             <p className="mt-2 text-sm font-semibold text-emerald-950">
-              Solicitação de imóvel: R$ 0,50
+              Avulso: R$ 14,90 · Mensal: R$ 119
             </p>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
         <MetricCard
           title="Receita aprovada"
           value={formatCurrency(data.metrics.totalReceita)}
-          helper={`${formatNumber(data.metrics.totalPago)} pagamentos`}
+          helper={`${formatNumber(data.metrics.totalPago)} avulsos pagos`}
           icon={<CircleDollarSign className="size-5 text-primary" />}
+        />
+        <MetricCard
+          title="Recorrente ativo"
+          value={formatCurrency(data.metrics.receitaRecorrenteAtiva)}
+          helper={`${formatNumber(data.metrics.assinaturasAtivas)} assinaturas`}
+          icon={<CreditCard className="size-5 text-primary" />}
         />
         <MetricCard
           title="Pendentes"
@@ -176,6 +197,35 @@ export default async function AdminPagamentosPage() {
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
         <PanelHeader
+          eyebrow="Assinaturas"
+          title="Planos mensais recentes"
+          icon={<CreditCard className="size-5 text-primary" />}
+        />
+
+        <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-slate-200">
+          <div className="hidden grid-cols-[0.85fr_1.25fr_1fr_0.75fr_0.8fr_0.8fr] gap-4 border-b border-slate-100 bg-slate-50/80 px-5 py-4 text-xs font-bold uppercase tracking-[0.22em] text-slate-400 xl:grid">
+            <span>Status</span>
+            <span>Cliente</span>
+            <span>Referência</span>
+            <span>Valor</span>
+            <span>Início</span>
+            <span>Gateway</span>
+          </div>
+
+          <div className="divide-y divide-slate-100">
+            {data.assinaturasRecentes.length > 0 ? (
+              data.assinaturasRecentes.map((assinatura) => (
+                <SubscriptionRow key={assinatura.id} assinatura={assinatura} />
+              ))
+            ) : (
+              <EmptyState text="Nenhuma assinatura registrada." />
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+        <PanelHeader
           eyebrow="Histórico"
           title="Últimos pagamentos"
           icon={<BadgeCheck className="size-5 text-primary" />}
@@ -202,6 +252,33 @@ export default async function AdminPagamentosPage() {
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+function SubscriptionRow({ assinatura }: { assinatura: AdminAssinaturaItem }) {
+  return (
+    <div className="grid gap-4 px-4 py-4 sm:px-5 xl:grid-cols-[0.85fr_1.25fr_1fr_0.75fr_0.8fr_0.8fr]">
+      <div className="xl:self-center">
+        <MobileLabel>Status</MobileLabel>
+        <StatusBadge status={assinatura.status} />
+      </div>
+      <DataBlock label="Cliente" value={assinatura.userLabel} helper={assinatura.userEmail} />
+      <DataBlock label="Referência" value={assinatura.imovelReferenciaLabel} helper="Acesso total" />
+      <DataBlock
+        label="Valor"
+        value={`${formatCurrency(assinatura.valor)}/mês`}
+        helper={formatPaymentMethod(assinatura.provider)}
+      />
+      <DataBlock label="Início" value={formatDateTime(assinatura.dataInicio ?? assinatura.createdAt)} />
+      <div className="xl:self-center">
+        <MobileLabel>Gateway</MobileLabel>
+        {assinatura.gatewayReference ? (
+          <PaymentReference value={assinatura.gatewayReference} />
+        ) : (
+          <span className="text-sm text-slate-500">-</span>
+        )}
+      </div>
     </div>
   );
 }
