@@ -73,10 +73,36 @@ const PUBLIC_SHARE_BASE_URL = PUBLIC_SITE_URL;
 const PROPERTY_ACCESS_PRICE_LABEL = 'R$ 14,90';
 const MONTHLY_ACCESS_PRICE_LABEL = 'R$ 119';
 const premiumOfferItems = [
-  'Dossiê do imóvel com matrícula, processo e documentos',
-  'Análise de risco, estratégia e observações jurídicas',
-  'Estimativa de lucro, ROI, dívidas e lance recomendado',
-  'Assistente de IA para tirar dúvidas sobre este imóvel',
+  {
+    title: 'Matrícula e edital',
+    description: 'Documentos do leilão organizados para consulta rápida.',
+    icon: FileBadge2,
+  },
+  {
+    title: 'Resumo jurídico',
+    description: 'Processo, ocupação, dívidas e pontos de atenção do imóvel.',
+    icon: Scale,
+  },
+  {
+    title: 'Análise financeira',
+    description: 'Valor de mercado, lucro estimado, ROI e lance recomendado.',
+    icon: TrendingUp,
+  },
+  {
+    title: 'Estratégia prática',
+    description: 'Clareza para decidir se vale entrar, aguardar ou evitar.',
+    icon: Target,
+  },
+  {
+    title: 'Assistente de IA',
+    description: 'IA treinada no contexto do imóvel para responder suas dúvidas.',
+    icon: MessageCircle,
+  },
+  {
+    title: 'Arquivos premium',
+    description: 'Acesso aos arquivos liberados e dados cadastrados pela Nexo.',
+    icon: FileSearch,
+  },
 ];
 
 function buildInfraChatContext(propertyId: string) {
@@ -3261,8 +3287,9 @@ function PropertyDetailsView({
                       Escolha como desbloquear este imóvel
                     </h3>
                     <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-                      Libere os dados que ajudam a decidir com segurança: documentos,
-                      análise jurídica, riscos, estratégia e IA no contexto deste imóvel.
+                      Você libera a visão completa da oportunidade: matrícula,
+                      documentos, análise jurídica, cálculo financeiro, riscos e uma IA
+                      pronta para responder dúvidas sobre este imóvel.
                     </p>
                   </div>
                 </div>
@@ -3282,7 +3309,7 @@ function PropertyDetailsView({
                     <div>
                       <p className="text-base font-black text-slate-950">Acesso avulso</p>
                       <p className="mt-1 text-sm leading-5 text-slate-500">
-                        Ideal para analisar apenas este imóvel agora.
+                        Libera a análise completa deste imóvel específico.
                       </p>
                     </div>
                     <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
@@ -3313,7 +3340,7 @@ function PropertyDetailsView({
                   <div className="pr-28">
                     <p className="text-base font-black text-slate-950">Plano mensal</p>
                     <p className="mt-1 text-sm leading-5 text-slate-500">
-                      Melhor para acompanhar várias oportunidades.
+                      Acesso total para consultar todos os imóveis da plataforma.
                     </p>
                   </div>
                   <p className="mt-5 text-4xl font-black tracking-tight text-slate-950">
@@ -3336,13 +3363,40 @@ function PropertyDetailsView({
               </div>
 
               <div className="border-t border-slate-200 bg-slate-50 px-5 py-5 sm:px-7">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {premiumOfferItems.map((item) => (
-                    <p key={item} className="flex gap-2 text-sm leading-5 text-slate-600">
-                      <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
-                      <span>{item}</span>
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="flex size-9 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                    <CheckCircle2 className="size-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-950">
+                      O que você desbloqueia
                     </p>
-                  ))}
+                    <p className="text-xs font-medium text-slate-500">
+                      Tudo que importa para decidir com segurança.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {premiumOfferItems.map((item) => {
+                    const Icon = item.icon;
+
+                    return (
+                      <div
+                        key={item.title}
+                        className="flex gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
+                      >
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <Icon className="size-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-slate-900">{item.title}</p>
+                          <p className="mt-1 text-xs leading-5 text-slate-500">
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 <p className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-medium leading-5 text-emerald-800">
                   Compra segura. Depois da confirmação do pagamento, as informações são liberadas automaticamente.
