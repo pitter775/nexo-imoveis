@@ -70,40 +70,6 @@ const INFRA_CHAT_WIDGET_SLUG = 'projeto-nexo-leiloes-chat';
 const INFRA_CHAT_API_BASE = 'https://www.infrastudio.pro';
 const INFRA_CHAT_AGENT = 'projeto-nexo-leiloes-assistente';
 const PUBLIC_SHARE_BASE_URL = PUBLIC_SITE_URL;
-const PROPERTY_ACCESS_PRICE_LABEL = 'R$ 14,90';
-const MONTHLY_ACCESS_PRICE_LABEL = 'R$ 119';
-const premiumOfferItems = [
-  {
-    title: 'Matrícula e edital',
-    description: 'Documentos do leilão organizados para consulta rápida.',
-    icon: FileBadge2,
-  },
-  {
-    title: 'Resumo jurídico',
-    description: 'Processo, ocupação, dívidas e pontos de atenção do imóvel.',
-    icon: Scale,
-  },
-  {
-    title: 'Análise financeira',
-    description: 'Valor de mercado, lucro estimado, ROI e lance recomendado.',
-    icon: TrendingUp,
-  },
-  {
-    title: 'Estratégia prática',
-    description: 'Clareza para decidir se vale entrar, aguardar ou evitar.',
-    icon: Target,
-  },
-  {
-    title: 'Assistente de IA',
-    description: 'IA treinada no contexto do imóvel para responder suas dúvidas.',
-    icon: MessageCircle,
-  },
-  {
-    title: 'Arquivos premium',
-    description: 'Acesso aos arquivos liberados e dados cadastrados pela Nexo.',
-    icon: FileSearch,
-  },
-];
 
 function buildInfraChatContext(propertyId: string) {
   return {
@@ -2476,10 +2442,7 @@ function PropertyDetailsView({
   const [activePremiumTab, setActivePremiumTab] = useState<'geral' | 'dossie' | 'analise' | 'arquivos'>('geral');
   const [similarPage, setSimilarPage] = useState(0);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
-  const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
   const [paymentState, setPaymentState] = useState<'idle' | 'pending' | 'approved'>('idle');
-  const [showUnlockOptions, setShowUnlockOptions] = useState(false);
-  const autoCheckoutStartedRef = useRef(false);
 
   const markPropertyAsUnlocked = () => {
     setPaymentState('approved');
@@ -2494,10 +2457,7 @@ function PropertyDetailsView({
     setActivePremiumTab('geral');
     setSimilarPage(0);
     setShareFeedback(null);
-    setIsCreatingCheckout(false);
     setPaymentState('idle');
-    setShowUnlockOptions(false);
-    autoCheckoutStartedRef.current = false;
   }, [hasPremiumAccess, property.id, property.image_url]);
 
   useEffect(() => {
@@ -2578,97 +2538,8 @@ function PropertyDetailsView({
     if (hasPremiumAccess) {
       setHasUnlockedPremium(true);
       setActivePremiumTab('dossie');
-      return;
-    }
-
-    setShowUnlockOptions(true);
-  };
-
-  const handleStartInformationCheckout = async (plano: 'imovel' | 'mensal') => {
-    if (hasPremiumAccess) {
-      setHasUnlockedPremium(true);
-      setActivePremiumTab('dossie');
-      return;
-    }
-
-    if (!user) {
-      window.location.href = `/login?redirectTo=${encodeURIComponent(
-        `/imoveis/${property.id}?pay=1`,
-      )}`;
-      return;
-    }
-
-    setIsCreatingCheckout(true);
-    setShareFeedback(null);
-
-    try {
-      const response = await fetch(
-        plano === 'mensal' ? '/api/pagamentos/assinatura' : '/api/pagamentos/informacoes',
-        {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imovelId: property.id }),
-        },
-      );
-      const payload = (await response.json()) as {
-        alreadyUnlocked?: boolean;
-        checkoutUrl?: string;
-        redirectUrl?: string;
-        error?: string;
-      };
-
-      if (!response.ok) {
-        throw new Error(payload.error || 'Nao foi possivel iniciar o pagamento.');
-      }
-
-      if (payload.alreadyUnlocked) {
-        markPropertyAsUnlocked();
-        return;
-      }
-
-      if (payload.checkoutUrl) {
-        window.location.href = payload.checkoutUrl;
-        return;
-      }
-
-      if (payload.redirectUrl) {
-        window.location.href = payload.redirectUrl;
-        return;
-      }
-
-      throw new Error('Checkout indisponivel no momento.');
-    } catch (error) {
-      setShareFeedback(
-        error instanceof Error
-          ? error.message
-          : 'Nao foi possivel iniciar o pagamento.',
-      );
-      setIsCreatingCheckout(false);
     }
   };
-
-  useEffect(() => {
-    if (
-      typeof window === 'undefined' ||
-      !user ||
-      hasPremiumAccess ||
-      isCreatingCheckout ||
-      autoCheckoutStartedRef.current
-    ) {
-      return;
-    }
-
-    const url = new URL(window.location.href);
-
-    if (url.searchParams.get('pay') !== '1') {
-      return;
-    }
-
-    autoCheckoutStartedRef.current = true;
-    url.searchParams.delete('pay');
-    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
-    void handleStartInformationCheckout('imovel');
-  }, [handleStartInformationCheckout, hasPremiumAccess, isCreatingCheckout, user]);
 
   useEffect(() => {
     if (paymentState !== 'pending') {
@@ -2905,23 +2776,18 @@ function PropertyDetailsView({
                   Informações liberadas
                 </button>
               ) : (
-                <button
-                  type="button"
-                  onClick={handleUnlockInformation}
-                  disabled={isCreatingCheckout}
-                  className={[
-                    'w-full rounded-xl bg-primary py-4 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70',
-                    paymentState === 'pending' ? 'animate-pulse' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                >
-                  {isCreatingCheckout
-                    ? 'Gerando pagamento...'
-                    : paymentState === 'pending'
-                      ? 'Pagamento em análise'
-                      : 'Solicitar informações'}
-                </button>
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full cursor-not-allowed rounded-xl bg-slate-300 py-4 font-bold text-slate-600 shadow-sm"
+                  >
+                    Solicitar informações bloqueado
+                  </button>
+                  <p className="text-xs leading-5 text-slate-500">
+                    Após a confirmação do pagamento, a Nexo libera este acesso manualmente.
+                  </p>
+                </div>
               )}
               {isAdmin ? (
                 <AdminEditPropertyLink propertyId={property.id} className="w-full justify-center" />
@@ -3258,154 +3124,6 @@ function PropertyDetailsView({
         </section>
       ) : null}
 
-      <AnimatePresence>
-        {showUnlockOptions ? (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 px-4 py-4 backdrop-blur-sm sm:items-center sm:py-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="unlock-options-title"
-          >
-            <motion.div
-              className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl shadow-slate-950/30"
-              initial={{ opacity: 0, y: 28, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 18, scale: 0.98 }}
-              transition={{ type: 'spring', damping: 26, stiffness: 260 }}
-            >
-              <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-5 sm:px-7">
-                <div className="space-y-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
-                    <ShieldCheck className="size-3.5" />
-                    Acesso premium
-                  </span>
-                  <div>
-                    <h3 id="unlock-options-title" className="text-2xl font-black tracking-tight text-slate-950">
-                      Escolha como desbloquear este imóvel
-                    </h3>
-                    <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-                      Você libera a visão completa da oportunidade: matrícula,
-                      documentos, análise jurídica, cálculo financeiro, riscos e uma IA
-                      pronta para responder dúvidas sobre este imóvel.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowUnlockOptions(false)}
-                  className="flex size-10 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
-                  aria-label="Fechar opções de acesso"
-                >
-                  <X className="size-5" />
-                </button>
-              </div>
-
-              <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-7">
-                <div className="flex flex-col rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-base font-black text-slate-950">Acesso avulso</p>
-                      <p className="mt-1 text-sm leading-5 text-slate-500">
-                        Libera a análise completa deste imóvel específico.
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                      Por imóvel
-                    </span>
-                  </div>
-                  <p className="mt-5 text-4xl font-black tracking-tight text-primary">
-                    {PROPERTY_ACCESS_PRICE_LABEL}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">
-                    Pagamento único, sem assinatura.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleStartInformationCheckout('imovel')}
-                    disabled={isCreatingCheckout}
-                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    <CircleDollarSign className="size-4" />
-                    {isCreatingCheckout ? 'Gerando cobrança...' : 'Pagar este imóvel'}
-                  </button>
-                </div>
-
-                <div className="relative flex flex-col rounded-2xl border-2 border-primary bg-white p-5 shadow-xl shadow-primary/10">
-                  <div className="absolute right-4 top-4 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">
-                    Melhor valor
-                  </div>
-                  <div className="pr-28">
-                    <p className="text-base font-black text-slate-950">Plano mensal</p>
-                    <p className="mt-1 text-sm leading-5 text-slate-500">
-                      Acesso total para consultar todos os imóveis da plataforma.
-                    </p>
-                  </div>
-                  <p className="mt-5 text-4xl font-black tracking-tight text-slate-950">
-                    {MONTHLY_ACCESS_PRICE_LABEL}
-                    <span className="text-sm font-semibold text-slate-500">/mês</span>
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">
-                    Cobrança mensal para usar a plataforma com mais liberdade.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleStartInformationCheckout('mensal')}
-                    disabled={isCreatingCheckout}
-                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    <Wallet className="size-4" />
-                    {isCreatingCheckout ? 'Gerando cobrança...' : 'Assinar mensal'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="border-t border-slate-200 bg-slate-50 px-5 py-5 sm:px-7">
-                <div className="mb-4 flex items-center gap-2">
-                  <div className="flex size-9 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                    <CheckCircle2 className="size-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-black text-slate-950">
-                      O que você desbloqueia
-                    </p>
-                    <p className="text-xs font-medium text-slate-500">
-                      Tudo que importa para decidir com segurança.
-                    </p>
-                  </div>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {premiumOfferItems.map((item) => {
-                    const Icon = item.icon;
-
-                    return (
-                      <div
-                        key={item.title}
-                        className="flex gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
-                      >
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                          <Icon className="size-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-black text-slate-900">{item.title}</p>
-                          <p className="mt-1 text-xs leading-5 text-slate-500">
-                            {item.description}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <p className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-medium leading-5 text-emerald-800">
-                  Compra segura. Depois da confirmação do pagamento, as informações são liberadas automaticamente.
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
       </motion.div>
     </>
   );
