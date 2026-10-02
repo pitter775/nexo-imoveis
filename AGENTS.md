@@ -172,7 +172,7 @@ Registrado em 01/10/2026. Este roteiro descreve trabalho planejado; nao signific
 
 ### Andamento e ponto de retomada — 01/10/2026
 
-**Situacao geral: base tecnica implementada e compilada; ativacao operacional ainda depende de credenciais, flag de ambiente e homologacao de pagamento.**
+**Situacao geral: base tecnica implementada e compilada; o fluxo novo esta ativo diretamente no codigo para teste controlado, mas ainda depende das credenciais do Mercado Pago e de um pagamento real para validacao.**
 
 Decisoes confirmadas pelo responsavel:
 
@@ -199,11 +199,11 @@ Arquivos ja criados/alterados nesta frente:
 - `database/seeds/20261001_subscription_management.sql`: aplicado no Supabase; campos adicionais, tabelas de cobrancas/auditoria/avisos, RLS e funcoes transacionais.
 - `database/seeds/20261001_subscription_management_metrics_courtesy.sql`: aplicado no Supabase; metricas agregadas e concessao de cortesia auditada.
 - `lib/payments/subscription-management-types.ts`: tipos da estrutura aplicada no Supabase, sincronizados com `database/schema.sql`.
-- `lib/payments/subscription-management-db.ts`: cliente tipado e chave de ativacao `SUBSCRIPTION_MANAGEMENT_ENABLED`.
+- `lib/payments/subscription-management-db.ts`: cliente tipado; o modo novo esta temporariamente ativo por codigo para o teste de producao.
 - `lib/payments/subscription-policy.ts`: calculo de periodo, situacao, acesso manual e labels, usado pelos fluxos novos.
 - `lib/payments/subscription-management.ts`: consulta, sincronizacao de assinatura/fatura e conciliacao, usado pelo webhook e cron.
 - `lib/payments/mercado-pago.ts`: tipos ampliados e helpers para consultar faturas, cancelar assinatura e alterar token de cartao; chamadas novas ainda nao homologadas.
-- `.env.example`: flag `SUBSCRIPTION_MANAGEMENT_ENABLED="false"`, que nao habilita Pix Automatico.
+- `.env.example`: credenciais e chaves externas; a ativacao do modo novo nao depende mais de variavel de ambiente durante este teste.
 - `vercel.json`: agenda conciliacao a cada 15 minutos; exige `CRON_SECRET` no ambiente e a mesma credencial no scheduler.
 
 Verificacoes desta sessao:
@@ -214,7 +214,7 @@ Verificacoes desta sessao:
 - Nenhum pagamento real criado, nenhum cancelamento enviado ao Mercado Pago e nenhuma credencial alterada.
 - Nenhum commit, push ou deploy realizado nesta frente.
 
-**Proxima acao do Codex:** configurar variaveis no ambiente correto, ligar a flag somente depois de revisar credenciais e homologar um ciclo de teste. A compilacao nao prova a integracao financeira.
+**Proxima acao do Codex:** configurar as credenciais disponiveis no ambiente de producao e acompanhar um ciclo de teste de R$ 1,00. A compilacao nao prova a integracao financeira.
 
 **Atualizacao desta retomada:** o adaptador do Mercado Pago passou a aplicar timeout de 15 segundos nas chamadas de criacao e consulta, evitando requisicoes penduradas. O roteiro detalhado foi marcado com os blocos de banco, sincronizacao, experiencia, area do cliente e administrativo ja implementados. `npm exec tsc --noEmit` e `npm run build` passaram novamente apos essa alteracao.
 
@@ -225,11 +225,11 @@ Como o projeto nao possui ambiente de homologacao disponivel, o primeiro teste e
 1. Confirmar no ambiente de producao `MERCADO_PAGO_ACCESS_TOKEN`, `MERCADO_PAGO_WEBHOOK_SECRET`, `NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY`, `CRON_SECRET` e `APP_URL`. Nunca registrar os valores neste arquivo.
 2. Confirmar que os dois SQL foram aplicados no mesmo projeto Supabase usado pela aplicacao e que `metricas_assinaturas()` responde sem erro.
 3. Configurar no painel do Mercado Pago a URL `https://DOMINIO/api/pagamentos/mercado-pago/webhook` para os eventos de assinatura e pagamento. O endpoint rejeita notificacoes sem assinatura valida.
-4. Manter `SUBSCRIPTION_MANAGEMENT_ENABLED=false`, fazer deploy e confirmar que a aplicacao abre normalmente.
-5. Ativar a flag em uma janela acompanhada, contratar com o usuario interno e guardar o `assinaturaId` retornado. Durante este teste o valor e R$ 1,00; restaurar R$ 119,00 ao terminar.
+4. Fazer deploy e confirmar que a aplicacao abre normalmente. O modo novo ja esta ativo por codigo neste periodo de teste.
+5. Contratar com o usuario interno e guardar o `assinaturaId` retornado. Durante este teste o valor e R$ 1,00; restaurar R$ 119,00 ao terminar.
 6. Conferir no Supabase a assinatura, a cobranca e o historico antes de liberar qualquer outro usuario. O acesso so deve existir quando houver periodo pago confirmado ou cortesia auditada.
 7. Chamar o cron com `Authorization: Bearer CRON_SECRET` e confirmar resposta 200. Uma resposta 503 exige investigar antes de continuar.
-8. Para rollback, desligar a flag e fazer novo deploy. Nao apagar registros, nao cancelar cobrancas automaticamente e preservar o `assinaturaId` para conciliacao posterior.
+8. Para rollback, restaurar o retorno de `subscriptionManagementEnabled()` e o preco comercial, depois fazer novo deploy. Nao apagar registros, nao cancelar cobrancas automaticamente e preservar o `assinaturaId` para conciliacao posterior.
 
 Esse procedimento testa a integracao real sem afirmar que Pix Automatico esta disponivel. O primeiro teste deve usar o fluxo de cartao recorrente que a API atual do Mercado Pago oferece; Pix comum e Pix Automatico continuam sendo validacoes distintas.
 
@@ -239,10 +239,10 @@ Pendencias tecnicas conhecidas para a retomada:
 2. Revisar SQL e implementar testes significativos para duplicidade, concorrencia, estorno, virada do mes e precedencia de excecoes administrativas. A funcao de sincronizacao recalcula `pago_ate`; validar cobrancas futuras e periodos antes de usa-la como criterio de acesso.
 3. Exigir confirmacao do pagamento real ao persistir uma fatura como paga; revisar o fallback de status de `invoice.payment` quando nao existir ID de pagamento consultavel.
 4. Revisar concorrencia no compare-and-swap da assinatura e tratamento/repeticao quando a atualizacao nao afetar linhas. Validar payloads e estados de cancelamento/alteracao do cartao na API oficial.
-5. Homologar a regra nova nos pontos integrados: `subscriptions.ts`, contratacao, retorno, webhook e resumo do cliente. Com a flag desligada, o sistema preserva o fluxo anterior; com a flag ligada, usa as tabelas e RPCs novas.
+5. Homologar a regra nova nos pontos integrados: `subscriptions.ts`, contratacao, retorno, webhook e resumo do cliente. Durante o teste, o modo novo esta ativo por codigo e usa as tabelas e RPCs novas.
 6. Configurar e testar o cron `/api/cron/assinaturas` com `CRON_SECRET`, SMTP de avisos, assinatura de webhook e repeticao em falha.
 7. Fazer revisao visual e funcional em celular/desktop e revisar protecao de arquivos/URLs publicas antes de publicar acesso premium.
-8. Confirmar indicadores com dados de teste controlados, separando receita recebida, previsao e cortesia; validar tudo antes de ativar a flag em producao.
+8. Confirmar indicadores com dados de teste controlados, separando receita recebida, previsao e cortesia; restaurar o preco comercial depois do teste.
 
 ### Objetivo e base para reaproveitar
 

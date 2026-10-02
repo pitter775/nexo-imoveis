@@ -4,7 +4,9 @@ import { getSupabaseDatabaseEnv } from '@/lib/supabase/env';
 import type { SubscriptionDatabase } from './subscription-management-types';
 
 export function subscriptionManagementEnabled() {
-  return process.env.SUBSCRIPTION_MANAGEMENT_ENABLED === 'true';
+  // Ativo diretamente no codigo durante o teste de producao com assinatura de R$ 1.
+  // Depois da validacao, restaurar o valor comercial e usar uma decisao de ativacao revisada.
+  return true;
 }
 
 export function createSubscriptionClient() {
