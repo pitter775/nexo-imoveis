@@ -1,4 +1,5 @@
 import 'server-only';
+import { getSubscriptionMetrics } from '@/lib/payments/subscription-queries';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -189,6 +190,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     ((usersLookupResponse.data ?? []) as UserLookup[]).map((item) => [item.id, item]),
   );
 
+  const subscriptionMetrics = await getSubscriptionMetrics();
   const receitaAprovada = ((pagamentosResponse.data ?? []) as RevenueResponse[]).reduce(
     (sum, item) => sum + Number(item.valor ?? 0),
     0,
@@ -240,9 +242,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       totalUsers: totalUsersResponse.count ?? 0,
       totalImoveisAtivos: totalImoveisAtivosResponse.count ?? 0,
       totalAcessosAtivos: totalAcessosAtivosResponse.count ?? 0,
-      totalAssinaturasAtivas: totalAssinaturasAtivasResponse.count ?? 0,
-      receitaAprovada,
-      receitaRecorrenteAtiva,
+      totalAssinaturasAtivas: subscriptionMetrics?.ativas ?? totalAssinaturasAtivasResponse.count ?? 0,
+      receitaAprovada: receitaAprovada + Number(subscriptionMetrics?.recebido ?? 0),
+      receitaRecorrenteAtiva: Number(subscriptionMetrics?.previsao ?? receitaRecorrenteAtiva),
       conversasIaMes: new Set(chatMessages.map((item) => item.conversa_id)).size,
       tokensMes,
     },

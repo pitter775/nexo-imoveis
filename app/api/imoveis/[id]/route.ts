@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPublicAbsoluteUrl } from '@/lib/site';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentAuthenticatedUser } from '@/lib/auth';
+import { canAccessPropertyInformation } from '@/lib/payments/property-access';
 
 type RouteProps = {
   params: Promise<{
@@ -22,11 +24,6 @@ function createNotFoundResponse() {
   );
 }
 
-function getFutureAuthToken(request: NextRequest) {
-  // Reserved for future token-based auth without changing the route contract.
-  return request.headers.get('authorization');
-}
-
 export async function GET(request: NextRequest, { params }: RouteProps) {
   const { id } = await params;
 
@@ -34,7 +31,7 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
     return createNotFoundResponse();
   }
 
-  void getFutureAuthToken(request);
+  const hasAccess = await canAccessPropertyInformation(await getCurrentAuthenticatedUser(), id);
 
   const supabase = createAdminClient();
 
@@ -133,7 +130,7 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
         area_construida: toNumber(imovel.area_construida),
         ano_construcao: imovel.ano_construcao,
       },
-      detalhes: {
+      detalhes: hasAccess ? {
         resumo_executivo: detalhes?.resumo_executivo ?? null,
         ocupacao: detalhes?.ocupacao ?? null,
         matricula: detalhes?.matricula ?? null,
@@ -146,7 +143,7 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
         riscos: detalhes?.riscos ?? null,
         observacoes_juridicas: detalhes?.observacoes_juridicas ?? null,
         estrategia: detalhes?.estrategia ?? null,
-      },
+      } : null,
       imagens: (imagens ?? []).map((imagem) => ({
         url: imagem.url,
         ordem: imagem.ordem ?? 0,

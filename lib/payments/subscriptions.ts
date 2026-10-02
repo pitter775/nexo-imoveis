@@ -1,4 +1,7 @@
 import 'server-only';
+import { subscriptionManagementEnabled } from './subscription-management-db';
+import { getManagedSubscriptions, syncManagedPreapproval } from './subscription-management';
+import { hasSubscriptionAccess } from './subscription-policy';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
@@ -10,6 +13,12 @@ import {
 const ACTIVE_SUBSCRIPTION_STATUSES = ['ativa', 'active', 'authorized'];
 
 export async function userHasActiveMonthlySubscription(userId: string) {
+  if (subscriptionManagementEnabled()) {
+    const subscriptions = await getManagedSubscriptions(userId);
+    // Suspensao administrativa do acesso mensal prevalece sobre outras assinaturas.
+    if (subscriptions.some(item => item.acesso_manual === 'suspenso')) return false;
+    return subscriptions.some(item => hasSubscriptionAccess(item));
+  }
   const supabase = createAdminClient() as any;
   const { data, error } = await supabase
     .from('assinaturas')
@@ -37,6 +46,7 @@ export async function syncSubscriptionPreapproval(preapprovalId: string) {
 }
 
 async function persistSubscriptionPreapproval(preapproval: MercadoPagoPreapproval) {
+  if (subscriptionManagementEnabled()) return syncManagedPreapproval(preapproval);
   const supabase = createAdminClient() as any;
   const mappedStatus = mapMercadoPagoPreapprovalStatus(preapproval.status);
   const assinaturaId = preapproval.external_reference?.trim() || null;

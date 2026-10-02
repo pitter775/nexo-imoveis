@@ -193,9 +193,62 @@ CREATE TABLE public.assinaturas (
   data_fim timestamp with time zone,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  plano text NOT NULL DEFAULT 'Mensal'::text,
+  metodo text,
+  proxima_cobranca timestamp with time zone,
+  pago_ate timestamp with time zone,
+  provider_updated_at timestamp with time zone,
+  checkout_url text,
+  conciliado_em timestamp with time zone,
+  erro_conciliacao text,
+  acesso_manual text,
+  acesso_manual_ate timestamp with time zone,
   CONSTRAINT assinaturas_pkey PRIMARY KEY (id),
   CONSTRAINT assinaturas_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
   CONSTRAINT assinaturas_imovel_referencia_id_fkey FOREIGN KEY (imovel_referencia_id) REFERENCES public.imoveis(id)
+);
+CREATE TABLE public.assinatura_cobrancas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  assinatura_id uuid NOT NULL,
+  referencia_gateway text NOT NULL UNIQUE,
+  pagamento_gateway text,
+  status text NOT NULL,
+  valor numeric(12,2) NOT NULL,
+  moeda text NOT NULL DEFAULT 'BRL'::text,
+  metodo text,
+  vencimento timestamp with time zone NOT NULL,
+  periodo_fim timestamp with time zone NOT NULL,
+  pago_em timestamp with time zone,
+  provider_updated_at timestamp with time zone NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT assinatura_cobrancas_pkey PRIMARY KEY (id),
+  CONSTRAINT assinatura_cobrancas_assinatura_id_fkey FOREIGN KEY (assinatura_id) REFERENCES public.assinaturas(id)
+);
+CREATE TABLE public.assinatura_auditoria (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  assinatura_id uuid NOT NULL,
+  administrador_id uuid NOT NULL,
+  acao text NOT NULL,
+  motivo text NOT NULL,
+  estado_anterior jsonb NOT NULL,
+  estado_novo jsonb NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT assinatura_auditoria_pkey PRIMARY KEY (id),
+  CONSTRAINT assinatura_auditoria_assinatura_id_fkey FOREIGN KEY (assinatura_id) REFERENCES public.assinaturas(id),
+  CONSTRAINT assinatura_auditoria_administrador_id_fkey FOREIGN KEY (administrador_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.assinatura_avisos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  assinatura_id uuid NOT NULL,
+  referencia_gateway text NOT NULL,
+  tipo text NOT NULL,
+  enviado_em timestamp with time zone,
+  reservado_ate timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT assinatura_avisos_pkey PRIMARY KEY (id),
+  CONSTRAINT assinatura_avisos_unique UNIQUE (referencia_gateway, tipo),
+  CONSTRAINT assinatura_avisos_assinatura_id_fkey FOREIGN KEY (assinatura_id) REFERENCES public.assinaturas(id)
 );
 CREATE TABLE public.user_access (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

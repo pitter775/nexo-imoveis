@@ -3,7 +3,8 @@ import 'server-only';
 import { getAbsoluteUrl } from '@/lib/site';
 
 export const INFORMATION_ACCESS_PRICE = 14.9;
-export const MONTHLY_ACCESS_PRICE = 119;
+// Valor temporario para homologacao controlada em producao. Restaurar para 119 apos o teste.
+export const MONTHLY_ACCESS_PRICE = 1;
 export const INFORMATION_ACCESS_CURRENCY = 'BRL';
 
 type MercadoPagoPreferenceInput = {
@@ -41,6 +42,10 @@ type MercadoPagoPreapprovalResponse = {
   external_reference?: string;
   payer_email?: string;
   message?: string;
+  payment_method_id?: string;
+  next_payment_date?: string;
+  last_modified?: string;
+  auto_recurring?: { transaction_amount?: number; currency_id?: string; frequency?: number; frequency_type?: string };
 };
 
 export type MercadoPagoPayment = {
@@ -48,6 +53,10 @@ export type MercadoPagoPayment = {
   status?: string;
   external_reference?: string;
   transaction_amount?: number;
+  currency_id?: string;
+  payment_method_id?: string;
+  date_approved?: string;
+  date_last_updated?: string;
 };
 
 export type MercadoPagoPreapproval = {
@@ -55,6 +64,11 @@ export type MercadoPagoPreapproval = {
   status?: string;
   external_reference?: string;
   payer_email?: string;
+  payment_method_id?: string;
+  next_payment_date?: string;
+  last_modified?: string;
+  auto_recurring?: { transaction_amount?: number; currency_id?: string; frequency?: number; frequency_type?: string };
+  init_point?: string;
 };
 
 function getMercadoPagoAccessToken() {
@@ -112,6 +126,7 @@ export async function createInformationPreference({
         name: payer.name || undefined,
       },
     }),
+    signal: AbortSignal.timeout(15000),
   });
 
   const payload = (await response.json()) as MercadoPagoPreferenceResponse;
@@ -132,6 +147,7 @@ export async function getMercadoPagoPayment(paymentId: string) {
     headers: {
       Authorization: `Bearer ${getMercadoPagoAccessToken()}`,
     },
+    signal: AbortSignal.timeout(15000),
   });
 
   const payload = (await response.json()) as MercadoPagoPayment & { message?: string };
@@ -167,6 +183,7 @@ export async function createMonthlySubscriptionPreapproval({
         currency_id: INFORMATION_ACCESS_CURRENCY,
       },
     }),
+    signal: AbortSignal.timeout(15000),
   });
 
   const payload = (await response.json()) as MercadoPagoPreapprovalResponse;
@@ -188,6 +205,7 @@ export async function getMercadoPagoPreapproval(preapprovalId: string) {
     headers: {
       Authorization: `Bearer ${getMercadoPagoAccessToken()}`,
     },
+    signal: AbortSignal.timeout(15000),
   });
 
   const payload = (await response.json()) as MercadoPagoPreapprovalResponse;
@@ -201,7 +219,63 @@ export async function getMercadoPagoPreapproval(preapprovalId: string) {
     status: payload.status,
     external_reference: payload.external_reference,
     payer_email: payload.payer_email,
+    payment_method_id: payload.payment_method_id,
+    next_payment_date: payload.next_payment_date,
+    last_modified: payload.last_modified,
+    auto_recurring: payload.auto_recurring,
+    init_point: payload.init_point,
   };
+}
+
+export type MercadoPagoInvoice = {
+  id: number | string;
+  preapproval_id: string;
+  currency_id: string;
+  transaction_amount: number | string;
+  debit_date: string;
+  last_modified: string;
+  status: string;
+  payment?: { id?: number | string; status?: string };
+};
+
+export async function getSubscriptionInvoice(id: string): Promise<MercadoPagoInvoice> {
+  return mercadoPagoRequest(`/authorized_payments/${encodeURIComponent(id)}`);
+}
+
+export async function searchSubscriptionInvoices(preapprovalId: string, offset = 0): Promise<{
+  results: MercadoPagoInvoice[]; paging: { total: number; offset: number; limit: number };
+}> {
+  return mercadoPagoRequest(`/authorized_payments/search?preapproval_id=${encodeURIComponent(preapprovalId)}&limit=50&offset=${offset}`);
+}
+
+export async function updateSubscriptionPayment(preapprovalId: string, cardToken: string) {
+  await mercadoPagoRequest(`/preapproval/${encodeURIComponent(preapprovalId)}`, {
+    method: 'PUT', body: JSON.stringify({ card_token_id: cardToken }),
+  });
+}
+
+export async function cancelMercadoPagoSubscription(preapprovalId: string) {
+  await mercadoPagoRequest(`/preapproval/${encodeURIComponent(preapprovalId)}`, {
+    method: 'PUT', body: JSON.stringify({ status: 'cancelled' }),
+  });
+}
+
+export async function searchPreapprovalByReference(reference: string): Promise<{ results: MercadoPagoPreapproval[] }> {
+  return mercadoPagoRequest(`/preapproval/search?external_reference=${encodeURIComponent(reference)}`);
+}
+
+export async function searchInvoiceByPayment(paymentId: string): Promise<{ results: MercadoPagoInvoice[] }> {
+  return mercadoPagoRequest(`/authorized_payments/search?payment_id=${encodeURIComponent(paymentId)}`);
+}
+
+async function mercadoPagoRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await fetch(`https://api.mercadopago.com${path}`, {
+    ...init,
+    headers: { Authorization: `Bearer ${getMercadoPagoAccessToken()}`, 'Content-Type': 'application/json' },
+    cache: 'no-store', signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) throw new Error(`Mercado Pago indisponível (${response.status}). Tente novamente.`);
+  return response.json() as Promise<T>;
 }
 
 export function mapMercadoPagoStatus(status: string | null | undefined) {

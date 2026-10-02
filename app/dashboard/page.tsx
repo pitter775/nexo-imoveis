@@ -15,6 +15,7 @@ import {
 import { logoutAction } from '@/app/actions/auth';
 import { BrandLogo } from '@/components/brand-logo';
 import { getCurrentAuthenticatedUser } from '@/lib/auth';
+import { subscriptionManagementEnabled } from '@/lib/payments/subscription-management-db';
 import {
   getClientAccessSummary,
   type PurchasedProperty,
@@ -62,6 +63,7 @@ export default async function DashboardPage() {
       </header>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
+        {subscriptionManagementEnabled() && <Link href="/dashboard/assinatura" className="mb-6 inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-white px-5 py-3 text-sm font-bold text-primary shadow-sm"><CreditCard className="size-4" /> Minha Assinatura <ArrowRight className="size-4" /></Link>}
         <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
           <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="p-6 sm:p-8">
@@ -175,7 +177,7 @@ function SubscriptionCard({ subscription }: { subscription: ClientSubscription }
             </div>
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-emerald-700">
-                Plano mensal
+                Plano mensal · em testes
               </p>
               <h2 className="mt-1 text-2xl font-extrabold text-emerald-950">
                 Assinatura ativa

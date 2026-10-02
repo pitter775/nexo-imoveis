@@ -87,7 +87,7 @@ export default async function AdminPagamentosPage() {
               Checkout ativo
             </p>
             <p className="mt-2 text-sm font-semibold text-emerald-950">
-              Avulso: R$ 14,90 · Mensal: R$ 119
+              Avulso: R$ 14,90 · Mensal: R$ 1 (teste)
             </p>
           </div>
         </div>
@@ -101,7 +101,7 @@ export default async function AdminPagamentosPage() {
           icon={<CircleDollarSign className="size-5 text-primary" />}
         />
         <MetricCard
-          title="Recorrente ativo"
+          title="Previsão mensal ativa"
           value={formatCurrency(data.metrics.receitaRecorrenteAtiva)}
           helper={`${formatNumber(data.metrics.assinaturasAtivas)} assinaturas`}
           icon={<CreditCard className="size-5 text-primary" />}

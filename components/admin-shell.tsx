@@ -29,6 +29,7 @@ import { SiteFooter } from '@/components/site-footer';
 type AdminShellProps = {
   children: ReactNode;
   profile: AppUserProfile;
+  subscriptionsEnabled?: boolean;
 };
 
 const navigationItems = [
@@ -39,10 +40,11 @@ const navigationItems = [
   { href: '/admin/log', label: 'Log', icon: Logs },
   { href: '/admin/ia-tokens', label: 'IA Tokens', icon: Bot },
   { href: '/admin/pagamentos', label: 'Pagamentos', icon: CreditCard },
+  { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
   { href: '/admin/relatorios', label: 'Relatorios', icon: FileText },
 ];
 
-export function AdminShell({ children, profile }: AdminShellProps) {
+export function AdminShell({ children, profile, subscriptionsEnabled = false }: AdminShellProps) {
   const pathname = usePathname();
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -133,7 +135,7 @@ export function AdminShell({ children, profile }: AdminShellProps) {
 
           <div className="min-h-0 flex-1 pt-8 lg:overflow-hidden">
             <nav className="space-y-2 pr-1 pb-6 lg:h-full lg:overflow-y-auto lg:pb-36">
-              {navigationItems.map(({ href, label, icon: Icon }) => {
+              {navigationItems.filter(item => item.href !== '/admin/assinaturas' || subscriptionsEnabled).map(({ href, label, icon: Icon }) => {
                 const isActive =
                   href === '/admin'
                     ? pathname === href

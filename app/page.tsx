@@ -71,7 +71,7 @@ const INFRA_CHAT_API_BASE = 'https://www.infrastudio.pro';
 const INFRA_CHAT_AGENT = 'projeto-nexo-leiloes-assistente';
 const PUBLIC_SHARE_BASE_URL = PUBLIC_SITE_URL;
 const PROPERTY_ACCESS_PRICE_LABEL = 'R$ 14,90';
-const MONTHLY_ACCESS_PRICE_LABEL = 'R$ 119';
+const MONTHLY_ACCESS_PRICE_LABEL = 'R$ 1';
 const premiumOfferItems = [
   {
     title: 'Matrícula e edital',
@@ -3335,7 +3335,7 @@ function PropertyDetailsView({
 
                 <div className="relative flex flex-col rounded-2xl border-2 border-primary bg-white p-5 shadow-xl shadow-primary/10">
                   <div className="absolute right-4 top-4 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">
-                    Melhor valor
+                    Assinatura em testes
                   </div>
                   <div className="pr-28">
                     <p className="text-base font-black text-slate-950">Plano mensal</p>

@@ -1,4 +1,5 @@
 import 'server-only';
+import { getSubscriptionMetrics } from '@/lib/payments/subscription-queries';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -257,16 +258,19 @@ export async function getAdminPagamentosData(): Promise<AdminPagamentosData> {
     }
   }
 
+  const subscriptionMetrics = await getSubscriptionMetrics();
+  const totalReceived = totalReceita + Number(subscriptionMetrics?.recebido ?? 0);
+  const paidCount = totalPago + Number(subscriptionMetrics?.pagas ?? 0);
   return {
     metrics: {
-      totalReceita,
-      receitaRecorrenteAtiva,
-      totalPago,
+      totalReceita: totalReceived,
+      receitaRecorrenteAtiva: Number(subscriptionMetrics?.previsao ?? receitaRecorrenteAtiva),
+      totalPago: paidCount,
       totalPendente,
       totalFalhou,
       acessosAtivos,
-      assinaturasAtivas,
-      ticketMedio: totalPago > 0 ? totalReceita / totalPago : 0,
+      assinaturasAtivas: subscriptionMetrics?.ativas ?? assinaturasAtivas,
+      ticketMedio: paidCount > 0 ? totalReceived / paidCount : 0,
     },
     statusCounts: Array.from(statusBuckets.entries())
       .map(([status, bucket]) => ({

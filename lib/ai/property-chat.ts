@@ -100,6 +100,11 @@ export async function answerPropertyQuestion({
   }
 
   const supabase = createAdminClient();
+  if (conversationId) {
+    const { data: existing, error } = await supabase.from('chat_conversas').select('id')
+      .eq('id', conversationId).eq('imovel_id', propertyId).eq('user_id', userId ?? '').maybeSingle();
+    if (error || !existing) throw new Error('Conversa não encontrada para este usuário e imóvel.');
+  }
   const property = await loadPropertyContext(propertyId);
 
   if (!property) {

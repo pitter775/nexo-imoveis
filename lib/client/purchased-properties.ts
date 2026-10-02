@@ -1,4 +1,7 @@
 import 'server-only';
+import { subscriptionManagementEnabled } from '@/lib/payments/subscription-management-db';
+import { getManagedSubscriptions } from '@/lib/payments/subscription-management';
+import { hasSubscriptionAccess, subscriptionStatus } from '@/lib/payments/subscription-policy';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -89,6 +92,17 @@ export async function getClientAccessSummary(userId: string): Promise<ClientAcce
 }
 
 export async function getActiveClientSubscription(userId: string): Promise<ClientSubscription | null> {
+  if (subscriptionManagementEnabled()) {
+    const subscriptions = await getManagedSubscriptions(userId);
+    if (subscriptions.some(item => item.acesso_manual === 'suspenso')) return null;
+    const subscription = subscriptions.find(item => hasSubscriptionAccess(item));
+    return subscription ? {
+      id: subscription.id, status: subscriptionStatus(subscription), valor: Number(subscription.valor),
+      startedAt: subscription.data_inicio ?? subscription.created_at,
+      expiresAt: subscription.acesso_manual === 'concedido' ? subscription.acesso_manual_ate : subscription.pago_ate,
+      createdAt: subscription.created_at,
+    } : null;
+  }
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('assinaturas')

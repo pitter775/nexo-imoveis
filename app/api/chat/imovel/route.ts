@@ -4,6 +4,7 @@ import {
   getLatestPropertyConversation,
 } from '@/lib/ai/property-chat';
 import { getCurrentAuthenticatedUser } from '@/lib/auth';
+import { canAccessPropertyInformation } from '@/lib/payments/property-access';
 
 export async function GET(request: Request) {
   try {
@@ -26,6 +27,9 @@ export async function GET(request: Request) {
       });
     }
 
+    if (!await canAccessPropertyInformation(currentUser, propertyId)) {
+      return NextResponse.json({ error: 'Acesso premium necessário.' }, { status: 403 });
+    }
     const conversation = await getLatestPropertyConversation({
       propertyId,
       userId: currentUser.id,
@@ -68,6 +72,9 @@ export async function POST(request: Request) {
     }
 
     const currentUser = await getCurrentAuthenticatedUser();
+    if (!await canAccessPropertyInformation(currentUser, propertyId)) {
+      return NextResponse.json({ error: 'Acesso premium necessário.' }, { status: currentUser ? 403 : 401 });
+    }
     const result = await answerPropertyQuestion({
       propertyId,
       question: message,

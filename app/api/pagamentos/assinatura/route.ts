@@ -7,6 +7,8 @@ import {
 import { userHasActiveMonthlySubscription } from '@/lib/payments/subscriptions';
 import { getAbsoluteUrl, getPublicAbsoluteUrl } from '@/lib/site';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { subscriptionManagementEnabled } from '@/lib/payments/subscription-management-db';
+import { startManagedSubscription } from '@/lib/payments/subscription-checkout';
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
@@ -32,6 +34,19 @@ export async function POST(request: Request) {
     });
   }
 
+  if (subscriptionManagementEnabled()) {
+    try {
+      const result = await startManagedSubscription(user, imovelId || null);
+      if (!result.checkoutUrl) return NextResponse.json({
+        error: 'Já existe uma contratação. Acompanhe em Minha Assinatura antes de tentar novamente.',
+        managementUrl: result.managementUrl,
+      }, { status: 409 });
+      return NextResponse.json({ ...result, valor: MONTHLY_ACCESS_PRICE });
+    } catch (error) {
+      console.error('[subscriptions] checkout failed', error);
+      return NextResponse.json({ error: 'Não foi possível concluir agora. Consulte Minha Assinatura antes de tentar novamente.' }, { status: 503 });
+    }
+  }
   const supabase = createAdminClient() as any;
   const { data: assinatura, error: assinaturaError } = await supabase
     .from('assinaturas')

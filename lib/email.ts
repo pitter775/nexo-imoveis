@@ -28,6 +28,19 @@ function getSmtpConfig() {
   };
 }
 
+export async function sendSubscriptionNotice(email: string, paid: boolean, managementUrl: string) {
+  const config = getSmtpConfig();
+  const from = process.env.SMTP_FROM?.trim() || process.env.SMTP_USER?.trim();
+  if (!config || !from) throw new Error('SMTP não configurado para avisos de assinatura.');
+  await nodemailer.createTransport(config).sendMail({
+    from, to: email,
+    subject: paid ? 'Mensalidade confirmada | NEXO' : 'Pendência na sua mensalidade | NEXO',
+    text: [paid ? 'Recebemos a confirmação do pagamento da sua mensalidade.'
+      : 'A cobrança da sua mensalidade não foi aprovada. Confira sua forma de pagamento para regularizar o acesso.',
+    '', 'Consulte sua assinatura e o histórico de pagamentos:', managementUrl].join('\n'),
+  });
+}
+
 export async function sendPasswordResetEmail({ email, resetUrl }: PasswordResetEmailInput) {
   const smtpConfig = getSmtpConfig();
   const from = process.env.SMTP_FROM?.trim() || process.env.SMTP_USER?.trim();

@@ -5,6 +5,7 @@ import {
   createInformationPreference,
 } from '@/lib/payments/mercado-pago';
 import { userHasActivePropertyAccess } from '@/lib/payments/information-access';
+import { userHasActiveMonthlySubscription } from '@/lib/payments/subscriptions';
 import { getPublicAbsoluteUrl } from '@/lib/site';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Imovel nao encontrado.' }, { status: 404 });
   }
 
-  if (user.tipo_usuario === 'admin' || (await userHasActivePropertyAccess(user.id, imovelId))) {
+  if (user.tipo_usuario === 'admin' || (await userHasActiveMonthlySubscription(user.id)) || (await userHasActivePropertyAccess(user.id, imovelId))) {
     return NextResponse.json({
       alreadyUnlocked: true,
       redirectUrl: getPublicAbsoluteUrl(`/imoveis/${imovelId}?chat=1`),

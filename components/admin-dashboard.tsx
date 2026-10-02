@@ -68,7 +68,7 @@ export function AdminDashboard({ profile, data }: AdminDashboardProps) {
         <StatCard
           title="Assinaturas ativas"
           value={formatNumber(data.metrics.totalAssinaturasAtivas)}
-          helper={`${formatCurrency(data.metrics.receitaRecorrenteAtiva)}/mes recorrente`}
+          helper={`${formatCurrency(data.metrics.receitaRecorrenteAtiva)}/mês previsto`}
           icon={<CreditCard className="size-5 text-primary" />}
         />
         <StatCard
