@@ -191,7 +191,11 @@ Se eu precisar fazer qualquer trabalho neste repositorio, o padrao deve ser:
 - Cobertura: autorizacao sem pagamento, periodo pago apos cancelamento, expiracao, suspensao,
   cortesia, fim de mes/ano bissexto, webhook valido/adulterado, configuracao e vinculo/valor/moeda da fatura.
 - Estes testes NAO comprovam concorrencia SQL, processamento idempotente completo ou renovacao no MP.
-- TypeScript e build passaram; resultado do novo deploy deve ser conferido no check Vercel do commit.
+- TypeScript e build passaram. Commit `94d6c85` enviado para main e check Vercel confirmado como
+  success em 05/10/2026: https://vercel.com/pitter775s-projects/nexo-imoveis/9YfWfvamQRMrqqxVQBWXopRAtN21
+- Smoke local standalone: home 200, areas cliente/admin 307 para login, cron e contratacao sem
+  autenticacao 401, webhook com ID mas sem assinatura 401. No dominio publico: home 200,
+  areas cliente/admin 307 e cron sem autenticacao 401. Nenhum desses checks cria cobranca.
 - Nenhuma cobranca real criada, credencial alterada ou SQL aplicado nesta retomada.
 
 ### O que o responsavel precisa fazer
