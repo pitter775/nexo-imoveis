@@ -1,6 +1,7 @@
 import 'server-only';
 import { createSubscriptionClient } from './subscription-management-db';
 import { hasSubscriptionAccess, monthlyPeriodEnd } from './subscription-policy';
+import { validateSubscriptionInvoice } from './subscription-invoice-validation';
 import {
   getMercadoPagoPayment, getMercadoPagoPreapproval, getSubscriptionInvoice,
   mapMercadoPagoStatus, searchSubscriptionInvoices, type MercadoPagoPreapproval,
@@ -59,17 +60,8 @@ export async function syncManagedInvoice(invoiceId: string) {
   if (error) throw error;
   if (!subscription) return;
   const preapproval = await getMercadoPagoPreapproval(invoice.preapproval_id);
-  if (preapproval.external_reference !== subscription.id ||
-      preapproval.auto_recurring?.frequency !== 1 || preapproval.auto_recurring.frequency_type !== 'months') {
-    throw new Error('Vínculo ou periodicidade de assinatura inválida.');
-  }
   const payment = invoice.payment?.id ? await getMercadoPagoPayment(String(invoice.payment.id)) : null;
-  if (invoice.currency_id !== 'BRL' || Number(invoice.transaction_amount) !== Number(subscription.valor) ||
-      (payment && (payment.currency_id !== 'BRL' || Number(payment.transaction_amount) !== Number(subscription.valor)))) {
-    throw new Error('Cobrança com valor ou moeda divergente.');
-  }
-  const modified = payment?.date_last_updated ?? invoice.last_modified;
-  if (!modified || !Number.isFinite(Date.parse(modified))) throw new Error('Cobrança sem data de atualização.');
+  const modified = validateSubscriptionInvoice(subscription, invoice, preapproval, payment);
   const { error: syncError } = await db.rpc('sync_assinatura_cobranca', { p_cobranca: {
     assinatura_id: subscription.id, referencia_gateway: String(invoice.id),
     pagamento_gateway: payment ? String(payment.id) : null,

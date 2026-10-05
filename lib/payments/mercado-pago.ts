@@ -34,6 +34,8 @@ type MercadoPagoPreapprovalInput = {
   backUrl: string;
 };
 
+export class SubscriptionCreationRejected extends Error {}
+
 type MercadoPagoPreapprovalResponse = {
   id?: string;
   init_point?: string;
@@ -186,6 +188,9 @@ export async function createMonthlySubscriptionPreapproval({
     signal: AbortSignal.timeout(15000),
   });
 
+  if ([400, 401, 403, 422].includes(response.status)) {
+    throw new SubscriptionCreationRejected(`Mercado Pago recusou a criação da assinatura (${response.status}).`);
+  }
   const payload = (await response.json()) as MercadoPagoPreapprovalResponse;
 
   if (!response.ok || !payload.id || !payload.init_point) {

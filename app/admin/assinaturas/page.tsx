@@ -6,6 +6,7 @@ import { getAdminSubscriptions, parsePage } from '@/lib/payments/subscription-qu
 import { paymentMethodLabel, subscriptionStatus } from '@/lib/payments/subscription-policy';
 import { dateLabel, money, StatusBadge } from '@/components/subscriptions/subscription-summary';
 import { CourtesyForm } from '@/components/subscriptions/subscription-controls';
+import { SubscriptionConfiguration } from '@/components/subscriptions/subscription-configuration';
 
 export default async function SubscriptionsPage({ searchParams }: {
   searchParams: Promise<{ status?: string; metodo?: string; inicio?: string; fim?: string; page?: string }>;
@@ -24,6 +25,7 @@ export default async function SubscriptionsPage({ searchParams }: {
   return <div className="space-y-6">
     <div><p className="text-xs font-bold uppercase tracking-[.2em] text-primary">Financeiro NEXO</p><h1 className="mt-2 text-3xl font-extrabold">Assinaturas</h1>
       <p className="mt-2 text-sm text-slate-500">Cobranças, períodos pagos e exceções de acesso, com histórico por cliente.</p></div>
+    <SubscriptionConfiguration />
     <CourtesyForm />
     <form className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 sm:grid-cols-2 xl:grid-cols-5">
       <label className="text-sm font-semibold">Situação<select className={input} name="status" defaultValue={params.status ?? ''}>

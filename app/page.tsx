@@ -2613,11 +2613,16 @@ function PropertyDetailsView({
       const payload = (await response.json()) as {
         alreadyUnlocked?: boolean;
         checkoutUrl?: string;
+        managementUrl?: string;
         redirectUrl?: string;
         error?: string;
       };
 
       if (!response.ok) {
+        if (response.status === 409 && payload.managementUrl === '/dashboard/assinatura') {
+          window.location.href = payload.managementUrl;
+          return;
+        }
         throw new Error(payload.error || 'Nao foi possivel iniciar o pagamento.');
       }
 
