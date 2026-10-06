@@ -15,6 +15,8 @@ test('formulario avulso nao aceita preco, parcelas, email ou referencia controla
   const form = readCheckoutForm({ payment_method_id: 'pix', transaction_amount: 0.01, installments: 12,
     external_reference: 'outro', payer: { email: 'outro@example.com', identification: { type: 'CPF', number: '12345678901' } } }, 'sessao@example.com', false);
   assert.equal(form.payer.email, 'sessao@example.com');
+  const pixSemFormulario = readCheckoutForm({ payment_method_id: 'pix' }, 'sessao@example.com', false);
+  assert.deepEqual(pixSemFormulario.payer, { email: 'sessao@example.com' });
   assert.equal(form.transaction_amount, undefined);
   assert.equal(form.installments, undefined);
   assert.equal(form.external_reference, undefined);

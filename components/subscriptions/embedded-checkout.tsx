@@ -2,8 +2,8 @@
 
 import Script from 'next/script';
 import Link from 'next/link';
-import { useEffect, useId, useRef, useState } from 'react';
-import { ArrowLeft, Copy, LoaderCircle, ShieldCheck } from 'lucide-react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { ArrowLeft, Copy, CreditCard, LoaderCircle, QrCode, ShieldCheck } from 'lucide-react';
 
 type CheckoutResult = { id?: string; approved?: boolean; status?: string; expiresAt?: string; pix?: { code: string; image: string } | null };
 type CheckoutConfig = { publicKey: string; email: string; userId: string; amount: number };
@@ -32,6 +32,8 @@ export function EmbeddedCheckout({ plan, propertyId, onBack, onApproved }: {
   const callback = useRef(onApproved);
   callback.current = onApproved;
   const monthly = plan === 'mensal';
+  const [method, setMethod] = useState<'pix' | 'card'>('pix');
+  const showCard = monthly || method === 'card';
   const storageKey = config ? `nexo-checkout:${config.userId}:${propertyId}:${plan}` : '';
 
   useEffect(() => {
@@ -54,54 +56,55 @@ export function EmbeddedCheckout({ plan, propertyId, onBack, onApproved }: {
     return () => { disposed = true; };
   }, [plan, propertyId, revision]);
 
+  const submitPayment = useCallback(async (formData: Record<string, unknown>) => {
+    if (submitting.current) throw new Error('Pagamento em processamento.');
+    submitting.current = true;
+    setBusy(true); setError(null); setManagement(false);
+    try {
+      try { sessionStorage.setItem(storageKey, JSON.stringify({ attempt: attempt.current })); } catch {}
+      const response = await fetch('/api/pagamentos/checkout', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(50000),
+        body: JSON.stringify({ plano: plan, imovelId: propertyId, attempt: attempt.current, formData }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setManagement(data.managementUrl === '/dashboard/assinatura');
+        throw new Error(data.error || 'Não foi possível confirmar o pagamento.');
+      }
+      if (data.id) {
+        try { sessionStorage.setItem(storageKey, JSON.stringify({ attempt: attempt.current, id: data.id })); } catch {}
+      }
+      setResult(data);
+    } catch (failure) {
+      const message = failure instanceof Error && failure.name !== 'TimeoutError' ? failure.message
+        : 'A confirmação demorou mais que o esperado. Tente novamente nesta tela para consultar a mesma tentativa.';
+      setError(message);
+      throw new Error(message);
+    } finally { submitting.current = false; setBusy(false); }
+  }, [plan, propertyId, storageKey]);
+
   useEffect(() => {
-    if (!config || !sdkReady || result) return;
+    if (!config || !sdkReady || result || !showCard) return;
     let disposed = false;
     let controller: BrickController | undefined;
     const sdk = (window as Window & { MercadoPago?: MercadoPagoConstructor }).MercadoPago;
     if (!sdk) { setError('Não foi possível carregar o formulário seguro.'); return; }
     setFormReady(false);
-    const onSubmit = async (value: Record<string, unknown>) => {
-      if (submitting.current) throw new Error('Pagamento em processamento.');
-      submitting.current = true;
-      setBusy(true); setError(null); setManagement(false);
-      try {
-        try { sessionStorage.setItem(storageKey, JSON.stringify({ attempt: attempt.current })); } catch {}
-        const response = await fetch('/api/pagamentos/checkout', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(50000),
-          body: JSON.stringify({ plano: plan, imovelId: propertyId, attempt: attempt.current, formData: monthly ? value : value.formData }),
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          setManagement(data.managementUrl === '/dashboard/assinatura');
-          throw new Error(data.error || 'Não foi possível confirmar o pagamento.');
-        }
-        if (data.id) {
-          try { sessionStorage.setItem(storageKey, JSON.stringify({ attempt: attempt.current, id: data.id })); } catch {}
-        }
-        setResult(data);
-      } catch (failure) {
-        const message = failure instanceof Error && failure.name !== 'TimeoutError' ? failure.message
-          : 'A confirmação demorou mais que o esperado. Tente novamente nesta tela para consultar a mesma tentativa.';
-        setError(message);
-        throw new Error(message);
-      } finally { submitting.current = false; setBusy(false); }
-    };
-    new sdk(config.publicKey, { locale: 'pt-BR' }).bricks().create(monthly ? 'cardPayment' : 'payment', container, {
+    new sdk(config.publicKey, { locale: 'pt-BR' }).bricks().create('cardPayment', container, {
       initialization: { amount: config.amount, payer: { email: config.email } },
       customization: {
-        paymentMethods: monthly ? { minInstallments: 1, maxInstallments: 1 } : { creditCard: 'all', bankTransfer: 'all', maxInstallments: 1 },
+        paymentMethods: { minInstallments: 1, maxInstallments: 1 },
         visual: { style: { theme: 'default' } },
       },
       callbacks: {
         onReady: () => { if (!disposed) setFormReady(true); },
         onError: () => { if (!disposed) setError('Confira os campos do formulário. Se ele não carregar, atualize a página.'); },
-        onSubmit,
+        onSubmit: submitPayment,
       },
     }).then(value => { if (disposed) void value.unmount(); else controller = value; })
       .catch(() => { if (!disposed) setError('Não foi possível abrir o formulário seguro. Atualize a página e tente novamente.'); });
     return () => { disposed = true; void controller?.unmount(); };
-  }, [config, sdkReady, result, container, monthly, plan, propertyId, storageKey]);
+  }, [config, sdkReady, result, container, showCard, submitPayment]);
 
   async function refresh() {
     if (!result?.id || busy) return;
@@ -152,10 +155,27 @@ export function EmbeddedCheckout({ plan, propertyId, onBack, onApproved }: {
       {!config && <button type="button" className="mt-3 block font-bold underline" onClick={() => setRevision(value => value + 1)}>Tentar carregar novamente</button>}
     </div>}
     {!result ? <>
-      {(!config || !formReady) && !error && <p role="status" className="flex items-center gap-2 text-sm text-slate-600"><LoaderCircle className="size-4 animate-spin" /> Carregando formulário seguro…</p>}
-      <Script src="https://sdk.mercadopago.com/js/v2" onReady={() => setSdkReady(true)} onError={() => setError('Não foi possível carregar o Mercado Pago. Confira sua conexão e atualize a página.')} />
-      <div id={container} />
-      {busy && <p role="status" className="text-sm font-semibold text-primary">Confirmando pagamento. Aguarde nesta tela…</p>}
+      {!monthly && <div className="grid grid-cols-2 gap-3" role="group" aria-label="Forma de pagamento">
+        {(['pix', 'card'] as const).map(option => <button key={option} type="button" aria-pressed={method === option} disabled={busy}
+          className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-4 text-sm font-bold transition disabled:opacity-50 ${method === option ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}
+          onClick={() => { if (method !== option) { setMethod(option); setError(null); setFormReady(false); } }}>
+          {option === 'pix' ? <QrCode className="size-5" /> : <CreditCard className="size-5" />}{option === 'pix' ? 'Pix' : 'Cartão de crédito'}
+        </button>)}
+      </div>}
+      {showCard ? <>
+        {(!config || !formReady) && !error && <p role="status" className="flex items-center gap-2 text-sm text-slate-600"><LoaderCircle className="size-4 animate-spin" /> Carregando formulário seguro…</p>}
+        <Script src="https://sdk.mercadopago.com/js/v2" onReady={() => setSdkReady(true)} onError={() => setError('Não foi possível carregar o Mercado Pago. Confira sua conexão e atualize a página.')} />
+        <div id={container} />
+      </> : <div className="space-y-4 rounded-2xl border border-slate-200 p-5 text-center">
+        <QrCode className="mx-auto size-10 text-primary" />
+        <h4 className="text-lg font-extrabold">Pague com Pix aqui na NEXO</h4>
+        <p className="text-sm text-slate-600">Gere o QR Code e o Pix Copia e Cola para pagar no aplicativo do seu banco.</p>
+        <button type="button" disabled={!config || busy} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 font-bold text-white disabled:opacity-50"
+          onClick={() => { void submitPayment({ payment_method_id: 'pix' }).catch(() => { /* Erro exibido pelo envio compartilhado. */ }); }}>
+          {busy ? <><LoaderCircle className="size-4 animate-spin" /> Gerando Pix…</> : config ? 'Gerar QR Code Pix' : 'Carregando…'}
+        </button>
+      </div>}
+      {busy && showCard && <p role="status" className="text-sm font-semibold text-primary">Confirmando pagamento. Aguarde nesta tela…</p>}
     </> : <div className="space-y-4 rounded-2xl border border-slate-200 p-5">
       <h4 className="text-xl font-extrabold">{result.approved ? 'Pagamento confirmado' : rejected ? 'Pagamento não concluído' : result.pix ? 'Pix gerado' : 'Aguardando confirmação do pagamento'}</h4>
       {result.pix && <>
@@ -179,6 +199,6 @@ export function EmbeddedCheckout({ plan, propertyId, onBack, onApproved }: {
       }}>Tentar outro pagamento</button>}
       {monthly && <Link className="block text-sm font-bold text-primary underline" href="/dashboard/assinatura">Acompanhar em Minha Assinatura</Link>}
     </div>}
-    <p className="flex items-center gap-2 text-xs text-slate-500"><ShieldCheck className="size-4" /> Dados do cartão processados pelo Mercado Pago. Pagamento dentro da NEXO.</p>
+    <p className="flex items-center gap-2 text-xs text-slate-500"><ShieldCheck className="size-4" /> Pagamento processado pelo Mercado Pago dentro da NEXO.</p>
   </section>;
 }

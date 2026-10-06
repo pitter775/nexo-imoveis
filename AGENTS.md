@@ -162,6 +162,15 @@ Se eu precisar fazer qualquer trabalho neste repositorio, o padrao deve ser:
 
 ### Checkout dentro da NEXO — 06/10/2026
 
+#### Ajuste Pix sem formulario de e-mail
+
+- Pix padrao no avulso, com selecao propria e botao Gerar QR Code Pix; removido formulario do Brick.
+- Reutilizado envio/consulta existentes; servidor usa o e-mail autenticado, sem pedir novamente.
+- QR/Copia e Cola na janela e cartao no Card Payment Brick; idempotencia preservada.
+- Diretriz do responsavel: priorizar praticidade, poucas etapas e reutilizar dados ja cadastrados.
+- Validar build, testes existentes e publicar. Nao criar cobranca real sem teste do responsavel.
+
+
 - Implementado em `components/subscriptions/embedded-checkout.tsx` e `app/api/pagamentos/checkout/route.ts`.
 - Avulso: Payment Brick com Pix QR/Copia e Cola e cartao. Mensal: Card Payment Brick com token
   enviado ao preapproval; permanece R$ 1 em testes. Nenhum desses botoes redireciona ao checkout externo.
