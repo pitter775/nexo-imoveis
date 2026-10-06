@@ -45,6 +45,8 @@ type MercadoPagoPreapprovalResponse = {
   external_reference?: string;
   payer_email?: string;
   message?: string;
+  error?: string;
+  cause?: Array<{ code?: string; description?: string }>;
   payment_method_id?: string;
   next_payment_date?: string;
   last_modified?: string;
@@ -193,10 +195,18 @@ export async function createMonthlySubscriptionPreapproval({
     signal: AbortSignal.timeout(15000),
   });
 
-  if ([400, 401, 403, 422].includes(response.status)) {
-    throw new SubscriptionCreationRejected(`Mercado Pago recusou a criação da assinatura (${response.status}).`);
-  }
   const payload = (await response.json()) as MercadoPagoPreapprovalResponse;
+
+  if ([400, 401, 403, 422].includes(response.status)) {
+    const providerReason = [
+      payload.message,
+      payload.error,
+      ...(payload.cause ?? []).flatMap(cause => [cause.code, cause.description]),
+    ].filter(Boolean).join(' | ').replace(/\s+/g, ' ').slice(0, 240);
+    throw new SubscriptionCreationRejected(
+      `Mercado Pago recusou a criação da assinatura (${response.status})${providerReason ? `: ${providerReason}` : '.'}`,
+    );
+  }
 
   if (!response.ok || !payload.id || (!cardToken && !payload.init_point)) {
     throw new Error(payload.message || 'Nao foi possivel criar a assinatura no Mercado Pago.');
