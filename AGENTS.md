@@ -174,7 +174,11 @@ Se eu precisar fazer qualquer trabalho neste repositorio, o padrao deve ser:
 - Sem SQL ou variaveis novas; usa Public Key, Access Token e webhook existentes da mesma aplicacao.
 - Validacao: 14 testes de pagamentos, TypeScript e build aprovados. Pagamento real, SDK autenticado,
   celular e recuperacao de timeout com o provedor ainda precisam de teste. Nao foram criadas cobrancas.
-- Publicacao desta alteracao: conferir commit/deploy mais recente antes de afirmar disponibilidade.
+- Commit `e6bd889` publicado: check Vercel success em 06/10/2026
+  (https://vercel.com/pitter775s-projects/nexo-imoveis/5hjoUSgAkv3XddUTrBiFdXbTXBXW).
+- Smoke local: GET/POST checkout sem sessao retornam 401. Navegador em producao: modal mostra
+  R$ 1 mensal/R$ 14,90 avulso; Assinar mensal leva ao login da NEXO com `plano=mensal` preservado
+  nos links de Google/cadastro/recuperacao. Sem sessao comum disponivel para testar o SDK/cartao/Pix.
 
 ### Decisoes e estado atual
 
