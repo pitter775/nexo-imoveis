@@ -56,7 +56,8 @@ O painel nao revela segredos e nao comprova se uma chave esta valida.
 ## 3. Teste real de R$ 1,00
 
 1. Entrar na NEXO com usuario comum interno (nao administrador, que ja tem acesso gratuito).
-2. Abrir um imovel > Solicitar informacoes > Plano mensal. Confirmar R$ 1,00 antes de pagar.
+2. Abrir um imovel > Solicitar informacoes > Plano mensal. O formulario de cartao abre dentro
+   da NEXO; confirmar R$ 1,00 antes de pagar. Erros devem aparecer na propria janela.
 3. Usar pagador real distinto da conta recebedora e cartao real para a cobranca de producao;
    nao misturar credenciais/cartoes ficticios de sandbox com este teste real.
 4. Apos concluir, conferir Minha Assinatura e Admin > Assinaturas: fatura paga, valor R$ 1,00,
@@ -72,7 +73,8 @@ Nao considerar renovacao, estorno ou recuperacao de falha aprovados sem testa-lo
 ## Limites da entrega
 
 - Pix Automatico nao esta confirmado nem implementado; a assinatura atual usa o fluxo existente
-  de preapproval. A tela Pix QR/copia e cola embutida ainda e trabalho pendente.
+  de preapproval com cartao tokenizado dentro da NEXO. Avulso usa Pix comum ou cartao embutido;
+  nao confundir Pix comum com Pix Automatico. Ambos ainda exigem validacao real com o provedor.
 - Testes locais validam regras e assinaturas criptograficas, nao substituem o ciclo real de pagamento.
 - Timeout na criacao preserva reserva para conciliacao; nao apagar a reserva nem criar outra cobranca
   sem conferir a primeira no MP. Rejeicoes explicitas 400/401/403/422 permitem nova tentativa.
@@ -85,3 +87,18 @@ Nao considerar renovacao, estorno ou recuperacao de falha aprovados sem testa-lo
 - https://vercel.com/docs/environment-variables
 - https://vercel.com/docs/cron-jobs/usage-and-pricing
 - https://vercel.com/docs/cron-jobs/manage-cron-jobs
+
+## Checkout embutido — 06/10/2026
+
+Nao precisa de outro SQL, webhook ou variavel. A Public Key e o Access Token devem ser de
+producao e da mesma aplicacao. O formulario usa o SDK oficial do Mercado Pago.
+
+Para testar o avulso: em um imovel ainda sem acesso, escolher Pagar este imovel e Pix.
+Conferir o valor avulso atual (R$ 14,90), QR Code, Copia e Cola e prazo dentro da NEXO.
+Confirmar no banco somente depois de conferir esses dados; acompanhar a liberacao automatica.
+O R$ 1 de testes aplica-se ao plano mensal, nao ao avulso.
+
+Se existir uma contratacao antiga sem vinculo seguro ou com preco diferente, a tela orienta
+consultar Minha Assinatura. Nao apagar reservas para contornar esse aviso sem conferir o MP.
+O navegador conserva a tentativa na mesma aba; em timeout, tentar novamente nela para recuperar
+a mesma cobranca. Nao abrir novas abas para pagar novamente antes de conferir a primeira tentativa.

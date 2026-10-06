@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
@@ -48,6 +48,7 @@ import {
 } from 'lucide-react';
 import { logoutAction } from '@/app/actions/auth';
 import { BrandLogo } from '@/components/brand-logo';
+import { EmbeddedCheckout } from '@/components/subscriptions/embedded-checkout';
 import { Property, User as UserType } from '@/lib/types';
 import { SiteFooter } from '@/components/site-footer';
 import { PropertyDescription } from '@/components/property-description';
@@ -2476,12 +2477,14 @@ function PropertyDetailsView({
   const [activePremiumTab, setActivePremiumTab] = useState<'geral' | 'dossie' | 'analise' | 'arquivos'>('geral');
   const [similarPage, setSimilarPage] = useState(0);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
-  const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
   const [paymentState, setPaymentState] = useState<'idle' | 'pending' | 'approved'>('idle');
   const [showUnlockOptions, setShowUnlockOptions] = useState(false);
+  const [checkoutPlan, setCheckoutPlan] = useState<'imovel' | 'mensal' | null>(null);
   const autoCheckoutStartedRef = useRef(false);
 
   const markPropertyAsUnlocked = () => {
+    setShowUnlockOptions(false);
+    setCheckoutPlan(null);
     setPaymentState('approved');
     setHasUnlockedPremium(true);
     setActivePremiumTab('dossie');
@@ -2494,7 +2497,7 @@ function PropertyDetailsView({
     setActivePremiumTab('geral');
     setSimilarPage(0);
     setShareFeedback(null);
-    setIsCreatingCheckout(false);
+    setCheckoutPlan(null);
     setPaymentState('idle');
     setShowUnlockOptions(false);
     autoCheckoutStartedRef.current = false;
@@ -2517,7 +2520,7 @@ function PropertyDetailsView({
     }
 
     if (payment === 'approved') {
-      markPropertyAsUnlocked();
+      setPaymentState('pending');
       url.searchParams.delete('payment');
       window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
     }
@@ -2586,78 +2589,22 @@ function PropertyDetailsView({
 
   const handleStartInformationCheckout = async (plano: 'imovel' | 'mensal') => {
     if (hasPremiumAccess) {
-      setHasUnlockedPremium(true);
-      setActivePremiumTab('dossie');
+      markPropertyAsUnlocked();
       return;
     }
-
     if (!user) {
-      window.location.href = `/login?redirectTo=${encodeURIComponent(
-        `/imoveis/${property.id}?pay=1`,
-      )}`;
+      window.location.href = `/login?redirectTo=${encodeURIComponent(`/imoveis/${property.id}?pay=1&plano=${plano}`)}`;
       return;
     }
-
-    setIsCreatingCheckout(true);
     setShareFeedback(null);
-
-    try {
-      const response = await fetch(
-        plano === 'mensal' ? '/api/pagamentos/assinatura' : '/api/pagamentos/informacoes',
-        {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imovelId: property.id }),
-        },
-      );
-      const payload = (await response.json()) as {
-        alreadyUnlocked?: boolean;
-        checkoutUrl?: string;
-        managementUrl?: string;
-        redirectUrl?: string;
-        error?: string;
-      };
-
-      if (!response.ok) {
-        if (response.status === 409 && payload.managementUrl === '/dashboard/assinatura') {
-          window.location.href = payload.managementUrl;
-          return;
-        }
-        throw new Error(payload.error || 'Nao foi possivel iniciar o pagamento.');
-      }
-
-      if (payload.alreadyUnlocked) {
-        markPropertyAsUnlocked();
-        return;
-      }
-
-      if (payload.checkoutUrl) {
-        window.location.href = payload.checkoutUrl;
-        return;
-      }
-
-      if (payload.redirectUrl) {
-        window.location.href = payload.redirectUrl;
-        return;
-      }
-
-      throw new Error('Checkout indisponivel no momento.');
-    } catch (error) {
-      setShareFeedback(
-        error instanceof Error
-          ? error.message
-          : 'Nao foi possivel iniciar o pagamento.',
-      );
-      setIsCreatingCheckout(false);
-    }
+    setCheckoutPlan(plano);
+    setShowUnlockOptions(true);
   };
-
   useEffect(() => {
     if (
       typeof window === 'undefined' ||
       !user ||
       hasPremiumAccess ||
-      isCreatingCheckout ||
       autoCheckoutStartedRef.current
     ) {
       return;
@@ -2670,10 +2617,12 @@ function PropertyDetailsView({
     }
 
     autoCheckoutStartedRef.current = true;
+    const plan = url.searchParams.get('plano') === 'mensal' ? 'mensal' : 'imovel';
+    url.searchParams.delete('plano');
     url.searchParams.delete('pay');
     window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
-    void handleStartInformationCheckout('imovel');
-  }, [handleStartInformationCheckout, hasPremiumAccess, isCreatingCheckout, user]);
+    void handleStartInformationCheckout(plan);
+  }, [handleStartInformationCheckout, hasPremiumAccess, user]);
 
   useEffect(() => {
     if (paymentState !== 'pending') {
@@ -2913,7 +2862,6 @@ function PropertyDetailsView({
                 <button
                   type="button"
                   onClick={handleUnlockInformation}
-                  disabled={isCreatingCheckout}
                   className={[
                     'w-full rounded-xl bg-primary py-4 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70',
                     paymentState === 'pending' ? 'animate-pulse' : '',
@@ -2921,9 +2869,7 @@ function PropertyDetailsView({
                     .filter(Boolean)
                     .join(' ')}
                 >
-                  {isCreatingCheckout
-                    ? 'Gerando pagamento...'
-                    : paymentState === 'pending'
+                  {paymentState === 'pending'
                       ? 'Pagamento em análise'
                       : 'Solicitar informações'}
                 </button>
@@ -3289,7 +3235,7 @@ function PropertyDetailsView({
                   </span>
                   <div>
                     <h3 id="unlock-options-title" className="text-2xl font-black tracking-tight text-slate-950">
-                      Escolha como desbloquear este imóvel
+                      {checkoutPlan ? 'Conclua o pagamento na NEXO' : 'Escolha como desbloquear este imóvel'}
                     </h3>
                     <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
                       Você libera a visão completa da oportunidade: matrícula,
@@ -3308,6 +3254,9 @@ function PropertyDetailsView({
                 </button>
               </div>
 
+              {checkoutPlan ? <EmbeddedCheckout key={`${property.id}:${checkoutPlan}`} plan={checkoutPlan} propertyId={property.id}
+                onBack={() => setCheckoutPlan(null)} onApproved={markPropertyAsUnlocked} /> : <>
+              {shareFeedback && <p role="alert" className="mx-5 mt-4 rounded-xl bg-rose-50 p-4 text-sm text-rose-800">{shareFeedback}</p>}
               <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-7">
                 <div className="flex flex-col rounded-2xl border border-slate-200 bg-slate-50 p-5">
                   <div className="flex items-start justify-between gap-3">
@@ -3330,11 +3279,10 @@ function PropertyDetailsView({
                   <button
                     type="button"
                     onClick={() => handleStartInformationCheckout('imovel')}
-                    disabled={isCreatingCheckout}
-                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     <CircleDollarSign className="size-4" />
-                    {isCreatingCheckout ? 'Gerando cobrança...' : 'Pagar este imóvel'}
+                    Pagar este imóvel
                   </button>
                 </div>
 
@@ -3358,14 +3306,15 @@ function PropertyDetailsView({
                   <button
                     type="button"
                     onClick={() => handleStartInformationCheckout('mensal')}
-                    disabled={isCreatingCheckout}
-                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     <Wallet className="size-4" />
-                    {isCreatingCheckout ? 'Gerando cobrança...' : 'Assinar mensal'}
+                    Assinar mensal
                   </button>
                 </div>
               </div>
+
+              </>}
 
               <div className="border-t border-slate-200 bg-slate-50 px-5 py-5 sm:px-7">
                 <div className="mb-4 flex items-center gap-2">

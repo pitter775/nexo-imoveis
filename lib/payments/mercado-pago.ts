@@ -32,6 +32,7 @@ type MercadoPagoPreapprovalInput = {
   reason: string;
   payerEmail: string;
   backUrl: string;
+  cardToken?: string;
 };
 
 export class SubscriptionCreationRejected extends Error {}
@@ -59,6 +60,8 @@ export type MercadoPagoPayment = {
   payment_method_id?: string;
   date_approved?: string;
   date_last_updated?: string;
+  date_of_expiration?: string;
+  point_of_interaction?: { transaction_data?: { qr_code?: string; qr_code_base64?: string } };
 };
 
 export type MercadoPagoPreapproval = {
@@ -166,6 +169,7 @@ export async function createMonthlySubscriptionPreapproval({
   reason,
   payerEmail,
   backUrl,
+  cardToken,
 }: MercadoPagoPreapprovalInput) {
   const response = await fetch('https://api.mercadopago.com/preapproval', {
     method: 'POST',
@@ -178,6 +182,7 @@ export async function createMonthlySubscriptionPreapproval({
       external_reference: assinaturaId,
       payer_email: payerEmail,
       back_url: backUrl,
+      ...(cardToken ? { card_token_id: cardToken, status: 'authorized' } : {}),
       auto_recurring: {
         frequency: 1,
         frequency_type: 'months',
@@ -193,13 +198,13 @@ export async function createMonthlySubscriptionPreapproval({
   }
   const payload = (await response.json()) as MercadoPagoPreapprovalResponse;
 
-  if (!response.ok || !payload.id || !payload.init_point) {
+  if (!response.ok || !payload.id || (!cardToken && !payload.init_point)) {
     throw new Error(payload.message || 'Nao foi possivel criar a assinatura no Mercado Pago.');
   }
 
   return {
     preapprovalId: payload.id,
-    checkoutUrl: payload.init_point,
+    checkoutUrl: payload.init_point ?? null,
     sandboxCheckoutUrl: payload.sandbox_init_point,
     status: payload.status,
   };
@@ -263,6 +268,30 @@ export async function cancelMercadoPagoSubscription(preapprovalId: string) {
   await mercadoPagoRequest(`/preapproval/${encodeURIComponent(preapprovalId)}`, {
     method: 'PUT', body: JSON.stringify({ status: 'cancelled' }),
   });
+}
+
+export async function authorizeSubscriptionCard(preapprovalId: string, cardToken: string) {
+  await mercadoPagoRequest(`/preapproval/${encodeURIComponent(preapprovalId)}`, {
+    method: 'PUT', body: JSON.stringify({ card_token_id: cardToken, status: 'authorized' }),
+  });
+}
+
+export async function createEmbeddedPayment(reference: string, title: string, form: {
+  payment_method_id: string; token?: string; issuer_id?: string; payer: { email: string; identification?: { type: string; number: string } };
+}) {
+  const response = await fetch('https://api.mercadopago.com/v1/payments', {
+    method: 'POST', cache: 'no-store', signal: AbortSignal.timeout(20000),
+    headers: { Authorization: `Bearer ${getMercadoPagoAccessToken()}`, 'Content-Type': 'application/json', 'X-Idempotency-Key': reference },
+    body: JSON.stringify({ ...form, transaction_amount: INFORMATION_ACCESS_PRICE,
+      description: `Informações do imóvel - ${title}`.slice(0, 240), external_reference: reference,
+      notification_url: getAbsoluteUrl('/api/pagamentos/mercado-pago/webhook'),
+      ...(form.payment_method_id === 'pix' ? {} : { installments: 1 }),
+    }),
+  });
+  if (!response.ok) throw new Error(`Não foi possível processar o pagamento (${response.status}). Confira os dados e tente novamente.`);
+  const payment = await response.json() as MercadoPagoPayment;
+  if (!payment.id) throw new Error('Pagamento sem confirmação do provedor. Atualize a situação antes de tentar novamente.');
+  return payment;
 }
 
 export async function searchPreapprovalByReference(reference: string): Promise<{ results: MercadoPagoPreapproval[] }> {

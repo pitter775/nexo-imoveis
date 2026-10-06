@@ -2,7 +2,6 @@ import 'server-only';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
-  INFORMATION_ACCESS_PRICE,
   isMercadoPagoApproved,
   mapMercadoPagoStatus,
   type MercadoPagoPayment,
@@ -39,7 +38,7 @@ export async function userHasActivePropertyAccess(userId: string, imovelId: stri
 export async function syncInformationPayment(payment: MercadoPagoPayment): Promise<PaymentUpdateResult> {
   const pagamentoId = payment.external_reference?.trim() || null;
 
-  if (!pagamentoId) {
+  if (!pagamentoId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pagamentoId)) {
     return { pagamentoId: null, imovelId: null, approved: false };
   }
 
@@ -74,7 +73,10 @@ export async function syncInformationPayment(payment: MercadoPagoPayment): Promi
 
   const mappedStatus = mapMercadoPagoStatus(payment.status);
   const amount = Number(payment.transaction_amount ?? 0);
-  const approved = isMercadoPagoApproved(payment.status) && amount >= INFORMATION_ACCESS_PRICE;
+  if (payment.currency_id !== 'BRL' || amount !== Number(item.valor)) {
+    throw new Error('Valor ou moeda do pagamento divergente.');
+  }
+  const approved = isMercadoPagoApproved(payment.status);
 
   const { error: updateError } = await supabase
     .from('pagamentos')

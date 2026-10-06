@@ -160,6 +160,22 @@ Se eu precisar fazer qualquer trabalho neste repositorio, o padrao deve ser:
 
 ## Assinaturas: continuidade — 05/10/2026
 
+### Checkout dentro da NEXO — 06/10/2026
+
+- Implementado em `components/subscriptions/embedded-checkout.tsx` e `app/api/pagamentos/checkout/route.ts`.
+- Avulso: Payment Brick com Pix QR/Copia e Cola e cartao. Mensal: Card Payment Brick com token
+  enviado ao preapproval; permanece R$ 1 em testes. Nenhum desses botoes redireciona ao checkout externo.
+- Erros aparecem dentro da janela; login preserva o plano escolhido. Retorno `payment=approved`
+  agora depende da consulta do servidor antes de marcar o acesso como liberado.
+- Valores/email/referencia definidos no servidor; tentativa avulsa tem chave idempotente por
+  usuario/imovel, persistida na aba. Consultas autenticadas conferem dono, moeda e valor.
+- Webhook avulso sincroniza antes da busca de faturas de assinatura. Reservas mensais anteriores
+  so sao reutilizadas se vinculadas ao mesmo valor/moeda; casos incertos levam a Minha Assinatura.
+- Sem SQL ou variaveis novas; usa Public Key, Access Token e webhook existentes da mesma aplicacao.
+- Validacao: 14 testes de pagamentos, TypeScript e build aprovados. Pagamento real, SDK autenticado,
+  celular e recuperacao de timeout com o provedor ainda precisam de teste. Nao foram criadas cobrancas.
+- Publicacao desta alteracao: conferir commit/deploy mais recente antes de afirmar disponibilidade.
+
 ### Decisoes e estado atual
 
 - Fluxo novo ativo no codigo em `lib/payments/subscription-management-db.ts`; sem flag de ambiente.
@@ -169,7 +185,7 @@ Se eu precisar fazer qualquer trabalho neste repositorio, o padrao deve ser:
 - Alteracoes anteriores enviadas: `334d1cc` e `469acd7`. O check Vercel de `469acd7` foi consultado
   nesta retomada e estava em falha; push nao significa deploy confirmado.
 - Pix Automatico continua sem confirmacao tecnica para a conta NEXO. Nao inventar endpoints nem
-  confundir Pix comum com debito recorrente. Tela Pix embutida ainda nao implementada.
+  confundir Pix comum com debito recorrente. Pix comum avulso embutido implementado nesta retomada; falta validar com o provedor.
 
 ### Implementado
 
@@ -216,7 +232,7 @@ Nao pedir flag de ambiente nem reaplicacao dos dois SQL ja confirmados.
 4. Validar telas no celular/desktop e operacoes autenticadas de cliente/admin (inclusive outro usuario).
 5. Validar SMTP e cron. Configuracao presente nao significa chave valida nem e-mail entregue.
 6. Fechar regras comerciais de atraso/suspensao e confirmar Pix Automatico com documentacao
-   tecnica especifica antes de implementar. Pix comum embutido e trabalho separado ainda pendente.
+   tecnica especifica antes de implementar. Validar Pix comum avulso embutido com as credenciais de producao.
 7. Ao fim dos testes, restaurar R$ 119 no servidor e rotulos. Assinaturas de R$ 1 existentes no MP
    nao mudam automaticamente de preco; tratar com o responsavel antes de novas renovacoes.
 

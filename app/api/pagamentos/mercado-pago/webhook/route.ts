@@ -25,13 +25,13 @@ export async function POST(request: Request) {
     } else if (type === 'subscription_authorized_payment' && subscriptionManagementEnabled()) {
       await syncManagedInvoice(id);
     } else if (type === 'payment') {
-      let subscriptionPayment = false;
-      if (subscriptionManagementEnabled()) {
+      const payment = await getMercadoPagoPayment(id);
+      const information = await syncInformationPayment(payment);
+      // Pagamento avulso nao depende da API de faturas de assinatura para ser confirmado.
+      if (!information.imovelId && subscriptionManagementEnabled()) {
         const invoices = await searchInvoiceByPayment(id);
-        subscriptionPayment = invoices.results.length > 0;
         for (const invoice of invoices.results) await syncManagedInvoice(String(invoice.id));
       }
-      if (!subscriptionPayment) await syncInformationPayment(await getMercadoPagoPayment(id));
     }
     return NextResponse.json({ ok: true });
   } catch (error) {
