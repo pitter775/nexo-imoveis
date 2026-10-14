@@ -10,6 +10,7 @@ import {
   FileText,
   Home,
   ImageIcon,
+  LoaderCircle,
   MapPin,
   X,
 } from 'lucide-react';
@@ -57,6 +58,8 @@ export function AdminImovelTabs({
   const [activeTab, setActiveTab] = useState<TabKey>('dados');
   const [artworkOpen, setArtworkOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [artworkLoading, setArtworkLoading] = useState(false);
+  const [artworkLoadError, setArtworkLoadError] = useState(false);
   const artworkUrl = `/admin/imoveis/${propertyId}/arte-instagram`;
   const selectedArtworkUrl = `${artworkUrl}?image=${selectedImageIndex}`;
 
@@ -105,7 +108,11 @@ export function AdminImovelTabs({
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => setArtworkOpen(true)}
+                  onClick={() => {
+                    setArtworkLoading(true);
+                    setArtworkLoadError(false);
+                    setArtworkOpen(true);
+                  }}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-primary/90"
                 >
                   <Download className="size-4" />
@@ -211,7 +218,7 @@ export function AdminImovelTabs({
                 <h2 id="property-artwork-title" className="text-lg font-extrabold text-slate-900">
                   Arte para Instagram
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">Prévia horizontal · 1200 × 800 px</p>
+                <p className="mt-1 text-sm text-slate-500">Prévia horizontal · 1200 × 675 px</p>
               </div>
               <button
                 type="button"
@@ -222,12 +229,34 @@ export function AdminImovelTabs({
                 <X className="size-5" />
               </button>
             </div>
-            <div className="bg-slate-100 p-3 sm:p-6">
-              <img
-                src={selectedArtworkUrl}
-                alt={`Arte de divulgação: ${summary.titulo}`}
-                className="mx-auto max-h-[65vh] w-full rounded-xl object-contain shadow-lg"
-              />
+            <div className="relative bg-slate-100 p-3 sm:p-6">
+              {!artworkLoadError ? (
+                <img
+                  key={selectedImageIndex}
+                  src={selectedArtworkUrl}
+                  alt={`Arte de divulgação: ${summary.titulo}`}
+                  onLoad={() => setArtworkLoading(false)}
+                  onError={() => {
+                    setArtworkLoading(false);
+                    setArtworkLoadError(true);
+                  }}
+                  className={`mx-auto max-h-[65vh] w-full rounded-xl object-contain shadow-lg transition-opacity ${
+                    artworkLoading ? 'opacity-40' : 'opacity-100'
+                  }`}
+                />
+              ) : (
+                <div className="flex min-h-64 items-center justify-center rounded-xl bg-slate-200 p-6 text-center text-sm font-semibold text-slate-600">
+                  Não foi possível carregar a prévia. Tente escolher a foto novamente.
+                </div>
+              )}
+              {artworkLoading && !artworkLoadError ? (
+                <div className="absolute inset-3 flex items-center justify-center rounded-xl bg-slate-950/35 sm:inset-6">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-bold text-slate-800 shadow-lg">
+                    <LoaderCircle className="size-5 animate-spin text-primary" />
+                    Atualizando prévia…
+                  </span>
+                </div>
+              ) : null}
             </div>
             {galleryImages.length > 0 ? (
               <div className="border-t border-slate-200 px-5 py-4 sm:px-7">
@@ -239,7 +268,12 @@ export function AdminImovelTabs({
                       type="button"
                       aria-label={`Usar foto ${index + 1} na arte`}
                       aria-pressed={selectedImageIndex === index}
-                      onClick={() => setSelectedImageIndex(index)}
+                      onClick={() => {
+                        if (selectedImageIndex === index) return;
+                        setArtworkLoading(true);
+                        setArtworkLoadError(false);
+                        setSelectedImageIndex(index);
+                      }}
                       className={`relative size-20 shrink-0 overflow-hidden rounded-xl border-2 transition ${
                         selectedImageIndex === index
                           ? 'border-primary ring-2 ring-primary/20'
@@ -254,6 +288,11 @@ export function AdminImovelTabs({
                         sizes="80px"
                         className="object-cover"
                       />
+                      {artworkLoading && selectedImageIndex === index ? (
+                        <span className="absolute inset-0 flex items-center justify-center bg-slate-950/45 text-white">
+                          <LoaderCircle className="size-5 animate-spin" />
+                        </span>
+                      ) : null}
                     </button>
                   ))}
                 </div>

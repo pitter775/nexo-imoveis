@@ -66,7 +66,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
           style={{
             position: 'relative',
             display: 'flex',
-            width: '54%',
+            width: '57%',
             height: '100%',
             background: 'linear-gradient(135deg, #26384d, #101827)',
           }}
@@ -89,8 +89,8 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
           <div
             style={{
               position: 'absolute',
-              left: 42,
-              bottom: 42,
+              left: 34,
+              bottom: 34,
               display: 'flex',
               borderRadius: 999,
               padding: '13px 20px',
@@ -110,9 +110,9 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            width: '46%',
+            width: '43%',
             height: '100%',
-            padding: '54px 50px',
+            padding: '38px 40px',
             backgroundColor: '#101827',
           }}
         >
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 19 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
             <div
               style={{
                 display: 'flex',
@@ -156,7 +156,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
             >
               {formatPropertyType(property.tipo_propriedade)}
             </div>
-            <div style={{ display: 'flex', color: '#ffffff', fontSize: 45, lineHeight: 1.1, fontWeight: 900 }}>
+            <div style={{ display: 'flex', color: '#ffffff', fontSize: 39, lineHeight: 1.08, fontWeight: 900 }}>
               {displayTitle}
             </div>
             <div style={{ display: 'flex', color: '#e2e8f0', fontSize: 21, fontWeight: 600 }}>
@@ -166,17 +166,17 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 8,
-                marginTop: 5,
+                gap: 6,
+                marginTop: 2,
                 borderRadius: 18,
-                padding: '20px 23px',
+                padding: '16px 19px',
                 background: '#ffffff',
               }}
             >
               <div style={{ display: 'flex', color: '#475569', fontSize: 15, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>
                 Lance a partir de
               </div>
-              <div style={{ display: 'flex', color: '#101827', fontSize: 36, fontWeight: 900 }}>
+              <div style={{ display: 'flex', color: '#101827', fontSize: 33, fontWeight: 900 }}>
                 {formatCurrency(price)}
               </div>
             </div>
@@ -185,7 +185,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
                 display: 'flex',
                 justifyContent: 'center',
                 borderRadius: 15,
-                padding: '17px 20px',
+                padding: '14px 18px',
                 background: '#f97316',
                 color: '#ffffff',
                 fontSize: 18,
@@ -204,7 +204,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     ),
     {
       width: 1200,
-      height: 800,
+      height: 675,
       headers: {
         'Cache-Control': 'private, no-store',
         ...(download ? { 'Content-Disposition': `attachment; filename="${filename}"` } : {}),
