@@ -44,7 +44,9 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     ? requestedFormat
     : 'portrait';
   const isPortrait = format === 'portrait';
-  const isSplit = format !== 'portrait';
+  const isSquare = format === 'square';
+  const isWide = format === 'wide';
+  const isSplit = isWide;
   const dimensions = format === 'portrait'
     ? { width: 1080, height: 1350 }
     : format === 'square'
@@ -80,7 +82,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
             position: 'relative',
             display: 'flex',
             width: isSplit ? '57%' : '100%',
-            height: isSplit ? '100%' : '60%',
+            height: isSplit ? '100%' : isSquare ? '50%' : '60%',
             background: 'linear-gradient(135deg, #26384d, #101827)',
           }}
         >
@@ -90,6 +92,15 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
               alt=""
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
+          ) : null}
+          {isSquare ? (
+            <div style={{ position: 'absolute', top: 32, left: 38, display: 'flex', alignItems: 'center', gap: 14, padding: '12px 18px', borderRadius: 18, background: 'rgba(16,24,39,0.78)' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f97316', color: '#ffffff', fontSize: 32, fontWeight: 900 }}>N</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <div style={{ display: 'flex', color: '#ffffff', fontSize: 25, fontWeight: 800 }}>{SITE_NAME}</div>
+                <div style={{ display: 'flex', color: '#cbd5e1', fontSize: 12, fontWeight: 700, letterSpacing: 3 }}>LEILÕES IMOBILIÁRIOS</div>
+              </div>
+            </div>
           ) : null}
           <div
             style={{
@@ -124,12 +135,12 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
             flexDirection: 'column',
             justifyContent: 'space-between',
             width: isSplit ? '43%' : '100%',
-            height: isSplit ? '100%' : '40%',
-            padding: isSplit ? (format === 'square' ? '48px 42px' : '30px 36px') : '22px 58px 24px',
+            height: isSplit ? '100%' : isSquare ? '50%' : '40%',
+            padding: isSplit ? '30px 36px' : isSquare ? '28px 48px 30px' : '22px 58px 24px',
             backgroundColor: '#101827',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {!isSquare ? <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div
               style={{
                 width: 48,
@@ -150,16 +161,16 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
               <div style={{ display: 'flex', color: '#ffffff', fontSize: 25, fontWeight: 800 }}>{SITE_NAME}</div>
               <div style={{ display: 'flex', color: '#cbd5e1', fontSize: 12, fontWeight: 700, letterSpacing: 3 }}>LEILÕES IMOBILIÁRIOS</div>
             </div>
-          </div>
+          </div> : null}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: isPortrait ? 8 : 10 }}>
-            <div style={{ display: 'flex', alignSelf: 'flex-start', borderRadius: 999, padding: '8px 15px', background: '#26384d', color: '#fdba74', fontSize: 15, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>
+            <div style={{ display: 'flex', alignSelf: 'flex-start', borderRadius: 999, padding: isPortrait ? '10px 18px' : '8px 15px', background: '#26384d', color: '#fdba74', fontSize: isPortrait ? 19 : 15, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>
               {formatPropertyType(property.tipo_propriedade)} · LEILÃO
             </div>
-            <div style={{ display: 'flex', color: '#ffffff', fontSize: isPortrait ? 55 : isSplit && format === 'square' ? 43 : 35, lineHeight: 1.08, fontWeight: 900 }}>
+            <div style={{ display: 'flex', color: '#ffffff', fontSize: isPortrait ? 59 : isSquare ? 43 : 35, lineHeight: 1.08, fontWeight: 900 }}>
               {displayTitle}
             </div>
-            <div style={{ display: 'flex', color: '#e2e8f0', fontSize: 20, fontWeight: 600 }}>
+            <div style={{ display: 'flex', color: '#e2e8f0', fontSize: isPortrait ? 24 : 20, fontWeight: 600 }}>
               {location || 'Confira os detalhes desta oportunidade'}
             </div>
             <div
@@ -175,10 +186,10 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
                 background: isPortrait ? 'transparent' : '#ffffff',
               }}
             >
-              <div style={{ display: 'flex', color: isPortrait ? '#cbd5e1' : '#475569', fontSize: isPortrait ? 17 : 16, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              <div style={{ display: 'flex', color: isPortrait ? '#cbd5e1' : '#475569', fontSize: isPortrait ? 20 : 16, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>
                 Lance inicial
               </div>
-              <div style={{ display: 'flex', color: isPortrait ? '#ffffff' : '#101827', fontSize: isPortrait ? 41 : 34, fontWeight: 900 }}>
+              <div style={{ display: 'flex', color: isPortrait ? '#ffffff' : '#101827', fontSize: isPortrait ? 46 : 34, fontWeight: 900 }}>
                 {formatCurrency(price)}
               </div>
             </div>
@@ -191,14 +202,14 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
                 padding: isPortrait ? '12px 30px' : '12px 18px',
                 background: '#f97316',
                 color: '#ffffff',
-                fontSize: 17,
+                fontSize: isPortrait ? 20 : 17,
                 fontWeight: 900,
                 letterSpacing: 1.5,
               }}
             >
               VEJA NO SITE  ↗
             </div>
-            <div style={{ display: 'flex', justifyContent: isPortrait ? 'flex-start' : 'center', color: '#cbd5e1', fontSize: 14, fontWeight: 700 }}>
+            <div style={{ display: 'flex', justifyContent: isPortrait ? 'flex-start' : 'center', color: '#cbd5e1', fontSize: isPortrait ? 17 : 14, fontWeight: 700 }}>
               nexoleiloes.com.br
             </div>
           </div>
