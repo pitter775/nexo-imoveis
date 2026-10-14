@@ -11,6 +11,7 @@ import {
   Home,
   ImageIcon,
   MapPin,
+  X,
 } from 'lucide-react';
 
 type TabKey = 'dados' | 'dossie' | 'arquivos' | 'imagens';
@@ -27,6 +28,7 @@ type ImovelHeaderSummary = {
 
 type AdminImovelTabsProps = {
   propertyId: string;
+  galleryImages: string[];
   dadosTab: ReactNode;
   dossieTab: ReactNode;
   arquivosTab: ReactNode;
@@ -44,6 +46,7 @@ const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
 
 export function AdminImovelTabs({
   propertyId,
+  galleryImages,
   dadosTab,
   dossieTab,
   arquivosTab,
@@ -52,6 +55,10 @@ export function AdminImovelTabs({
   publicHref,
 }: AdminImovelTabsProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('dados');
+  const [artworkOpen, setArtworkOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const artworkUrl = `/admin/imoveis/${propertyId}/arte-instagram`;
+  const selectedArtworkUrl = `${artworkUrl}?image=${selectedImageIndex}`;
 
   useEffect(() => {
     const stored = window.sessionStorage.getItem('admin-imovel-active-tab');
@@ -63,6 +70,17 @@ export function AdminImovelTabs({
   useEffect(() => {
     window.sessionStorage.setItem('admin-imovel-active-tab', activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!artworkOpen) return;
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setArtworkOpen(false);
+    }
+
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [artworkOpen]);
 
   return (
     <div className="space-y-6">
@@ -84,15 +102,25 @@ export function AdminImovelTabs({
                 </p>
               </div>
 
-              <Link
-                href={publicHref}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary/30 hover:text-primary"
-              >
-                <ExternalLink className="size-4" />
-                Ver imovel
-              </Link>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setArtworkOpen(true)}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-primary/90"
+                >
+                  <Download className="size-4" />
+                  Baixar arte
+                </button>
+                <Link
+                  href={publicHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary/30 hover:text-primary"
+                >
+                  <ExternalLink className="size-4" />
+                  Ver imovel
+                </Link>
+              </div>
             </div>
 
             <div className="-mx-1 overflow-x-auto px-1 sm:mx-0 sm:px-0">
@@ -116,7 +144,7 @@ export function AdminImovelTabs({
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div>
             <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
               <div className="flex flex-col gap-4 sm:flex-row">
                 <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
@@ -156,28 +184,6 @@ export function AdminImovelTabs({
                 <SummaryBadge label="Leilao" value={summary.tipo_leilao || '-'} />
               </div>
             </div>
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-slate-900">Arte para Instagram</p>
-                  <p className="mt-1 text-xs text-slate-500">Modelo NEXO · formato horizontal</p>
-                </div>
-                <a
-                  href={`/admin/imoveis/${propertyId}/arte-instagram?download=1`}
-                  download
-                  className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-white transition hover:bg-primary/90"
-                >
-                  <Download className="size-4" />
-                  Baixar arte
-                </a>
-              </div>
-              <div
-                role="img"
-                aria-label={`Prévia da arte para Instagram do imóvel ${summary.titulo}`}
-                className="mt-4 aspect-[3/2] overflow-hidden rounded-xl bg-slate-900 bg-cover bg-center"
-                style={{ backgroundImage: `url('/admin/imoveis/${propertyId}/arte-instagram')` }}
-              />
-            </div>
           </div>
         </div>
       </div>
@@ -186,6 +192,97 @@ export function AdminImovelTabs({
       {activeTab === 'dossie' ? dossieTab : null}
       {activeTab === 'arquivos' ? arquivosTab : null}
       {activeTab === 'imagens' ? imagensTab : null}
+
+      {artworkOpen ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/75 p-3 backdrop-blur-sm sm:p-6"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setArtworkOpen(false);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="property-artwork-title"
+            className="my-auto w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl"
+          >
+            <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-7">
+              <div>
+                <h2 id="property-artwork-title" className="text-lg font-extrabold text-slate-900">
+                  Arte para Instagram
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">Prévia horizontal · 1200 × 800 px</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setArtworkOpen(false)}
+                aria-label="Fechar prévia da arte"
+                className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <div className="bg-slate-100 p-3 sm:p-6">
+              <img
+                src={selectedArtworkUrl}
+                alt={`Arte de divulgação: ${summary.titulo}`}
+                className="mx-auto max-h-[65vh] w-full rounded-xl object-contain shadow-lg"
+              />
+            </div>
+            {galleryImages.length > 0 ? (
+              <div className="border-t border-slate-200 px-5 py-4 sm:px-7">
+                <p className="mb-3 text-sm font-bold text-slate-700">Escolha a foto da arte</p>
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {galleryImages.map((imageUrl, index) => (
+                    <button
+                      key={`${imageUrl}-${index}`}
+                      type="button"
+                      aria-label={`Usar foto ${index + 1} na arte`}
+                      aria-pressed={selectedImageIndex === index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`relative size-20 shrink-0 overflow-hidden rounded-xl border-2 transition ${
+                        selectedImageIndex === index
+                          ? 'border-primary ring-2 ring-primary/20'
+                          : 'border-slate-200 hover:border-slate-400'
+                      }`}
+                    >
+                      <Image
+                        src={imageUrl}
+                        alt=""
+                        fill
+                        unoptimized
+                        sizes="80px"
+                        className="object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="border-t border-slate-200 px-5 py-4 text-sm text-slate-500 sm:px-7">
+                Este imóvel ainda não tem fotos na galeria.
+              </p>
+            )}
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:justify-end sm:px-7">
+              <button
+                type="button"
+                onClick={() => setArtworkOpen(false)}
+                className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+              >
+                Fechar
+              </button>
+              <a
+                href={`${artworkUrl}?image=${selectedImageIndex}&download=1`}
+                download
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary/90"
+              >
+                <Download className="size-4" />
+                Baixar imagem PNG
+              </a>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

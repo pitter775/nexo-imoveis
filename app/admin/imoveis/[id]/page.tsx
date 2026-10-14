@@ -38,6 +38,7 @@ export default async function EditImovelPage({ params }: EditImovelPageProps) {
     <div className="space-y-8">
       <AdminImovelTabs
         propertyId={id}
+        galleryImages={images.map((image) => image.url)}
         publicHref={`/?imovel=${id}`}
         summary={{
           titulo: imovel.titulo,

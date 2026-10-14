@@ -33,7 +33,11 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
   if (!property) return new Response('Imóvel não encontrado.', { status: 404 });
 
-  const cover = images[0]?.url;
+  const requestedImageIndex = Number.parseInt(request.nextUrl.searchParams.get('image') ?? '0', 10);
+  const imageIndex = Number.isInteger(requestedImageIndex)
+    ? Math.max(0, Math.min(requestedImageIndex, Math.max(images.length - 1, 0)))
+    : 0;
+  const cover = images[imageIndex]?.url ?? images[0]?.url;
   const location = [property.cidade, property.estado].filter(Boolean).join(' · ');
   const price =
     property.valor_segundo_leilao ??
@@ -42,43 +46,158 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     property.valor_avaliacao;
   const filename = `nexo-imovel-${id}.png`;
   const download = request.nextUrl.searchParams.get('download') === '1';
+  const displayTitle = property.titulo.length > 66
+    ? `${property.titulo.slice(0, 63).trimEnd()}…`
+    : property.titulo;
 
   return new ImageResponse(
     (
       <div
         style={{
-          width: '100%', height: '100%', display: 'flex', position: 'relative',
-          backgroundColor: '#101827', color: 'white', fontFamily: 'Arial, sans-serif',
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          backgroundColor: '#101827',
+          color: 'white',
+          fontFamily: 'Arial, sans-serif',
         }}
       >
-        {cover ? (
-          <img src={cover} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', background: 'linear-gradient(135deg, #25364b, #101827)' }} />
-        )}
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', background: 'linear-gradient(180deg, rgba(8,18,32,0.08) 16%, rgba(8,18,32,0.35) 39%, rgba(8,18,32,0.96) 76%)' }} />
-        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', width: '100%', height: '100%', justifyContent: 'space-between', padding: 64 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 32, fontWeight: 800, letterSpacing: 1 }}>
-              <div style={{ width: 54, height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f97316', fontSize: 36 }}>N</div>
-              {SITE_NAME}
+        <div
+          style={{
+            position: 'relative',
+            display: 'flex',
+            width: '54%',
+            height: '100%',
+            background: 'linear-gradient(135deg, #26384d, #101827)',
+          }}
+        >
+          {cover ? (
+            <img
+              src={cover}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : null}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              background: 'linear-gradient(180deg, rgba(8,18,32,0.25), transparent 38%, rgba(8,18,32,0.55))',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              left: 42,
+              bottom: 42,
+              display: 'flex',
+              borderRadius: 999,
+              padding: '13px 20px',
+              background: 'rgba(8,18,32,0.82)',
+              color: '#ffffff',
+              fontSize: 18,
+              fontWeight: 800,
+              letterSpacing: 2,
+            }}
+          >
+            OPORTUNIDADE NEXO
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            width: '46%',
+            height: '100%',
+            padding: '54px 50px',
+            backgroundColor: '#101827',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 15,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#f97316',
+                color: '#ffffff',
+                fontSize: 35,
+                fontWeight: 900,
+              }}
+            >
+              N
             </div>
-            <div style={{ display: 'flex', borderRadius: 999, padding: '13px 22px', background: '#f97316', fontSize: 20, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>
-              {formatPropertyType(property.tipo_propriedade)}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <div style={{ display: 'flex', color: '#ffffff', fontSize: 27, fontWeight: 800 }}>{SITE_NAME}</div>
+              <div style={{ display: 'flex', color: '#cbd5e1', fontSize: 13, fontWeight: 700, letterSpacing: 3 }}>LEILÕES IMOBILIÁRIOS</div>
             </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 900 }}>
-            <div style={{ display: 'flex', fontSize: 19, fontWeight: 800, color: '#fdba74', textTransform: 'uppercase', letterSpacing: 3 }}>Uma oportunidade para você</div>
-            <div style={{ display: 'flex', fontSize: 56, lineHeight: 1.08, fontWeight: 900, textShadow: '0 3px 18px rgba(0,0,0,.35)' }}>{property.titulo}</div>
-            <div style={{ display: 'flex', fontSize: 25, color: '#e2e8f0' }}>{location || 'Confira os detalhes desta oportunidade'}</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                <div style={{ display: 'flex', color: '#cbd5e1', fontSize: 18, textTransform: 'uppercase', letterSpacing: 2 }}>Lance a partir de</div>
-                <div style={{ display: 'flex', fontSize: 42, fontWeight: 900, color: '#ffffff' }}>{formatCurrency(price)}</div>
-              </div>
-              <div style={{ display: 'flex', border: '2px solid rgba(255,255,255,.8)', borderRadius: 18, padding: '17px 23px', fontSize: 20, fontWeight: 800 }}>SAIBA MAIS  ↗</div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 19 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignSelf: 'flex-start',
+                borderRadius: 999,
+                padding: '11px 17px',
+                background: '#26384d',
+                color: '#fdba74',
+                fontSize: 17,
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+              }}
+            >
+              {formatPropertyType(property.tipo_propriedade)}
             </div>
-            <div style={{ display: 'flex', marginTop: 8, fontSize: 17, color: '#cbd5e1' }}>nexoleiloes.com.br</div>
+            <div style={{ display: 'flex', color: '#ffffff', fontSize: 45, lineHeight: 1.1, fontWeight: 900 }}>
+              {displayTitle}
+            </div>
+            <div style={{ display: 'flex', color: '#e2e8f0', fontSize: 21, fontWeight: 600 }}>
+              {location || 'Confira os detalhes desta oportunidade'}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                marginTop: 5,
+                borderRadius: 18,
+                padding: '20px 23px',
+                background: '#ffffff',
+              }}
+            >
+              <div style={{ display: 'flex', color: '#475569', fontSize: 15, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                Lance a partir de
+              </div>
+              <div style={{ display: 'flex', color: '#101827', fontSize: 36, fontWeight: 900 }}>
+                {formatCurrency(price)}
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                borderRadius: 15,
+                padding: '17px 20px',
+                background: '#f97316',
+                color: '#ffffff',
+                fontSize: 18,
+                fontWeight: 900,
+                letterSpacing: 1.5,
+              }}
+            >
+              VEJA NO SITE  ↗
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', color: '#cbd5e1', fontSize: 15, fontWeight: 700 }}>
+              nexoleiloes.com.br
+            </div>
           </div>
         </div>
       </div>
