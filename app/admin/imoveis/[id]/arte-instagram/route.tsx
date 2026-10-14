@@ -92,6 +92,15 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : null}
+          {isCompactSplit ? (
+            <div style={{ position: 'absolute', top: 32, left: 32, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', borderRadius: 16, background: 'rgba(16,24,39,0.78)' }}>
+              <div style={{ width: 42, height: 42, borderRadius: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f97316', color: '#ffffff', fontSize: 28, fontWeight: 900 }}>N</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <div style={{ display: 'flex', color: '#ffffff', fontSize: 21, fontWeight: 800 }}>{SITE_NAME}</div>
+                <div style={{ display: 'flex', color: '#cbd5e1', fontSize: 10, fontWeight: 700, letterSpacing: 2 }}>LEILÕES IMOBILIÁRIOS</div>
+              </div>
+            </div>
+          ) : null}
           <div
             style={{
               position: 'absolute',
@@ -123,14 +132,14 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
           style={{
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between',
+            justifyContent: isCompactSplit ? 'center' : 'space-between',
             width: isSplit ? (isCompactSplit ? '35%' : '43%') : '100%',
             height: isSplit ? '100%' : '40%',
             padding: isSplit ? (isCompactSplit ? '32px 26px' : '30px 36px') : '22px 58px 24px',
             backgroundColor: '#101827',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {!isCompactSplit ? <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div
               style={{
                 width: isCompactSplit ? 42 : 48,
@@ -151,16 +160,16 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
               <div style={{ display: 'flex', color: '#ffffff', fontSize: isCompactSplit ? 19 : 25, fontWeight: 800 }}>{SITE_NAME}</div>
               <div style={{ display: 'flex', color: '#cbd5e1', fontSize: isCompactSplit ? 9 : 12, fontWeight: 700, letterSpacing: isCompactSplit ? 2 : 3 }}>LEILÕES IMOBILIÁRIOS</div>
             </div>
-          </div>
+          </div> : null}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: isPortrait ? 8 : 10 }}>
-            <div style={{ display: 'flex', alignSelf: 'flex-start', borderRadius: 999, padding: '8px 15px', background: '#26384d', color: '#fdba74', fontSize: 15, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>
+            <div style={{ display: 'flex', alignSelf: 'flex-start', borderRadius: 999, padding: isCompactSplit ? '9px 14px' : '8px 15px', background: '#26384d', color: '#fdba74', fontSize: isCompactSplit ? 16 : 15, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>
               {formatPropertyType(property.tipo_propriedade)} · LEILÃO
             </div>
             <div style={{ display: 'flex', color: '#ffffff', fontSize: isPortrait ? 55 : isCompactSplit ? 32 : 35, lineHeight: 1.08, fontWeight: 900 }}>
               {displayTitle}
             </div>
-            <div style={{ display: 'flex', color: '#e2e8f0', fontSize: isCompactSplit ? 17 : 20, fontWeight: 600 }}>
+            <div style={{ display: 'flex', color: '#e2e8f0', fontSize: isCompactSplit ? 19 : 20, fontWeight: 600 }}>
               {location || 'Confira os detalhes desta oportunidade'}
             </div>
             <div
@@ -170,16 +179,16 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
                 alignItems: isPortrait || isCompactSplit ? 'flex-start' : 'center',
                 justifyContent: 'space-between',
                 gap: isPortrait || isCompactSplit ? 3 : 0,
-                borderRadius: isPortrait ? 0 : 18,
+                borderRadius: isPortrait || isCompactSplit ? 0 : 18,
                 marginTop: 3,
-                padding: isPortrait ? '4px 0' : isCompactSplit ? '8px 0' : '13px 22px',
-                background: isPortrait ? 'transparent' : '#ffffff',
+                padding: isPortrait || isCompactSplit ? '4px 0' : '13px 22px',
+                background: isPortrait || isCompactSplit ? 'transparent' : '#ffffff',
               }}
             >
-              <div style={{ display: 'flex', color: isPortrait ? '#cbd5e1' : '#475569', fontSize: isPortrait ? 17 : isCompactSplit ? 12 : 16, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              <div style={{ display: 'flex', color: isPortrait || isCompactSplit ? '#cbd5e1' : '#475569', fontSize: isPortrait ? 17 : isCompactSplit ? 16 : 16, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.2 }}>
                 Lance inicial
               </div>
-              <div style={{ display: 'flex', color: isPortrait ? '#ffffff' : '#101827', fontSize: isPortrait ? 41 : isCompactSplit ? 25 : 34, fontWeight: 900 }}>
+              <div style={{ display: 'flex', color: isPortrait || isCompactSplit ? '#ffffff' : '#101827', fontSize: isPortrait ? 41 : isCompactSplit ? 31 : 34, fontWeight: 900 }}>
                 {formatCurrency(price)}
               </div>
             </div>
@@ -192,14 +201,14 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
                 padding: isPortrait ? '12px 30px' : isCompactSplit ? '10px 6px' : '12px 18px',
                 background: '#f97316',
                 color: '#ffffff',
-                fontSize: isCompactSplit ? 13 : 17,
+                fontSize: isCompactSplit ? 16 : 17,
                 fontWeight: 900,
                 letterSpacing: 1.5,
               }}
             >
               VEJA NO SITE  ↗
             </div>
-            <div style={{ display: 'flex', justifyContent: isPortrait ? 'flex-start' : 'center', color: '#cbd5e1', fontSize: isCompactSplit ? 11 : 14, fontWeight: 700 }}>
+            <div style={{ display: 'flex', justifyContent: isPortrait ? 'flex-start' : 'center', color: '#cbd5e1', fontSize: isCompactSplit ? 13 : 14, fontWeight: 700 }}>
               nexoleiloes.com.br
             </div>
           </div>
