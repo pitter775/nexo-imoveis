@@ -8,6 +8,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type RouteContext = { params: Promise<{ id: string }> };
+type ArtworkFormat = 'portrait' | 'square' | 'wide';
 
 function formatCurrency(value: number | null | undefined) {
   if (value == null) return 'Consulte condições';
@@ -38,6 +39,16 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     ? Math.max(0, Math.min(requestedImageIndex, Math.max(images.length - 1, 0)))
     : 0;
   const cover = images[imageIndex]?.url ?? images[0]?.url;
+  const requestedFormat = request.nextUrl.searchParams.get('format');
+  const format: ArtworkFormat = requestedFormat === 'square' || requestedFormat === 'wide'
+    ? requestedFormat
+    : 'portrait';
+  const isWide = format === 'wide';
+  const dimensions = format === 'portrait'
+    ? { width: 1080, height: 1350 }
+    : format === 'square'
+      ? { width: 1080, height: 1080 }
+      : { width: 1200, height: 675 };
   const location = [property.cidade, property.estado].filter(Boolean).join(' · ');
   const price =
     property.valor_segundo_leilao ??
@@ -57,7 +68,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
           width: '100%',
           height: '100%',
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: isWide ? 'row' : 'column',
           backgroundColor: '#101827',
           color: 'white',
           fontFamily: 'Arial, sans-serif',
@@ -67,8 +78,8 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
           style={{
             position: 'relative',
             display: 'flex',
-            width: '100%',
-            height: '54%',
+            width: isWide ? '57%' : '100%',
+            height: isWide ? '100%' : format === 'square' ? '44%' : '54%',
             background: 'linear-gradient(135deg, #26384d, #101827)',
           }}
         >
@@ -90,8 +101,8 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
           <div
             style={{
               position: 'absolute',
-              left: 48,
-              bottom: 38,
+              left: isWide ? 34 : 48,
+              bottom: isWide ? 34 : 38,
               display: 'flex',
               borderRadius: 999,
               padding: '13px 20px',
@@ -111,9 +122,9 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            width: '100%',
-            height: '46%',
-            padding: '28px 58px 30px',
+            width: isWide ? '43%' : '100%',
+            height: isWide ? '100%' : format === 'square' ? '56%' : '46%',
+            padding: isWide ? '30px 36px' : format === 'square' ? '24px 48px' : '28px 58px 30px',
             backgroundColor: '#101827',
           }}
         >
@@ -144,7 +155,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
             <div style={{ display: 'flex', alignSelf: 'flex-start', borderRadius: 999, padding: '8px 15px', background: '#26384d', color: '#fdba74', fontSize: 15, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>
               {formatPropertyType(property.tipo_propriedade)} · LEILÃO
             </div>
-            <div style={{ display: 'flex', color: '#ffffff', fontSize: 49, lineHeight: 1.08, fontWeight: 900 }}>
+            <div style={{ display: 'flex', color: '#ffffff', fontSize: isWide ? 35 : format === 'square' ? 43 : 49, lineHeight: 1.08, fontWeight: 900 }}>
               {displayTitle}
             </div>
             <div style={{ display: 'flex', color: '#e2e8f0', fontSize: 20, fontWeight: 600 }}>
@@ -191,8 +202,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       </div>
     ),
     {
-      width: 1080,
-      height: 1350,
+      ...dimensions,
       headers: {
         'Cache-Control': 'private, no-store',
         ...(download ? { 'Content-Disposition': `attachment; filename="${filename}"` } : {}),

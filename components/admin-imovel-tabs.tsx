@@ -12,6 +12,9 @@ import {
   ImageIcon,
   LoaderCircle,
   MapPin,
+  RectangleHorizontal,
+  RectangleVertical,
+  Square,
   X,
 } from 'lucide-react';
 
@@ -45,6 +48,12 @@ const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'imagens', label: 'Imagens', icon: <ImageIcon className="size-4" /> },
 ];
 
+const artworkFormats = [
+  { value: 'portrait', label: 'Fino', dimensions: '4:5 · 1080 × 1350', Icon: RectangleVertical },
+  { value: 'square', label: 'Quadrado', dimensions: '1:1 · 1080 × 1080', Icon: Square },
+  { value: 'wide', label: 'Largo', dimensions: '16:9 · 1200 × 675', Icon: RectangleHorizontal },
+] as const;
+
 export function AdminImovelTabs({
   propertyId,
   galleryImages,
@@ -58,10 +67,12 @@ export function AdminImovelTabs({
   const [activeTab, setActiveTab] = useState<TabKey>('dados');
   const [artworkOpen, setArtworkOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedArtworkFormat, setSelectedArtworkFormat] = useState<(typeof artworkFormats)[number]['value']>('portrait');
   const [artworkLoading, setArtworkLoading] = useState(false);
   const [artworkLoadError, setArtworkLoadError] = useState(false);
   const artworkUrl = `/admin/imoveis/${propertyId}/arte-instagram`;
-  const selectedArtworkUrl = `${artworkUrl}?image=${selectedImageIndex}`;
+  const selectedArtworkUrl = `${artworkUrl}?format=${selectedArtworkFormat}&image=${selectedImageIndex}`;
+  const selectedFormat = artworkFormats.find((format) => format.value === selectedArtworkFormat) ?? artworkFormats[0];
 
   useEffect(() => {
     const stored = window.sessionStorage.getItem('admin-imovel-active-tab');
@@ -218,7 +229,7 @@ export function AdminImovelTabs({
                 <h2 id="property-artwork-title" className="text-lg font-extrabold text-slate-900">
                   Arte para Instagram
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">Prévia vertical · 1080 × 1350 px (4:5)</p>
+                <p className="mt-1 text-sm text-slate-500">Prévia {selectedFormat.label.toLowerCase()} · {selectedFormat.dimensions}</p>
               </div>
               <button
                 type="button"
@@ -257,6 +268,29 @@ export function AdminImovelTabs({
                   </span>
                 </div>
               ) : null}
+            </div>
+            <div className="flex flex-wrap gap-2 border-t border-slate-200 px-5 py-3 sm:px-7">
+              {artworkFormats.map(({ value, label, Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={selectedArtworkFormat === value}
+                  onClick={() => {
+                    if (selectedArtworkFormat === value) return;
+                    setArtworkLoading(true);
+                    setArtworkLoadError(false);
+                    setSelectedArtworkFormat(value);
+                  }}
+                  className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold transition ${
+                    selectedArtworkFormat === value
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-slate-200 text-slate-600 hover:border-slate-400'
+                  }`}
+                >
+                  <Icon className="size-4" />
+                  {label}
+                </button>
+              ))}
             </div>
             {galleryImages.length > 0 ? (
               <div className="border-t border-slate-200 px-5 py-4 sm:px-7">
@@ -311,7 +345,7 @@ export function AdminImovelTabs({
                 Fechar
               </button>
               <a
-                href={`${artworkUrl}?image=${selectedImageIndex}&download=1`}
+                href={`${artworkUrl}?format=${selectedArtworkFormat}&image=${selectedImageIndex}&download=1`}
                 download
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary/90"
               >
