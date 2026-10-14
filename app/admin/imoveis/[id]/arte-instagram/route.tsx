@@ -24,6 +24,13 @@ function formatPropertyType(value: string | null) {
   return value.charAt(0).toLocaleUpperCase('pt-BR') + value.slice(1);
 }
 
+function formatAuctionDate(value: string | null | undefined) {
+  if (!value) return 'Data a confirmar';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Data a confirmar';
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 export async function GET(request: NextRequest, { params }: RouteContext) {
   await requireAdmin();
   const { id } = await params;
@@ -63,6 +70,16 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   const displayTitle = property.titulo.length > 66
     ? `${property.titulo.slice(0, 63).trimEnd()}…`
     : property.titulo;
+  const firstBid = property.valor_primeiro_leilao ?? null;
+  const secondBid = property.valor_segundo_leilao ?? null;
+  const discount = firstBid && secondBid && firstBid > secondBid
+    ? Math.round((1 - secondBid / firstBid) * 100)
+    : null;
+  const facts = [
+    property.quartos ? `${property.quartos} ${property.quartos === 1 ? 'quarto' : 'quartos'}` : null,
+    property.banheiros ? `${property.banheiros} ${property.banheiros === 1 ? 'banheiro' : 'banheiros'}` : null,
+    property.area_total ? `${property.area_total} m²` : null,
+  ].filter(Boolean);
 
   return new ImageResponse(
     (
@@ -82,7 +99,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
             position: 'relative',
             display: 'flex',
             width: isSplit ? '57%' : '100%',
-            height: isSplit ? '100%' : isSquare ? '50%' : '60%',
+            height: isSplit ? '100%' : isSquare ? '50%' : '36%',
             background: 'linear-gradient(135deg, #26384d, #101827)',
           }}
         >
@@ -93,7 +110,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : null}
-          {isSquare ? (
+          {isSquare || isPortrait ? (
             <div style={{ position: 'absolute', top: 32, left: 38, display: 'flex', alignItems: 'center', gap: 14, padding: '12px 18px', borderRadius: 18, background: 'rgba(16,24,39,0.78)' }}>
               <div style={{ width: 48, height: 48, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f97316', color: '#ffffff', fontSize: 32, fontWeight: 900 }}>N</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -114,7 +131,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
             style={{
               position: 'absolute',
               left: isSplit ? 34 : 48,
-              bottom: isSplit ? 34 : 38,
+              bottom: isPortrait ? 24 : isSplit ? 34 : 38,
               display: 'flex',
               borderRadius: 999,
               padding: '13px 20px',
@@ -135,11 +152,51 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
             flexDirection: 'column',
             justifyContent: 'space-between',
             width: isSplit ? '43%' : '100%',
-            height: isSplit ? '100%' : isSquare ? '50%' : '40%',
-            padding: isSplit ? '30px 36px' : isSquare ? '28px 48px 30px' : '22px 58px 24px',
+            height: isSplit ? '100%' : isSquare ? '50%' : '64%',
+            padding: isSplit ? '30px 36px' : isSquare ? '28px 48px 30px' : '26px 44px 28px',
             backgroundColor: '#101827',
           }}
         >
+          {isPortrait ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18, height: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                <div style={{ display: 'flex', color: '#fb923c', fontSize: 22, fontWeight: 900, letterSpacing: 3 }}>OPORTUNIDADE EM LEILÃO</div>
+                <div style={{ display: 'flex', color: '#ffffff', fontSize: 46, lineHeight: 1.04, fontWeight: 900 }}>{displayTitle}</div>
+                <div style={{ display: 'flex', color: '#cbd5e1', fontSize: 25, fontWeight: 700 }}>{location || 'Confira os detalhes desta oportunidade'}</div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '17px 22px', borderRadius: 18, background: '#f8fafc', color: '#101827' }}>
+                <div style={{ display: 'flex', color: '#0f766e', fontSize: 19, fontWeight: 900, letterSpacing: 2 }}>SOBRE O IMÓVEL</div>
+                <div style={{ display: 'flex', fontSize: 24, fontWeight: 800 }}>{formatPropertyType(property.tipo_propriedade)}{property.tipo_leilao ? ` · ${property.tipo_leilao}` : ''}</div>
+                {property.rua ? <div style={{ display: 'flex', color: '#334155', fontSize: 19 }}>{[property.rua, property.numero, property.complemento].filter(Boolean).join(', ')}</div> : null}
+                {facts.length ? <div style={{ display: 'flex', color: '#0f766e', fontSize: 21, fontWeight: 800 }}>{facts.join('   ·   ')}</div> : null}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', color: '#ffffff', fontSize: 23, fontWeight: 900, letterSpacing: 2 }}>DATAS E LANCES</div>
+                  {discount ? <div style={{ display: 'flex', borderRadius: 999, padding: '7px 15px', background: '#0f766e', color: '#ffffff', fontSize: 18, fontWeight: 900 }}>ATÉ {discount}% DE DESCONTO</div> : null}
+                </div>
+                <div style={{ display: 'flex', gap: 14 }}>
+                  {[{ label: '1ª PRAÇA', date: formatAuctionDate(property.data_primeiro_leilao), bid: firstBid, color: '#0f766e' }, { label: '2ª PRAÇA', date: formatAuctionDate(property.data_segundo_leilao), bid: secondBid, color: '#c2410c' }].map((auction) => (
+                    <div key={auction.label} style={{ display: 'flex', flexDirection: 'column', flex: 1, borderRadius: 16, overflow: 'hidden', background: '#f8fafc', color: '#101827' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, padding: '13px 16px', background: auction.color, color: '#ffffff' }}>
+                        <div style={{ display: 'flex', fontSize: 21, fontWeight: 900 }}>{auction.label}</div>
+                        <div style={{ display: 'flex', fontSize: 17, fontWeight: 700 }}>{auction.date}</div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '12px 16px' }}>
+                        <div style={{ display: 'flex', color: '#475569', fontSize: 15, fontWeight: 800 }}>LANCE MÍNIMO</div>
+                        <div style={{ display: 'flex', color: auction.color, fontSize: 27, fontWeight: 900 }}>{formatCurrency(auction.bid)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center', borderRadius: 14, padding: '14px 20px', background: '#f97316', color: '#ffffff', fontSize: 21, fontWeight: 900, letterSpacing: 1.5 }}>VEJA TODOS OS DETALHES NO SITE ↗</div>
+              <div style={{ display: 'flex', justifyContent: 'center', color: '#cbd5e1', fontSize: 16, fontWeight: 700 }}>nexoleiloes.com.br · As informações podem ser atualizadas. Consulte o edital.</div>
+            </div>
+          ) : <>
           {!isSquare ? <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div
               style={{
@@ -213,6 +270,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
               nexoleiloes.com.br
             </div>
           </div>
+          </>}
         </div>
       </div>
     ),
