@@ -218,7 +218,7 @@ export function AdminImovelTabs({
                 <h2 id="property-artwork-title" className="text-lg font-extrabold text-slate-900">
                   Arte para Instagram
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">Prévia horizontal · 1200 × 675 px</p>
+                <p className="mt-1 text-sm text-slate-500">Prévia vertical · 1080 × 1350 px (4:5)</p>
               </div>
               <button
                 type="button"
