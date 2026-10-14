@@ -3,7 +3,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
-import { BookText, ExternalLink, FileText, Home, ImageIcon, MapPin } from 'lucide-react';
+import {
+  BookText,
+  Download,
+  ExternalLink,
+  FileText,
+  Home,
+  ImageIcon,
+  MapPin,
+} from 'lucide-react';
 
 type TabKey = 'dados' | 'dossie' | 'arquivos' | 'imagens';
 
@@ -18,6 +26,7 @@ type ImovelHeaderSummary = {
 };
 
 type AdminImovelTabsProps = {
+  propertyId: string;
   dadosTab: ReactNode;
   dossieTab: ReactNode;
   arquivosTab: ReactNode;
@@ -34,6 +43,7 @@ const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
 ];
 
 export function AdminImovelTabs({
+  propertyId,
   dadosTab,
   dossieTab,
   arquivosTab,
@@ -106,43 +116,67 @@ export function AdminImovelTabs({
             </div>
           </div>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
-                {summary.capaUrl ? (
-                  <Image
-                    src={summary.capaUrl}
-                    alt={`Capa do imovel ${summary.titulo}`}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center px-2 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                    Sem capa
-                  </div>
-                )}
+          <div className="space-y-4">
+            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+              <div className="flex flex-col gap-4 sm:flex-row">
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
+                  {summary.capaUrl ? (
+                    <Image
+                      src={summary.capaUrl}
+                      alt={`Capa do imovel ${summary.titulo}`}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center px-2 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                      Sem capa
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-base font-bold text-slate-900">
+                    {summary.titulo}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-primary">
+                    {formatCurrency(summary.valor_minimo)}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="size-3.5 text-primary" />
+                      {[summary.cidade, summary.estado].filter(Boolean).join(' - ') || 'Localizacao nao informada'}
+                    </span>
+                  </p>
+                </div>
               </div>
 
-              <div className="min-w-0 flex-1">
-                <p className="line-clamp-2 text-base font-bold text-slate-900">
-                  {summary.titulo}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-primary">
-                  {formatCurrency(summary.valor_minimo)}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin className="size-3.5 text-primary" />
-                    {[summary.cidade, summary.estado].filter(Boolean).join(' - ') || 'Localizacao nao informada'}
-                  </span>
-                </p>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <SummaryBadge label="Status" value={summary.status || '-'} />
+                <SummaryBadge label="Leilao" value={summary.tipo_leilao || '-'} />
               </div>
             </div>
-
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <SummaryBadge label="Status" value={summary.status || '-'} />
-              <SummaryBadge label="Leilao" value={summary.tipo_leilao || '-'} />
+            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-slate-900">Arte para Instagram</p>
+                  <p className="mt-1 text-xs text-slate-500">Modelo NEXO · formato horizontal</p>
+                </div>
+                <a
+                  href={`/admin/imoveis/${propertyId}/arte-instagram?download=1`}
+                  download
+                  className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-white transition hover:bg-primary/90"
+                >
+                  <Download className="size-4" />
+                  Baixar arte
+                </a>
+              </div>
+              <div
+                role="img"
+                aria-label={`Prévia da arte para Instagram do imóvel ${summary.titulo}`}
+                className="mt-4 aspect-[3/2] overflow-hidden rounded-xl bg-slate-900 bg-cover bg-center"
+                style={{ backgroundImage: `url('/admin/imoveis/${propertyId}/arte-instagram')` }}
+              />
             </div>
           </div>
         </div>
